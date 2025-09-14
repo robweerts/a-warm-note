@@ -1,0 +1,634 @@
+:root{
+  --ink:#00008B;
+  --paper:#FFE66D;
+  --bar:rgba(0,0,0,.55);
+  --bar2:rgba(0,0,0,.38);
+  --shadow:0 18px 40px rgba(0,0,0,.35);
+  --ui:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+  --hand:"Caveat","Patrick Hand",ui-rounded,system-ui,sans-serif;
+  --ease:cubic-bezier(.2,.8,.2,1);
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; font-family:var(--ui); color:#333; background:#fff8e7;
+  background-image:
+    radial-gradient(circle at top left, rgba(255,230,167,.85) 0%, rgba(255,230,167,0) 60%),
+    radial-gradient(circle at bottom right, rgba(255,179,71,.65) 0%, rgba(255,179,71,0) 70%);
+  display:grid; place-items:center;
+}
+.page{width:min(980px,92vw); padding:96px 0 32px}
+
+/* Topbar */
+.topbar{
+  position:fixed; top:12px; left:50%; transform:translateX(-50%); z-index:1000;
+  display:flex; flex-direction:column; align-items:center; gap:8px;
+  width:96vw; padding:8px 10px; border-radius:14px;
+  background:var(--bar); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+  box-shadow:0 10px 26px rgba(0,0,0,.28);
+}
+.brand{
+  margin:0; font-family:var(--hand); color:#fff; text-shadow:0 1px 4px rgba(0,0,0,.7);
+  font-size:clamp(18px,5vw,22px);
+}
+.actions{display:flex; gap:6px; flex-wrap:wrap; justify-content:center}
+.btn{
+  appearance:none; border:0; padding:7px 10px; border-radius:10px; cursor:pointer;
+  background:rgba(0,0,0,.45); color:#fff; font-weight:600; font-size:.92rem;
+  box-shadow:0 6px 18px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.06);
+  transition:background .2s var(--ease), transform .06s var(--ease);
+  backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+}
+.btn.primary{background:rgba(255,255,255,.9); color:#222}
+.btn:hover{transform:translateY(-1px)}
+.btn:active{transform:translateY(1px)}
+.btn:focus-visible{outline:2px solid rgba(255,255,255,.9); outline-offset:2px}
+
+/* Intro */
+.intro{
+  margin:4px auto 6px; text-align:center; font-family:var(--hand);
+  font-size:clamp(16px,2.2vw,20px); color:#2b261f; text-shadow:0 1px rgba(255,255,255,.35);
+}
+
+/* Chips (sentiments) */
+.chips-wrap{ margin:6px auto 0; width:min(980px,92vw); }
+.chip-row{
+  display:flex; gap:8px; overflow:auto; -webkit-overflow-scrolling:touch; padding:2px 2px 6px;
+}
+.chip{
+  border:0; padding:6px 10px; border-radius:999px; font-weight:600; font-size:.9rem;
+  background:rgba(0,0,0,.08); color:#222; cursor:pointer;
+  transition: transform .06s cubic-bezier(.2,.8,.2,1), background .2s cubic-bezier(.2,.8,.2,1);
+  white-space:nowrap;
+}
+.chip:hover{ transform:translateY(-1px); }
+.chip:active{ transform:translateY(1px); }
+.chip.active{ background:#222; color:#fff; }
+
+/* Mobile-first verbeteringen voor chips */
+.chips-wrap{ margin:6px auto 0; width:min(980px,92vw); position:relative; }
+.chip-row{
+  display:flex; gap:8px; overflow:auto; -webkit-overflow-scrolling:touch;
+  padding:2px 2px 6px; scroll-snap-type:x mandatory;
+  mask-image: linear-gradient(90deg, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%);
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%);
+}
+.chip{ scroll-snap-align:start; }
+
+/* Affordance: chevrons + actieve chip duidelijker */
+.chips-wrap{ position:relative; }
+
+.chip {
+  transition: transform .06s cubic-bezier(.2,.8,.2,1), background .2s cubic-bezier(.2,.8,.2,1), box-shadow .2s ease;
+}
+.chip.active{
+  background:#222; color:#fff;
+  box-shadow:0 0 0 2px rgba(0,0,0,.12), 0 6px 14px rgba(0,0,0,.18);
+}
+
+/* Chevrons aan de randen (alleen zichtbaar bij overflow, JS toggelt display) */
+.chip-chevron{
+  position:absolute; top:0; bottom:0; width:34px; display:none; place-items:center;
+  background: linear-gradient(90deg, rgba(255,255,255,0) 0, rgba(0,0,0,.08) 100%);
+  color:#222; font-weight:700; font-size:18px; border:0; cursor:pointer; z-index:2;
+  backdrop-filter: blur(2px);
+}
+.chip-chevron--left{ left:0; transform:scaleX(-1); border-top-left-radius:10px; border-bottom-left-radius:10px; }
+.chip-chevron--right{ right:0; border-top-right-radius:10px; border-bottom-right-radius:10px; }
+
+/* (optioneel) iets meer ruimte zodat de eerste/laatste chip niet onder de chevron valt */
+.chip-row{ padding-left:8px; padding-right:8px; }
+.chip--label{
+  pointer-events:none; opacity:.9; background:rgba(255,0,85,.1); color:#b0003a;
+  border:1px solid rgba(255,0,85,.25);
+}
+/* Klikbare thema-chip */
+.chip--theme{
+  background:rgba(255,0,85,.1);
+  color:#b0003a;
+  border:1px solid rgba(255,0,85,.25);
+}
+.chip--theme.active{
+  background:#b0003a;
+  color:#fff;
+  border-color:#b0003a;
+}
+
+/* Note */
+.note-wrap{display:grid; place-items:center; padding:20px 0}
+.note{
+  width:min(360px,88vw); min-height:320px; padding:clamp(18px,3vw,28px);
+  background:var(--paper); color:var(--ink); border-radius:8px; box-shadow:var(--shadow);
+  position:relative; transform:rotate(-1.2deg);
+  background-image:
+    radial-gradient(100% 100% at 50% 0%, rgba(255,255,255,.55), transparent 60%),
+    repeating-linear-gradient(0deg, rgba(0,0,0,0.015) 0 2px, rgba(255,255,255,0.02) 2px 4px),
+    linear-gradient(180deg, rgba(0,0,0,0.03), rgba(255,255,255,0.03));
+  animation: note-drop .6s var(--ease) both;
+}
+
+/* Welkomstnote subtiel accent */
+.note--welcome{
+  outline: 2px solid rgba(0,0,0,.06);
+  outline-offset: 2px;
+}
+
+/* === FROM inline met symbool (rechts-onder) ============================== */
+.from-wrap{
+  position: absolute;
+  right: 16px;
+  bottom: 12px;                 /* zelfde baseline als oude #fromline */
+  display: flex;
+  align-items: center;
+  gap: 6px;                      /* ruimte tussen symbool en tekst */
+}
+
+/* Zet child-posities op 'static' binnen de wrap (ipv absolute) */
+.from-wrap #fromline{
+  position: static;
+  margin: 0;                     /* geen extra spacing */
+}
+
+.from-wrap #from-symbol{
+  position: static;
+  width: 22px;                   /* iets kleiner, leest beter */
+  height: 22px;
+  opacity: .9;
+}
+
+/* Hou de bestaande inkt-stijl voor het SVG */
+.from-wrap #from-symbol svg{
+  width: 100%; height: 100%;
+  stroke: #FF5757;
+  fill: none;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Subtiel wiebeltje (respecteert reduced motion) */
+@keyframes handsketch { 0%{transform:rotate(-1deg)} 50%{transform:rotate(1deg)} 100%{transform:rotate(-1deg)} }
+.from-wrap #from-symbol { animation: handsketch 5s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce){
+  .from-wrap #from-symbol { animation: none; }
+}
+
+/* Handgetekend symbool bij '— van …' */
+#from-symbol{
+  position: absolute;
+  right: 16px;
+  bottom: 46px;           /* net boven de van-regel */
+  width: 28px; height: 28px;
+  opacity: .9;
+  pointer-events: none;
+}
+
+/* Subtiel wiebeltje (respecteert reduced motion) */
+@keyframes handsketch { 0%{transform:rotate(-1deg)} 50%{transform:rotate(1deg)} 100%{transform:rotate(-1deg)} }
+#from-symbol { animation: handsketch 5s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce){
+  #from-symbol { animation: none; }
+}
+
+@keyframes note-drop{
+  from{transform:translateY(-12px) rotate(-2deg); opacity:0}
+  60%{transform:translateY(2px) rotate(1.2deg); opacity:1}
+  to{transform:translateY(0) rotate(-1.2deg)}
+}
+.message{font-family:var(--hand); font-size:clamp(26px,3.2vw,38px); line-height:1.2; white-space:pre-wrap}
+#iconline{margin-top:12px; text-align:center; font-size:clamp(22px,3vw,28px)}
+#toline,#fromline{position:absolute; font-family:var(--hand); font-size:20px; opacity:.9}
+#toline{left:16px; top:10px}
+#fromline{right:16px; bottom:12px}
+.tape{width:86px; height:28px; position:absolute; top:-12px;
+  background:linear-gradient(180deg, rgba(255,255,255,.55), rgba(255,255,255,.25));
+  box-shadow:0 3px 8px rgba(0,0,0,.18); border-radius:3px}
+.tape--tl{left:22px; transform:rotate(-12deg)}
+.tape--tr{right:22px; transform:rotate(8deg)}
+
+/* Compose */
+.compose{background:var(--bar); color:#fff; border-radius:14px; box-shadow:0 10px 26px rgba(0,0,0,.28);
+  backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+  width:min(640px,92vw); margin:8px auto 0; padding:6px 8px}
+.compose-row{display:grid; grid-template-columns:1fr 1fr; gap:8px}
+@media (max-width:900px){.compose-row{grid-template-columns:1fr}}
+.compose input{
+  height:38px; padding:0 12px; border-radius:10px; border:1px solid rgba(255,255,255,.2);
+  background:rgba(0,0,0,.25); color:#fff; font-weight:500; font-size:.95rem
+}
+.compose input:focus{outline:2px solid rgba(255,255,255,.9); outline-offset:2px}
+
+/* Coach */
+.coach{margin:10px auto 0; padding:8px 12px; width:fit-content; max-width:min(720px,92vw);
+  background:var(--bar); color:#fff; border-radius:12px; display:flex; gap:10px; align-items:center;
+  backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); box-shadow:0 6px 18px rgba(0,0,0,.25);
+  animation: coach-in .3s var(--ease) both}
+@keyframes coach-in{from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:translateY(0)}}
+.coach .coach-close{appearance:none; border:0; cursor:pointer; background:rgba(255,255,255,.12); color:#fff; width:26px; height:26px; border-radius:50%}
+.hidden{display:none!important}
+
+/* Share-sheet */
+.sheet-backdrop{position:fixed; inset:0; background:rgba(0,0,0,.35); display:grid; place-items:end center; z-index:1200}
+.sheet{
+  width:100%; max-width:560px; background:rgba(20,20,20,.75); color:#fff; border-top-left-radius:16px; border-top-right-radius:16px;
+  backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); box-shadow:0 -10px 30px rgba(0,0,0,.35);
+  padding:12px 14px; transform:translateY(10px); animation:sheet-in .26s var(--ease) both
+}
+@keyframes sheet-in{from{transform:translateY(16px); opacity:0} to{transform:translateY(0); opacity:1}}
+.sheet-header{display:flex; align-items:center; justify-content:space-between}
+.sheet-header h2{margin:0; font-size:18px}
+.sheet-close{appearance:none; border:0; cursor:pointer; background:rgba(255,255,255,.12); color:#fff; width:30px; height:30px; border-radius:50%}
+.sheet-body{padding:8px 2px 10px; display:grid; gap:8px}
+.pair-inline{display:flex; gap:8px; align-items:baseline; font-size:14.5px}
+.sheet-actions{display:flex; gap:8px; justify-content:flex-end; padding-top:8px}
+.share-options{display:grid; gap:8px}
+.btn.opt{width:100%; text-align:center}
+
+.share-grid{
+  --tile-gap: 10px;      /* horizontale/verticale ruimte tussen tegels */
+  --tile-ic: 48px;       /* basis icon-size (kan via media query opschalen) */
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));  /* 4 per rij */
+  gap: var(--tile-gap);
+  align-items: start;     /* label tekst start bovenaan samen met icon */
+  justify-items: center;  /* center inhoud binnen de cel */
+  margin-top: 8px;        /* lucht boven het grid */
+}
+
+/* Eén tegel met icon + label */
+.share-tile{
+  appearance: none; border: 0; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 8px 6px; border-radius: 12px;
+  background: rgba(255,255,255,.06); color: #fff; text-align: center;
+  transition:
+    background .2s cubic-bezier(.2,.8,.2,1),
+    transform  .06s cubic-bezier(.2,.8,.2,1);
+}
+.share-tile:hover{ background: rgba(255,255,255,.10); transform: translateY(-1px); }
+.share-tile:active{ transform: translateY(1px); }
+.share-tile:focus-visible{ outline: 2px solid rgba(255,255,255,.9); outline-offset: 2px; }
+
+/* Icon en label */
+.tile-icon{
+  width: var(--tile-ic);
+  height: var(--tile-ic);
+  object-fit: contain;      /* behoudt verhoudingen, geen vervorming */
+  display: block;
+}
+.tile-label{
+  font-weight: 600;
+  font-size: .92rem;
+  line-height: 1.1;
+  letter-spacing: .1px;
+}
+
+/* Iets groter op bredere viewports / grotere sheets */
+@media (min-width: 560px){
+  .share-grid{ --tile-ic: 56px; gap: 12px; }
+}
+
+/* De oude sheet-actions houden we om semantische redenen,
+   maar we verbergen ze visueel omdat de tegel 'Deel' (#share-confirm)
+   dezelfde functionaliteit aanbiedt. */
+.sheet-actions{ display: none; }
+
+/* Share list (vertical, left-aligned, scalable) */
+.share-list{
+  list-style:none; margin:8px 0 0; padding:0;
+  display:flex; flex-direction:column; gap:10px;
+}
+.share-li{ margin:0; padding:0; }
+
+.share-item{
+  /* full-width, left-aligned */
+  width:100%;
+  display:flex; align-items:flex-start; gap:12px;
+  padding:10px 12px; border:0; border-radius:12px; cursor:pointer;
+  background:rgba(255,255,255,.06); color:#fff; text-align:left;
+  transition:background .2s cubic-bezier(.2,.8,.2,1), transform .06s cubic-bezier(.2,.8,.2,1);
+}
+.share-item:hover{ background:rgba(255,255,255,.10); transform:translateY(-1px); }
+.share-item:active{ transform:translateY(1px); }
+.share-item:focus-visible{ outline:2px solid rgba(255,255,255,.9); outline-offset:2px; }
+
+.share-icon{
+  width:48px; height:48px; flex:0 0 auto; object-fit:contain;
+}
+@media (min-width:480px){
+  .share-icon{ width:56px; height:56px; }
+}
+
+.share-label{
+  display:block; font-weight:600; font-size:0.95rem; line-height:1.15;
+  margin-top:4px;
+}
+
+/* Optioneel subtitel of toelichting onder label (als je dat later wilt) */
+.share-item .share-text{ font-size:0.9rem; opacity:.85; margin-top:2px; }
+
+/* High-DPI algo doet de rest via srcset; wil je kleiner? pas .tile-icon aan naar 56px of 48px */
+/* Toast & confetti */
+.toast{
+  position:fixed; left:50%; bottom:18px; transform:translateX(-50%); z-index:1300;
+  padding:10px 14px; border-radius:12px; background:rgba(0,0,0,.72); color:#fff; text-align:center; font-size:14px;
+  backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); box-shadow:0 6px 18px rgba(0,0,0,.25)
+}
+@keyframes confetti{0%{transform:translateY(-20vh) rotate(0); opacity:0}10%{opacity:1}100%{transform:translateY(100vh) rotate(720deg); opacity:0}}
+.confetti{position:fixed; top:-20vh; left:0; width:8px; height:12px; z-index:1400; pointer-events:none; animation:confetti 1.2s linear forwards}
+
+/* Reduced motion */
+@media (prefers-reduced-motion:reduce){*{animation:none!important; transition:none!important}}
+
+/* Topbar payoff subtiel */
+.brand-payoff {
+  font-weight: 500;
+  opacity: .85;
+  margin-left: .25rem;
+  white-space: nowrap;
+  font-size: .95rem;
+}
+
+/* Intro tagline + swipe-hint */
+.intro-hint {
+  margin: 8px auto 0;
+  font-weight: 600;
+  text-align: center;
+  opacity: .95;
+}
+.hint-swipe {
+  font-weight: 500;
+  opacity: .9;
+}
+
+/* === Sentiment swipe hints === */
+.sentiment-strip {
+  position: relative;
+}
+.sentiment-strip::before,
+.sentiment-strip::after {
+  content: "";
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 32px;
+  pointer-events: none;
+}
+.sentiment-strip::before {
+  left: 0;
+  background: linear-gradient(to right, rgba(255,248,231,0.95), rgba(255,248,231,0));
+}
+.sentiment-strip::after {
+  right: 0;
+  background: linear-gradient(to left, rgba(255,248,231,0.95), rgba(255,248,231,0));
+}
+
+.sentiment-strip.hint-active {
+  animation: nudgeX 0.6s ease-in-out;
+}
+@keyframes nudgeX {
+  0%,100% { transform: translateX(0); }
+  20% { transform: translateX(-8px); }
+  40% { transform: translateX(8px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+
+/* === Motion respect === */
+@media (prefers-reduced-motion: reduce) {
+  .note, .tape, .coach, .compose, .sheet {
+    transition: none !important;
+    animation: none !important;
+  }
+  .confetti {
+    display: none !important; /* vervangbaar door subtiele sparkle later */
+  }
+}
+
+/* === ABOUT: vrolijke look & feel ======================================= */
+.sheet--about{
+  background:
+    radial-gradient(1200px 300px at 50% -120px, rgba(255, 230, 109, .35), rgba(0,0,0,0) 60%),
+    radial-gradient(900px 220px at 10% 105%, rgba(197, 250, 213, .25), rgba(0,0,0,0) 60%),
+    radial-gradient(900px 220px at 90% 105%, rgba(205, 231, 255, .25), rgba(0,0,0,0) 60%),
+    rgba(20,20,20,.75);
+  position: relative;
+  overflow: hidden;
+}
+/* === ABOUT: subtiele happy accent-bar =================================== */
+.sheet--about .sheet-body{
+  /* dunne “ribbon” onder de header – zonder extra DOM */
+  border-top: 6px solid transparent;
+  border-image: linear-gradient(90deg, #FFE66D, #C5FAD5, #CDE7FF) 1;
+  padding-top: 12px;      /* beetje lucht na de ribbon */
+  margin-top: 6px;        /* visueel los van de header */
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
+}
+
+/* Iets meer glim in de header, blijft clean */
+.sheet--about .sheet-header{
+  background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,0));
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  padding-bottom: 6px;
+}
+
+.sheet--about::before{
+  content:"";
+  position:absolute; inset:0; pointer-events:none;
+  background-image:
+    radial-gradient(circle at 10% 20%, rgba(255,255,255,.08) 2px, transparent 3px),
+    radial-gradient(circle at 80% 30%, rgba(255,255,255,.08) 2px, transparent 3px),
+    radial-gradient(circle at 30% 80%, rgba(255,255,255,.08) 2px, transparent 3px),
+    radial-gradient(circle at 70% 70%, rgba(255,255,255,.08) 2px, transparent 3px);
+  background-size: 160px 140px, 180px 160px, 200px 180px, 220px 200px;
+  opacity:.55;
+  animation: awnDots 18s linear infinite;
+}
+@keyframes awnDots{
+  from{ transform: translateY(0) }
+  to  { transform: translateY(-12px) }
+}
+@media (prefers-reduced-motion:reduce){
+  .sheet--about::before{ animation:none }
+}
+
+/* Header net iets vrolijker */
+.sheet--about .sheet-header h2{
+  display:flex; align-items:center; gap:8px;
+}
+.sheet--about .sheet-header h2::before{
+  content:"✨";
+  font-size: 18px;
+}
+
+/* Hero-blok */
+.about-hero{
+  display:flex; align-items:center; gap:10px;
+  padding:8px 10px; border-radius:12px;
+  background: rgba(255,255,255,.08);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+  width: fit-content;
+}
+.about-emoji{ font-size: 22px; line-height: 1; }
+.about-tag{ font-weight: 700; letter-spacing:.2px; opacity:.95; }
+
+/* Iets meer lucht */
+.sheet--about .sheet-body p{ margin-top:10px }
+
+
+/* Respecteer reduced motion (geen rotatie-animaties hier, dus niets nodig) */
+@media (prefers-reduced-motion: reduce){
+  /* nothing: tapes zijn statisch */
+}
+
+/* === Background upgrade (lichte beweging/noise overlay) === */
+body::before {
+  content:"";
+  position:fixed; inset:0;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4'/></filter><rect width='160' height='160' filter='url(%23n)'/></svg>");
+  opacity:.05;
+  animation: subtleMove 30s linear infinite;
+  z-index:-1;
+}
+@keyframes subtleMove {
+  from { transform:translate(0,0); }
+  to   { transform:translate(-80px,-80px); }
+}
+
+/* === CHIPS OVERRIDES — compacter, leesbaar, links uitlijnen ============== */
+/* 1) Rij compacter + alleen rechts een fade (links dus 100% scherp) */
+.chip-row{
+  gap: 6px;                                /* was 8px */
+  /* fade alleen aan de RECHTER kant → eerste chip blijft helder */
+  mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 12px), transparent 100%);
+  -webkit-mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 12px), transparent 100%);
+}
+
+/* 2) Knoppen kleiner en netter op mobile */
+.chip{
+  padding: 5px 9px;                         /* was 6px 10px */
+  font-size: .85rem;                        /* was .9rem */
+}
+@media (max-width: 360px){
+  .chip{ padding: 4px 8px; font-size: .8rem; }
+}
+
+/* 3) Thema-chip iets prominenter maar compact */
+.chip--theme{
+  padding: 5px 10px;
+  font-weight: 700;
+}
+
+/* 4) Chevrons smaller & zachter, overlappen geen labels */
+.chip-chevron{
+  width: 28px;                               /* was 34px */
+  background: linear-gradient(90deg, rgba(255,255,255,0) 0, rgba(0,0,0,.06) 100%);
+}
+
+/* 5) Automatisch extra ruimte rechts zodra chevron aanwezig is (geen JS nodig) */
+.chips-wrap:has(#chips-right) .chip-row{
+  padding-right: 38px;                       /* labels blijven vrij van chevron */
+}
+
+/* === CHIPS FIXES (override) =============================================== */
+/* 1) Verwijder blur/fade-mask over de chips */
+.chip-row{
+  -webkit-mask-image: none !important;
+          mask-image: none !important;
+  gap: 6px;                 /* iets compacter */
+  padding-left: 8px;        /* ruimte links */
+  padding-right: 8px;       /* basisruimte rechts; zie chevrons hieronder */
+}
+
+/* 2) Chevron icons goed en niet over labels heen */
+.chip-chevron{
+  width: 28px;
+  background: none;         /* geen donkere fade achter de chevrons */
+}
+.chip-chevron--left{
+  left: 0;
+  transform: none !important;   /* was scaleX(-1) → gaf '>' i.p.v. '<' */
+}
+.chip-chevron--right{
+  right: 0;
+}
+
+/* Laat ruimte vrij zodra chevrons in DOM staan (zonder JS-klassen) */
+.chips-wrap:has(#chips-left) .chip-row{
+  padding-left: 38px;
+}
+.chips-wrap:has(#chips-right) .chip-row{
+  padding-right: 38px;
+}
+
+/* 3) Chips minder rond en iets compacter */
+.chip{
+  border-radius: 10px;      /* was 999px (pill) → nu UI-conform */
+  padding: 5px 9px;         /* compacter */
+  font-size: .85rem;
+}
+@media (max-width: 360px){
+  .chip{ padding: 4px 8px; font-size: .8rem; }
+}
+
+/* Duidelijke actieve staat maar subtieler schaduw */
+.chip.active{
+  background: #222;
+  color: #fff;
+  box-shadow: 0 0 0 1px rgba(0,0,0,.12), 0 6px 12px rgba(0,0,0,.16);
+}
+
+/* === FIX chips: blur weg, chevrons correct, minder rond ============== */
+
+/* Verwijder mask/fade die over eerste chip valt */
+.chip-row{
+  -webkit-mask-image: none !important;
+          mask-image: none !important;
+}
+
+/* Chevron links moet gewoon '<' zijn, niet gespiegeld */
+.chip-chevron--left{
+  transform: none !important; /* override scaleX(-1) */
+}
+
+/* Chips minder rond → sluit beter aan bij rest van layout */
+.chip{
+  border-radius: 10px !important;  /* ipv 999px */
+}
+/* === DEBUG / BASELINE ANIM — note pop-in =============================== */
+@keyframes awnPopIn {
+  0% { transform: translateY(8px) scale(.98); opacity: 0; }
+  100%{ transform: translateY(0)  scale(1);   opacity: 1; }
+}
+.note.anim-pop {
+  animation: awnPopIn .28s cubic-bezier(.2,.8,.2,1);
+}
+@media (prefers-reduced-motion: reduce){
+  .note.anim-pop { animation: none; opacity: 1; }
+}
+
+/* (optioneel) kleine sparkle-fallback als confetti uit staat */
+.awn-sparkle {
+  position: fixed; pointer-events:none; inset:auto auto 16px 16px;
+  font-size: 18px; opacity: 0; transform: translateY(6px);
+  animation: awnSparkle .9s ease-out;
+}
+@keyframes awnSparkle {
+  0% { opacity: 0; transform: translateY(6px); }
+  20%{ opacity: 1; transform: translateY(0); }
+  100%{ opacity: 0; transform: translateY(-6px); }
+}
+/* Nudge voor verplicht 'Voor wie?' veld */
+@keyframes awnFieldNudge {
+  0%, 100% { transform: translateX(0); }
+  20%      { transform: translateX(-6px); }
+  40%      { transform: translateX(6px); }
+  60%      { transform: translateX(-3px); }
+  80%      { transform: translateX(3px); }
+}
+.field-nudge {
+  animation: awnFieldNudge .5s ease;
+  box-shadow: 0 0 0 2px rgba(255, 213, 0, .85);
+}
+
