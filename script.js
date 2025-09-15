@@ -108,44 +108,56 @@ const STATE = {
 
 /* [D] INIT (lifecycle) ------------------------------------------------------ */
 
-console.log("script is geladen");
-
 function init() {
-  console.log("init wordt aangeroepen");
   wireGlobalUI(); 
   loadMessages()
     .then(() => {
-      console.log("messages loaded");
       buildSentimentChips();
-      console.log("sentiment chips built");
-      rebuildDeck(true);
-      console.log("deck rebuilt");
-
-      // Vul 'to' en 'from' vanuit URL (indien aanwezig)
+      if (els.toInput) {
+        els.toInput.addEventListener('input', function(e) {
+          const val = e.target.value;
+          if (val.length > 0) {
+            // Alleen de eerste letter hoofdletter, de rest ongewijzigd
+            e.target.value = val.charAt(0).toUpperCase() + val.slice(1);
+          }
+        });
+      }
+      if (els.fromInput) {
+        els.fromInput.addEventListener('input', function(e) {
+          const val = e.target.value;
+          if (val.length > 0) {
+            e.target.value = val.charAt(0).toUpperCase() + val.slice(1);
+          }
+        });
+      }
       const qp = new URLSearchParams(location.search);
       const toVal = qp.get('to');
       const fromVal = qp.get('from');
-      console.log("URL params:", { toVal, fromVal });
+      const sharedMid = qp.get('mid');
+      const sharedId = qp.get('id'); // indien van toepassing
+
       if (toVal && els.toInput) els.toInput.value = toVal;
       if (fromVal && els.fromInput) els.fromInput.value = fromVal;
 
-      if (!showWelcomeNoteOnce()) {
-        const sharedMid = qp.get('mid');
-        console.log("mid param:", sharedMid);
+      // Alleen welcome tonen als er géén mid/id/to/from is
+      const hasDirectMsg = !!(sharedMid || sharedId || toVal || fromVal);
+
+      if (hasDirectMsg) {
+        let msgIdx = null;
         if (sharedMid) {
-          const idx = STATE.allMessages.findIndex(m => m.id === sharedMid);
-          console.log("mid idx:", idx);
-          if (idx !== -1) {
-            renderMessage({ requestedIdx: idx, wiggle: false });
-          } else {
-            renderMessage({ newRandom: true, wiggle: false });
-          }
+          msgIdx = STATE.allMessages.findIndex(m => m.id === sharedMid);
+        } else if (sharedId) {
+          msgIdx = Number(sharedId); // let op: 0-based index!
+        }
+        if (msgIdx !== null && msgIdx >= 0 && msgIdx < STATE.allMessages.length) {
+          renderMessage({ requestedIdx: msgIdx, wiggle: false });
         } else {
           renderMessage({ newRandom: true, wiggle: false });
         }
+      } else {
+        showWelcomeNoteOnce();
       }
       updateCoach(currentCoachState());
-      console.log("init finished");
     })
     .catch((e) => {
       console.error("FOUT in init():", e);
