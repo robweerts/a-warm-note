@@ -47,7 +47,7 @@ window.downloadNoteAsImage = function(noteEl, msgEl, iconLineEl, lang, toLabel, 
 
   // === Tekststijl (handgeschreven)
   ctx.shadowColor = "transparent";
-  const ink = getComputedStyle(document.body).getPropertyValue("--ink") || "#1d1b16";
+  const ink = getComputedStyle(document.body).getPropertyValue("--ink") || "#00008B";
   ctx.fillStyle = ink;
 
   const fontFamily = (getComputedStyle(msgEl).fontFamily.split(",")[0] || "Caveat").replaceAll('"','').trim();
@@ -109,7 +109,7 @@ window.downloadNoteAsImage = function(noteEl, msgEl, iconLineEl, lang, toLabel, 
   if (toName) {
     const small = Math.round(baseSize * 0.55);
     ctx.font = `700 ${small}px "${fontFamily}"`;
-    ctx.fillText(toLabel(lang, toName), x + 16, y + 12);
+    ctx.fillText(toLabel(lang, toName), x + 16, y + 20);
   }
 
   // 8) "— van ..." rechtsonder
