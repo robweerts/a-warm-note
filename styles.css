@@ -1,13 +1,14 @@
 :root{
   --ink:#00008B;
   --paper:#FFE66D;
-  --bar:rgba(0,0,0,.55);
+  --bar:rgba(0,0,0,.48);
   --bar2:rgba(0,0,0,.38);
   --shadow:0 18px 40px rgba(0,0,0,.35);
   --ui:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
   --hand:"Caveat","Patrick Hand",ui-rounded,system-ui,sans-serif;
   --ease:cubic-bezier(.2,.8,.2,1);
 }
+
 *{box-sizing:border-box}
 html,body{height:100%}
 body{
@@ -25,7 +26,7 @@ body{
   display:flex; flex-direction:column; align-items:center; gap:8px;
   width:96vw; padding:8px 10px; border-radius:14px;
   background:var(--bar); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
-  box-shadow:0 10px 26px rgba(0,0,0,.28);
+  box-shadow:0 14px 36px rgba(0,0,0,.42);
 }
 .brand{
   margin:0; font-family:var(--hand); color:#fff; text-shadow:0 1px 4px rgba(0,0,0,.7);
@@ -216,6 +217,10 @@ body{
   height:38px; padding:0 12px; border-radius:10px; border:1px solid rgba(255,255,255,.2);
   background:rgba(0,0,0,.25); color:#fff; font-weight:500; font-size:.95rem
 }
+/* Compose placeholders subtiel lichter */
+.compose input::placeholder{
+  color: rgba(255,255,255,.72); /* net wat lichter dan default */
+}
 .compose input:focus{outline:2px solid rgba(255,255,255,.9); outline-offset:2px}
 
 /* Coach */
@@ -226,7 +231,23 @@ body{
 @keyframes coach-in{from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:translateY(0)}}
 .coach .coach-close{appearance:none; border:0; cursor:pointer; background:rgba(255,255,255,.12); color:#fff; width:26px; height:26px; border-radius:50%}
 .hidden{display:none!important}
-
+/* Coach inline "Verstuur" als link-achtige knop */
+.coach .coach-inline{
+  appearance:none;
+  border:0;
+  background:transparent;
+  color:#FFE66D;            /* sluit aan bij jouw gele thema */
+  font-weight:700;
+  text-decoration:underline;
+  cursor:pointer;
+  padding:0 2px;
+}
+.coach .coach-inline:hover{ text-decoration:none; }
+.coach .coach-inline:focus-visible{
+  outline:2px solid rgba(255,255,255,.9);
+  outline-offset:2px;
+  border-radius:4px;
+}
 /* Share-sheet */
 .sheet-backdrop{position:fixed; inset:0; background:rgba(0,0,0,.35); display:grid; place-items:end center; z-index:1200}
 .sheet{
@@ -326,6 +347,29 @@ body{
 
 /* Optioneel subtitel of toelichting onder label (als je dat later wilt) */
 .share-item .share-text{ font-size:0.9rem; opacity:.85; margin-top:2px; }
+
+/* Share-sheet pair: center + handschrift */
+.pair-inline{
+  width: 100%;
+  justify-content: center;   /* center i.p.v. links */
+  text-align: center;
+  font-family: var(--hand);  /* jouw handschriftfont */
+  font-size: clamp(16px, 2.4vw, 20px);
+  gap: 10px;
+  flex-wrap: wrap;           /* netjes afbreken op smal scherm */
+}
+
+/* labels iets subtieler; waarden net iets sterker */
+.pair-inline .pair-label{ opacity: .85; font-weight: 600; }
+.pair-inline .pair-val{ opacity: .95; font-weight: 700; }
+
+/* puntje (•) iets subtieler */
+.pair-inline .pair-sep{ opacity: .6; }
+
+/* wanneer wrap optreedt: separator verbergen om lelijke alleenstaande bullets te voorkomen */
+@media (max-width: 380px){
+  .pair-inline .pair-sep{ display: none; }
+}
 
 /* High-DPI algo doet de rest via srcset; wil je kleiner? pas .tile-icon aan naar 56px of 48px */
 /* Toast & confetti */
@@ -779,7 +823,7 @@ body::before {
     margin-bottom: 18px;
     left: auto;
     top: auto;
-    font-size: 20px;
+    font-size: 22px;
   }
   .note .message {
     margin-top: 0 !important;

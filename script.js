@@ -109,7 +109,7 @@ const STATE = {
 /* [D] INIT (lifecycle) ------------------------------------------------------ */
 
 function init() {
-  wireGlobalUI(); 
+  wireGlobalUI();
   loadMessages()
     .then(() => {
       buildSentimentChips();
@@ -117,7 +117,6 @@ function init() {
         els.toInput.addEventListener('input', function(e) {
           const val = e.target.value;
           if (val.length > 0) {
-            // Alleen de eerste letter hoofdletter, de rest ongewijzigd
             e.target.value = val.charAt(0).toUpperCase() + val.slice(1);
           }
         });
@@ -134,28 +133,25 @@ function init() {
       const toVal = qp.get('to');
       const fromVal = qp.get('from');
       const sharedMid = qp.get('mid');
-      const sharedId = qp.get('id'); // indien van toepassing
+      const sharedId = qp.get('id');
 
       if (toVal && els.toInput) els.toInput.value = toVal;
       if (fromVal && els.fromInput) els.fromInput.value = fromVal;
 
-      // Alleen welcome tonen als er géén mid/id/to/from is
-      const hasDirectMsg = !!(sharedMid || sharedId || toVal || fromVal);
-
-      if (hasDirectMsg) {
+      // Nieuw: Welkomstboodschap tonen als van toepassing
+      if (!showWelcomeIfRelevant(els)) {
+        // Geen welkom getoond, dus direct message of random tonen
         let msgIdx = null;
         if (sharedMid) {
           msgIdx = STATE.allMessages.findIndex(m => m.id === sharedMid);
         } else if (sharedId) {
-          msgIdx = Number(sharedId); // let op: 0-based index!
+          msgIdx = Number(sharedId);
         }
         if (msgIdx !== null && msgIdx >= 0 && msgIdx < STATE.allMessages.length) {
           renderMessage({ requestedIdx: msgIdx, wiggle: false });
         } else {
           renderMessage({ newRandom: true, wiggle: false });
         }
-      } else {
-        showWelcomeNoteOnce();
       }
       updateCoach(currentCoachState());
     })
@@ -531,33 +527,34 @@ function renderToFrom(){
   }, {passive:true});
 })();
 
-// === Welkomstnote (éénmalig per sessie; ?welcome forceert) ================
-function showWelcomeNoteOnce(){
-  try{
-    const qp = new URLSearchParams(location.search);
-    const force = qp.has('welcome');          // test: ?welcome
-    const seen  = sessionStorage.getItem('awn_welcome_shown') === '1';
-    if (seen && !force) return false;
+/**
+ * Toon een welkomstboodschap voor nieuwe bezoekers,
+ * tenzij ze via een directe boodschap (mid/id in URL) komen.
+ * @param {Object} els - Object met referenties naar DOM-elementen
+ * @returns {boolean} true als welkom getoond is, anders false
+ */
+function showWelcomeIfRelevant(els) {
+  const qp = new URLSearchParams(location.search);
+  const isDirectMessage = qp.has('mid') || qp.has('id');
+  const welcomeAlready = sessionStorage.getItem('awn_welcome_shown') === "1";
+  const forceWelcome = qp.has('welcome'); // debug/test: ?welcome
 
-    // Note invullen met instructie
+  // 1. Mensen die via een persoonlijke boodschap komen, krijgen geen welkom
+  if (isDirectMessage && !forceWelcome) return false;
+
+  // 2. Welkomst tonen als nog niet gezien óf geforceerd
+  if (!welcomeAlready || forceWelcome) {
+    // Vul element met instructies
     if (els.msg)  els.msg.textContent  = "Welkom! Kies een gevoel hierboven, vul ‘Voor wie?’ in en klik op ‘Verstuur’.";
     if (els.icon) els.icon.textContent = "💛";
-
-    // Subtiele paper-look + to/from labels updaten
-    if (typeof setPaperLook === 'function') setPaperLook();
-    if (typeof renderToFrom === 'function') renderToFrom();
-
-    // Optioneel: visuele tag
     if (els.note) els.note.classList.add("note--welcome");
-
-    // Coach terug naar init (korte guidance)
+    if (typeof setPaperLook === 'function') setPaperLook();
     if (typeof updateCoach === 'function') updateCoach('init');
-
     sessionStorage.setItem('awn_welcome_shown','1');
-    return true;
-  }catch(_e){
-    return false;
+    return true; // welkom getoond
   }
+
+  return false; // welkom niet getoond
 }
 
 /* [I] COMPOSE (inputs Voor/Van) -------------------------------------------- */
@@ -567,7 +564,7 @@ function onComposeEdit(){
   renderShareSheetPairsInline();
 }
 
-/* [J] COACH (microcopy) ----------------------------------------------------- */
+// [J] COACH (microcopy)
 function currentCoachState(){ return getTo() ? "toFilled" : "init"; }
 function updateCoach(state){
   if (!els.coach) return;
@@ -576,14 +573,16 @@ function updateCoach(state){
                      (theme===THEME.NEWYEAR)   ? "Nieuw begin ✨ Kies een gevoel en verstuur je note." :
                      (theme===THEME.EASTER)    ? "Zacht begin 🐣 Kies een gevoel en verstuur je note." : null;
 
+  // Basis-copies
   const copy = {
     init: themedInit || "Kies een gevoel en verstuur je note.",
-    toFilled: "Mooi! Klik ‘Verstuur’ om je boodschap te delen.",
+    toFilled: `Mooi! Klik <button type="button" class="coach-inline">Verstuur</button> om je boodschap te delen.`,
     shared: "Je boodschap is verstuurd 💛 Nog eentje maken?"
   };
 
-  const txt = copy[state] || copy.init;
-  els.coach.querySelector(".coach-text").textContent = txt;
+  const html = copy[state] || copy.init;
+  const t = els.coach.querySelector(".coach-text");
+  if (t) t.innerHTML = html;           // ← innerHTML zodat de inline-knop rendert
   els.coach.classList.remove("hidden");
 }
 
@@ -641,8 +640,8 @@ function onDownload(){
   if (typeof window.downloadNoteAsImage === "function") {
     window.downloadNoteAsImage(
       els.note, els.msg, els.icon, "nl",
-      (_l,n)=> n?`voor ${n}`:"",
-      (_l,n)=> n?`— van ${n}`:"",
+      (_l,n)=> n?`Voor ${n}`:"",
+      (_l,n)=> n?`Van ${n}`:"",
       getTo, getFrom
     );
     showToast("Afbeelding wordt opgeslagen ⬇️");
@@ -723,8 +722,8 @@ function showToast(msg){
 function getTo(){   return (els.toInput?.value || "").trim(); }
 function getFrom(){ return (els.fromInput?.value || "").trim(); }
 
-function toLabel(name){   return name ? `voor ${name}` : ""; }
-function fromLabel(name){ return name ? `— van ${name}` : ""; }
+function toLabel(name){   return name ? `Voor ${name}` : ""; }
+function fromLabel(name){ return name ? `Van ${name}` : ""; }
 
 function personalize(text){
   const to = getTo();
@@ -742,7 +741,7 @@ function personalize(text){
 
   // Subtiele personalisatie zonder token (kleine kans)
   return Math.random() < 0.34
-    ? `Voor ${to}, ` + lowerFirst(text)
+    ? `${to}, ` + lowerFirst(text)
     : text;
 }
 
@@ -1151,6 +1150,12 @@ function wireGlobalUI(){
   // Coach close
   els.coachClose && els.coachClose.addEventListener("click", ()=> els.coach.classList.add("hidden"));
 }
+// Coach inline "Verstuur" → zelfde gedrag als topbarbutton
+els.coach && els.coach.addEventListener("click", (e)=>{
+  if (e.target && e.target.classList.contains("coach-inline")){
+    guardShareOrNudge();
+  }
+});
 
 /* ========================================================================
    DEBUG HARNESS — NIET PRODUCTIE, HELPT ZIEN WAT ER WEL/NIET TRIGGERT
