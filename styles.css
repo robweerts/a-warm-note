@@ -290,6 +290,24 @@ body{
 .share-tile:active{ transform: translateY(1px); }
 .share-tile:focus-visible{ outline: 2px solid rgba(255,255,255,.9); outline-offset: 2px; }
 
+/* Messenger help sheet */
+.sheet--msgr { background: rgba(20,20,20,.78); }
+.msgr-title { display:flex; align-items:center; gap:8px; margin:0; }
+.msgr-ico   { width:24px; height:24px; object-fit:contain; }
+.msgr-notice{
+  font-weight:700;
+  font-family: var(--ui);
+  background: rgba(255,255,255,.08);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin: 4px 0 6px;
+}
+.msgr-steps{
+  margin: 8px 0 0 18px; padding: 0;
+  line-height: 1.35;
+}
+.msgr-steps li{ margin: 2px 0; }
+
 /* Icon en label */
 .tile-icon{
   width: var(--tile-ic);

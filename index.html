@@ -128,6 +128,35 @@
       </footer>
     </section>
   </div>
+  
+  <!-- MESSENGER HELP SHEET -->
+<div id="msgr-help-backdrop" class="sheet-backdrop hidden" aria-hidden="true">
+  <section class="sheet sheet--msgr" role="dialog" aria-modal="true" aria-labelledby="msgr-title">
+    <header class="sheet-header">
+      <h2 id="msgr-title" class="msgr-title">
+        <img class="msgr-ico" src="assets/icons/messenger-64.png"
+             srcset="assets/icons/messenger-64.png 1x, assets/icons/messenger-128.png 2x"
+             width="24" height="24" alt="" />
+        Messenger
+      </h2>
+      <button class="sheet-close" aria-label="Sluiten">✕</button>
+    </header>
+
+    <div class="sheet-body">
+      <p class="msgr-notice">Link van jouw persoonlijke bericht is gekopieerd. 📋</p>
+      <ol class="msgr-steps">
+        <li>Kies een contact in Messenger.</li>
+        <li>Plak de link in het berichtveld.</li>
+        <li>Verstuur je warme note. 💛</li>
+      </ol>
+
+      <div class="sheet-actions">
+        <button id="msgr-open" class="btn primary" type="button">Open Messenger</button>
+        <button id="msgr-close" class="btn" type="button">Sluiten</button>
+      </div>
+    </div>
+  </section>
+</div>
 
   <!-- ABOUT (zelfde structurele pattern als share) -->
   <div id="about-backdrop" class="sheet-backdrop hidden" aria-hidden="true">

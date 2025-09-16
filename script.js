@@ -564,6 +564,16 @@ function onComposeEdit(){
   renderShareSheetPairsInline();
 }
 
+try{
+  els.fromInput?.addEventListener('change', ()=> localStorage.setItem('awn_from', getFrom()));
+}catch{}
+(function restoreFrom(){
+  try{
+    const v = localStorage.getItem('awn_from');
+    if (v && els.fromInput && !els.fromInput.value) { els.fromInput.value = v; onComposeEdit(); }
+  }catch{}
+})();
+
 // [J] COACH (microcopy)
 function currentCoachState(){ return getTo() ? "toFilled" : "init"; }
 function updateCoach(state){
@@ -587,17 +597,78 @@ function updateCoach(state){
 }
 
 /* [K] SHARE-SHEET (WA/E-mail/Download/Kopieer/Native) ---------------------- */
+let __lastFocusEl = null;
+function trapFocusIn(el, e){
+  const focusables = el.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+  if (!focusables.length) return;
+  const first = focusables[0], last = focusables[focusables.length - 1];
+  if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+  else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+}
 function openShareSheet(){
   renderShareSheetPairsInline();
   if (!els.sheet) return;
+  __lastFocusEl = document.activeElement;
   els.sheet.classList.remove("hidden");
   els.sheet.setAttribute("aria-hidden","false");
+  const panel = els.sheet.querySelector('.sheet');
+  setTimeout(()=> panel?.querySelector('button, [href], [tabindex]:not([tabindex="-1"])')?.focus(), 0);
+  els._sheetKey = (ev)=>{
+    if (ev.key === "Escape") { closeShareSheet(); }
+    if (ev.key === "Tab")    { trapFocusIn(panel, ev); }
+  };
+  document.addEventListener('keydown', els._sheetKey);
 }
 function closeShareSheet(){
   if (!els.sheet) return;
   els.sheet.classList.add("hidden");
   els.sheet.setAttribute("aria-hidden","true");
+  document.removeEventListener('keydown', els._sheetKey);
+  els._sheetKey = null;
+  __lastFocusEl?.focus?.(); __lastFocusEl = null;
 }
+
+function openMessengerHelp(){
+  const wrap = document.getElementById("msgr-help-backdrop");
+  if (!wrap) return;
+  wrap.classList.remove("hidden");
+  wrap.setAttribute("aria-hidden","false");
+  wrap._key = (ev)=>{ if (ev.key === "Escape") closeMessengerHelp(); };
+  document.addEventListener("keydown", wrap._key);
+  setTimeout(()=> document.getElementById("msgr-open")?.focus(), 0);
+}
+
+function closeMessengerHelp(){
+  const wrap = document.getElementById("msgr-help-backdrop");
+  if (!wrap) return;
+  wrap.classList.add("hidden");
+  wrap.setAttribute("aria-hidden","true");
+  if (wrap._key){ document.removeEventListener("keydown", wrap._key); wrap._key = null; }
+}
+
+(function enableSheetSwipeDown(){
+  const backdrop = els.sheet; if (!backdrop) return;
+  const panel = backdrop.querySelector('.sheet'); if (!panel) return;
+  let y0=0, dy=0, active=false;
+  backdrop.addEventListener('touchstart', (e)=>{
+    if (e.target.closest('.sheet') == null) return; // alleen binnen panel
+    const t=e.touches?.[0]; if (!t) return;
+    y0=t.clientY; dy=0; active=true;
+    panel.style.transition='none';
+  }, {passive:true});
+  backdrop.addEventListener('touchmove', (e)=>{
+    if (!active) return;
+    const t=e.touches?.[0]; if (!t) return;
+    dy = t.clientY - y0;
+    if (dy>0) { panel.style.transform = `translateY(${dy}px)`; panel.style.opacity = Math.max(0.6, 1 - dy/600); }
+  }, {passive:true});
+  backdrop.addEventListener('touchend', ()=>{
+    if (!active) return; active=false; panel.style.transition='';
+    if (dy>80){ closeShareSheet(); panel.style.transform=''; panel.style.opacity=''; }
+    else { panel.style.transform=''; panel.style.opacity=''; }
+  }, {passive:true});
+})();
+
 function renderShareSheetPairsInline(){
   els.pairToVal  && (els.pairToVal.textContent   = toLabel(getTo())     || "—");
   els.pairFromVal&& (els.pairFromVal.textContent = fromLabel(getFrom()) || "—");
@@ -667,15 +738,21 @@ async function onNativeShare(){
   }
   closeShareSheet();
 }
+
 function onShareMessenger(){
-  const pageUser = "awarmnote"; // <--- vervang door jouw Facebook Page username
   const url = buildSharedURL().toString();
-  const ref = encodeURIComponent(url);
-  window.open(`https://m.me/${pageUser}?ref=${ref}`, "_blank", "noopener");
-  showToast("Messenger geopend 💬");
-  celebrate();
-  closeShareSheet();
-  afterShareSuccess();
+  // 1) Kopieer naar klembord (met fallback)
+  (async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+      showToast("Link van jouw persoonlijke bericht is gekopieerd. 📋");
+    } catch {
+      prompt("Kopieer deze link en plak straks in Messenger:", url);
+    }
+    // 2) Sluit de share-sheet en open de help-sheet met stappen
+    closeShareSheet();
+    openMessengerHelp();
+  })();
 }
 
 // NIEUW: na succesvolle share → viering + coach-tekst "shared"
@@ -1122,6 +1199,38 @@ function guardShareOrNudge(){
   openShareSheet();
 }
 
+// --- Messenger helpers: gegarandeerd beschikbaar, ook als ze later nogmaals gedefinieerd worden
+var openMessengerHelp = window.openMessengerHelp || function(){
+  const wrap = document.getElementById("msgr-help-backdrop");
+  if (!wrap) return;
+  wrap.classList.remove("hidden");
+  wrap.setAttribute("aria-hidden","false");
+  setTimeout(()=> document.getElementById("msgr-open")?.focus(), 0);
+};
+window.openMessengerHelp = openMessengerHelp;
+
+var closeMessengerHelp = window.closeMessengerHelp || function(){
+  const wrap = document.getElementById("msgr-help-backdrop");
+  if (!wrap) return;
+  wrap.classList.add("hidden");
+  wrap.setAttribute("aria-hidden","true");
+};
+window.closeMessengerHelp = closeMessengerHelp;
+
+var actuallyOpenMessenger = window.actuallyOpenMessenger || function(){
+  const url = (typeof buildSharedURL === "function" ? buildSharedURL().toString() : location.href);
+  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if (isMobile){
+    const deeplink = "fb-messenger://share/?link=" + encodeURIComponent(url);
+    const w = window.open(deeplink, "_blank");
+    setTimeout(()=>{ try{ w?.close(); }catch(_){} window.open("https://www.messenger.com/", "_blank", "noopener"); }, 1200);
+  } else {
+    window.open("https://www.messenger.com/", "_blank", "noopener");
+  }
+};
+
+window.actuallyOpenMessenger = actuallyOpenMessenger;
+
 function wireGlobalUI(){
   // Topbar
   els.btnNew   && els.btnNew.addEventListener("click", ()=>{ renderMessage({ newRandom:true, wiggle:true }); showToast("Nieuwe boodschap geladen ✨"); });
@@ -1142,7 +1251,23 @@ function wireGlobalUI(){
   els.shareMS = $("share-messenger");
   els.shareMS && els.shareMS.addEventListener("click", onShareMessenger);
   els.sheet && (els.sheet.onclick = (e)=>{ if (e.target === els.sheet) closeShareSheet(); });
+  els.msgrHelp   = document.getElementById("msgr-help-backdrop");
+  els.msgrOpen   = document.getElementById("msgr-open");
+  els.msgrClose  = document.getElementById("msgr-close");
 
+  els.msgrHelp && (els.msgrHelp.onclick = (e)=>{ if (e.target === els.msgrHelp) closeMessengerHelp(); });
+  els.msgrOpen && els.msgrOpen.addEventListener("click", ()=>{ actuallyOpenMessenger(); closeMessengerHelp(); });
+  els.msgrClose && els.msgrClose.addEventListener("click", closeMessengerHelp);
+  
+  
+  els.msgrHelp   = document.getElementById("msgr-help-backdrop");
+  els.msgrOpen   = document.getElementById("msgr-open");
+  els.msgrClose  = document.getElementById("msgr-close");
+
+  // ✕ in de header van de hulpsheet
+  const msgrX = els.msgrHelp?.querySelector(".sheet-close");
+  msgrX && msgrX.addEventListener("click", closeMessengerHelp);
+  
   // About
   els.about?.querySelector(".sheet-close")?.addEventListener("click", closeAbout);
   els.aboutClose && els.aboutClose.addEventListener("click", closeAbout);
