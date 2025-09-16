@@ -632,3 +632,156 @@ body::before {
   box-shadow: 0 0 0 2px rgba(255, 213, 0, .85);
 }
 
+.sheet-backdrop { z-index: 1200; }
+.sheet-backdrop > .sheet { z-index: 1201; }
+
+.sheet-header {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  padding-top: 12px; /* ruimte voor drag-lijntje */
+}
+
+/* Drag-indicator altijd boven de titel gecentreerd, niet in flex-flow */
+.sheet-header .drag-indicator {
+  width: 44px;
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(255,255,255,0.43);
+  margin-bottom: 8px;
+  pointer-events: none;
+  transition: background .2s;
+}
+.sheet--dragging .sheet-header .drag-indicator {
+  background: #FFE66D;
+}
+
+/* Titel netjes centreren, flexbox zorgt voor uitlijning */
+.sheet-header h2 {
+  margin: 0;
+  text-align: center;
+  width: 100%;
+}
+
+/* X-knop rechtsboven */
+.sheet-header .sheet-close {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  z-index: 3;
+}
+
+/* Visueel accent bij actief draggen */
+.sheet--dragging .sheet-header::before {
+  background: #FFE66D;
+}
+
+/* PATCH: Sheet optimalisatie voor drag */
+.sheet {
+  will-change: transform;
+  touch-action: pan-y;
+  transition: transform .24s cubic-bezier(.2,.8,.2,1); /* zachte default */
+}
+
+.sheet.closing {
+  transform: translateY(120%);
+}
+
+/* --- PATCH: Voorkom tekstselectie tijdens drag --- */
+.sheet--dragging,
+.sheet--dragging * {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+.sheet-header .drag-indicator {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 44px;
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(255,255,255,0.43);
+  transition: background .2s;
+  z-index: 2;
+  pointer-events: none;
+}
+.sheet--dragging .sheet-header .drag-indicator {
+  background: #FFE66D;
+}
+/* PATCH: Sheet header als flexbox, header + drag-indicator */
+.sheet-header {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 14px; /* ruimte voor drag-lijntje */
+  min-height: 44px;  /* genoeg ruimte voor drag-lijntje + X-knop */
+}
+
+/* Drag-indicator bovenin, gecentreerd, geen pointer events */
+.sheet-header .drag-indicator {
+  width: 44px;
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(255,255,255,0.43);
+  margin-bottom: 8px;
+  pointer-events: none;
+  transition: background .2s;
+}
+.sheet--dragging .sheet-header .drag-indicator {
+  background: #FFE66D;
+}
+
+/* Titel gecentreerd en over gehele breedte */
+.sheet-header h2 {
+  margin: 0 32px 0 32px; /* genoeg ruimte voor X-knop */
+  text-align: center;
+  flex: 1 1 auto;
+  width: 100%;
+}
+
+/* X-knop rechtsboven */
+.sheet-header .sheet-close {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  z-index: 3;
+}
+
+/* Sheet: animatie en drag optimalisatie */
+.sheet {
+  will-change: transform;
+  transition: transform .24s cubic-bezier(.2,.8,.2,1);
+  touch-action: pan-y;
+}
+
+.sheet.closing {
+  transform: translateY(120%);
+}
+
+/* Visueel accent bij actief draggen */
+.sheet--dragging,
+.sheet--dragging * {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+@media (max-width: 500px) {
+  .note {
+    padding-top: 38px;
+    padding-bottom: 18px;
+  }
+  #toline {
+    position: static !important;
+    display: block;
+    margin-bottom: 18px;
+    left: auto;
+    top: auto;
+    font-size: 20px;
+  }
+  .note .message {
+    margin-top: 0 !important;
+  }
+}

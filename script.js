@@ -851,7 +851,7 @@ function renderFromSymbol(sent){
   host.innerHTML = markup || "";
 }
 
-/* [N] ABOUT-DIALOOG --------------------------------------------------------- */
+/* [N] SHARE / ABOUT-DIALOOG --------------------------------------------------------- */
 function openAbout(){
   if (!els.about) return;
   els.about.classList.remove("hidden");
@@ -859,12 +859,251 @@ function openAbout(){
   els.about.onclick = (e)=>{ if (e.target === els.about) closeAbout(); };
 }
 function closeAbout(){
-  if (!els.about) return;
-  els.about.classList.add("hidden");
-  els.about.setAttribute("aria-hidden","true");
+  const backdrop = document.getElementById('about-backdrop');
+  if (!backdrop) return;
+  const sheet = backdrop.querySelector('.sheet');
+
+  // als er een sheet is: eerst zichtbaar weg laten zakken
+  if (sheet) {
+    // reset eventuele vorige inline transform van een drag
+    sheet.style.transform = '';
+    // trig de wegzak-animatie
+    sheet.classList.add('closing');
+
+    // na de transition: backdrop verbergen
+    const finish = () => {
+      sheet.classList.remove('closing');
+      backdrop.classList.add('hidden');
+      backdrop.setAttribute('aria-hidden','true');
+    };
+
+    sheet.addEventListener('transitionend', finish, { once: true });
+    // safety net voor oude webviews
+    setTimeout(finish, 320);
+  } else {
+    // fallback
+    backdrop.classList.add('hidden');
+    backdrop.setAttribute('aria-hidden','true');
+  }
 }
 
+/* [N+] ABOUT — swipe-to-close mét visuele drag en indicator */
+(function setupShareSwipe(){
+  const backdrop = document.getElementById('sheet-backdrop');
+  if (!backdrop) return;
 
+  const sheet  = backdrop.querySelector('.sheet');
+  const handle = sheet?.querySelector('.sheet-header');
+  if (!sheet || !handle) return;
+
+  let dragging = false, startY = 0, lastY = 0, dy = 0, lastT = 0, velocity = 0;
+  const thresholdRatio = 0.23;
+  const velocityClose  = 1.0;
+
+  handle.style.touchAction = 'none';
+
+  function setDragging(active) {
+    if (active) {
+      sheet.classList.add('sheet--dragging');
+      backdrop.classList.add('sheet--dragging');
+    } else {
+      sheet.classList.remove('sheet--dragging');
+      backdrop.classList.remove('sheet--dragging');
+    }
+  }
+
+  function onPointerDown(e){
+    if ((e.button !== undefined && e.button !== 0) || dragging) return;
+    if (e.target.closest('.sheet-close')) return;
+    dragging = true; dy = 0; velocity = 0;
+    const y = e.clientY ?? e.touches?.[0]?.clientY ?? 0;
+    startY = lastY = y; lastT = performance.now();
+    sheet.style.transition = 'none';
+    setDragging(true);
+    document.body.style.userSelect = "none";
+    sheet.setPointerCapture?.(e.pointerId);
+  }
+
+  function onPointerMove(e){
+    if (!dragging) return;
+    const y = e.clientY ?? e.touches?.[0]?.clientY ?? lastY;
+    dy = Math.max(0, y - startY);
+    const h = sheet.getBoundingClientRect().height;
+    if (dy > h * 0.95) dy = h * 0.95;
+    sheet.style.transform = `translateY(${dy}px)`;
+    lastY = y;
+    const now = performance.now();
+    velocity = (y - lastY) / Math.max(1, now - lastT);
+    lastT = now;
+  }
+
+  function onPointerUp(e){
+    if (!dragging) return;
+    dragging = false;
+    setDragging(false);
+
+    const h    = sheet.getBoundingClientRect().height;
+    const pass = dy > h * thresholdRatio || velocity > velocityClose;
+
+    sheet.style.transition = 'transform .22s cubic-bezier(.2,.8,.2,1)';
+
+    if (pass) {
+      sheet.style.transform = `translateY(${h + 80}px)`;
+      sheet.classList.add('closing');
+      setTimeout(() => {
+        sheet.classList.remove('closing');
+        sheet.style.transform = '';
+        closeShareSheet();
+        document.body.style.userSelect = "";
+      }, 320);
+    } else {
+      sheet.style.transform = '';
+      setTimeout(() => { sheet.style.transition = ''; document.body.style.userSelect = ""; }, 240);
+    }
+  }
+
+  handle.addEventListener('pointerdown', onPointerDown, { passive: true });
+  window.addEventListener('pointermove',  onPointerMove, { passive: false });
+  window.addEventListener('pointerup',    onPointerUp,   { passive: true });
+  handle.addEventListener('touchstart',   onPointerDown, { passive: true });
+  window.addEventListener('touchmove',    onPointerMove, { passive: false });
+  window.addEventListener('touchend',     onPointerUp,   { passive: true });
+
+  // Reset transform bij openen
+  const _openShareSheet = window.openShareSheet;
+  if (typeof _openShareSheet === 'function') {
+    window.openShareSheet = function patchedOpenShareSheet(){
+      sheet.style.transform = '';
+      setDragging(false);
+      return _openShareSheet.apply(this, arguments);
+    };
+  }
+})();
+
+(function setupAboutSwipe(){
+  const backdrop = document.getElementById('about-backdrop');
+  if (!backdrop) return;
+
+  const sheet  = backdrop.querySelector('.sheet');
+  const handle = sheet?.querySelector('.sheet-header');
+  if (!sheet || !handle) return;
+
+  let dragging = false, startY = 0, lastY = 0, dy = 0, lastT = 0, velocity = 0;
+  const thresholdRatio = 0.23;   // 23% van sheet-hoogte moet je swipen voor sluiten
+  const velocityClose  = 1.0;    // px/ms; snelle flick sluit
+
+  handle.style.touchAction = 'none';
+
+  function setDragging(active) {
+    if (active) {
+      sheet.classList.add('sheet--dragging');
+      backdrop.classList.add('sheet--dragging');
+    } else {
+      sheet.classList.remove('sheet--dragging');
+      backdrop.classList.remove('sheet--dragging');
+    }
+  }
+  
+  function onPointerDown(e){
+  // Alleen drag starten als het NIET de X-knop is
+  if ((e.button !== undefined && e.button !== 0) || dragging) return;
+  if (e.target.closest('.sheet-close')) return; // Klik op X: geen drag!
+  dragging = true; dy = 0; velocity = 0;
+  const y = e.clientY ?? e.touches?.[0]?.clientY ?? 0;
+  startY = lastY = y; lastT = performance.now();
+  sheet.style.transition = 'none';
+  setDragging(true);
+  document.body.style.userSelect = "none";
+  sheet.setPointerCapture?.(e.pointerId);
+}
+
+  function onPointerMove(e){
+    if (!dragging) return;
+    const y = e.clientY ?? e.touches?.[0]?.clientY ?? lastY;
+    dy = Math.max(0, y - startY); // Alleen naar beneden
+    // Limiteer max drag (optioneel, bijv. tot 90% van sheet)
+    const h = sheet.getBoundingClientRect().height;
+    if (dy > h * 0.95) dy = h * 0.95;
+    sheet.style.transform = `translateY(${dy}px)`;
+    lastY = y;
+    const now = performance.now();
+    velocity = (y - lastY) / Math.max(1, now - lastT);
+    lastT = now;
+  }
+
+  function onPointerUp(e){
+    if (!dragging) return;
+    dragging = false;
+    setDragging(false);
+
+    const h    = sheet.getBoundingClientRect().height;
+    const pass = dy > h * thresholdRatio || velocity > velocityClose;
+
+    // Zet transition vóór transform!
+    sheet.style.transition = 'transform .22s cubic-bezier(.2,.8,.2,1)';
+
+    if (pass) {
+      sheet.style.transform = `translateY(${h + 80}px)`;
+      sheet.classList.add('closing');
+      setTimeout(() => { 
+        sheet.classList.remove('closing');
+        sheet.style.transform = '';
+        closeAbout();
+        document.body.style.userSelect = "";
+      }, 320);
+    } else {
+      sheet.style.transform = '';
+      setTimeout(() => { sheet.style.transition = ''; document.body.style.userSelect = ""; }, 240);
+    }
+  }
+
+  // Pointer + touch (breed compatibel)
+  handle.addEventListener('pointerdown', onPointerDown, { passive: true });
+  window.addEventListener('pointermove',  onPointerMove, { passive: false });
+  window.addEventListener('pointerup',    onPointerUp,   { passive: true });
+  handle.addEventListener('touchstart',   onPointerDown, { passive: true });
+  window.addEventListener('touchmove',    onPointerMove, { passive: false });
+  window.addEventListener('touchend',     onPointerUp,   { passive: true });
+
+  // Reset transform bij openen (voor het geval hij eerder half gesleept is)
+  const _openAbout = window.openAbout;
+  if (typeof _openAbout === 'function') {
+    window.openAbout = function patchedOpenAbout(){
+      sheet.style.transform = '';
+      setDragging(false);
+      return _openAbout.apply(this, arguments);
+    };
+  }
+})();
+
+/* ABOUT: robuuste close-handlers (delegation + ESC) */
+(function bindAboutCloseDelegation(){
+  const backdrop = document.getElementById('about-backdrop');
+  if (!backdrop) return;
+
+  // Klik op backdrop sluit
+  backdrop.addEventListener('click', (e)=>{
+    if (e.target === backdrop) closeAbout();
+  });
+
+  // Klik op ✕ of 'Sluiten' (werkt ook na DOM-wijzigingen)
+  backdrop.addEventListener('click', (e)=>{
+    const btn = e.target.closest?.('#about-backdrop .sheet-close, #about-backdrop #about-close');
+    if (btn) {
+      e.preventDefault();
+      closeAbout();
+    }
+  });
+
+  // ESC sluit (alleen als About open is)
+  window.addEventListener('keydown', (e)=>{
+    if (e.key === 'Escape' && !backdrop.classList.contains('hidden')) {
+      closeAbout();
+    }
+  });
+})();
+
+ 
 /* — Event-wiring (null-safe) ----------------------------------------------- */
 
 function guardShareOrNudge(){
@@ -960,3 +1199,115 @@ function wireGlobalUI(){
     }catch(_){}
   };
 })();
+
+function setupSheetSwipe({ backdropId, closeFunction, openFunctionName }) {
+  const backdrop = document.getElementById(backdropId);
+  if (!backdrop) return;
+
+  const sheet = backdrop.querySelector('.sheet');
+  const handle = sheet?.querySelector('.sheet-header');
+  if (!sheet || !handle) return;
+
+  let dragging = false, startY = 0, lastY = 0, dy = 0, lastT = 0, velocity = 0;
+  const thresholdRatio = 0.23;
+  const velocityClose  = 1.0;
+
+  handle.style.touchAction = 'none';
+
+  function setDragging(active) {
+    if (active) {
+      sheet.classList.add('sheet--dragging');
+      backdrop.classList.add('sheet--dragging');
+    } else {
+      sheet.classList.remove('sheet--dragging');
+      backdrop.classList.remove('sheet--dragging');
+    }
+  }
+
+  function resetSheetState() {
+    sheet.classList.remove('closing');
+    sheet.classList.remove('sheet--dragging');
+    backdrop.classList.remove('sheet--dragging');
+    sheet.style.transition = '';
+    sheet.style.transform = '';
+    document.body.style.userSelect = "";
+  }
+
+  function onPointerDown(e){
+    if ((e.button !== undefined && e.button !== 0) || dragging) return;
+    if (e.target.closest('.sheet-close')) return;
+    dragging = true; dy = 0; velocity = 0;
+    const y = e.clientY ?? e.touches?.[0]?.clientY ?? 0;
+    startY = lastY = y; lastT = performance.now();
+    sheet.style.transition = 'none';
+    setDragging(true);
+    document.body.style.userSelect = "none";
+    sheet.setPointerCapture?.(e.pointerId);
+  }
+
+  function onPointerMove(e){
+    if (!dragging) return;
+    const y = e.clientY ?? e.touches?.[0]?.clientY ?? lastY;
+    dy = Math.max(0, y - startY);
+    const h = sheet.getBoundingClientRect().height;
+    if (dy > h * 0.95) dy = h * 0.95;
+    sheet.style.transform = `translateY(${dy}px)`;
+    lastY = y;
+    const now = performance.now();
+    velocity = (y - lastY) / Math.max(1, now - lastT);
+    lastT = now;
+  }
+
+  function onPointerUp(e){
+    if (!dragging) return;
+    dragging = false;
+    setDragging(false);
+
+    const h    = sheet.getBoundingClientRect().height;
+    const pass = dy > h * thresholdRatio || velocity > velocityClose;
+
+    sheet.style.transition = 'transform .22s cubic-bezier(.2,.8,.2,1)';
+
+    if (pass) {
+      sheet.style.transform = `translateY(${h + 80}px)`;
+      sheet.classList.add('closing');
+      setTimeout(() => {
+        resetSheetState();
+        closeFunction();
+      }, 320);
+    } else {
+      sheet.style.transform = '';
+      setTimeout(() => { resetSheetState(); }, 240);
+    }
+  }
+
+  handle.addEventListener('pointerdown', onPointerDown, { passive: true });
+  window.addEventListener('pointermove',  onPointerMove, { passive: false });
+  window.addEventListener('pointerup',    onPointerUp,   { passive: true });
+  handle.addEventListener('touchstart',   onPointerDown, { passive: true });
+  window.addEventListener('touchmove',    onPointerMove, { passive: false });
+  window.addEventListener('touchend',     onPointerUp,   { passive: true });
+
+  // Reset alles bij openen (VOOR het sheet getoond wordt!)
+  if (openFunctionName && typeof window[openFunctionName] === 'function') {
+    const originalOpen = window[openFunctionName];
+    window[openFunctionName] = function(){
+      resetSheetState();
+      return originalOpen.apply(this, arguments);
+    }
+  }
+}
+
+// Gebruik de generieke functie voor beide sheets:
+setupSheetSwipe({
+  backdropId: 'about-backdrop',
+  closeFunction: window.closeAbout,
+  openFunctionName: 'openAbout'
+});
+setupSheetSwipe({
+  backdropId: 'sheet-backdrop',
+  closeFunction: window.closeShareSheet,
+  openFunctionName: 'openShareSheet'
+});
+
+
