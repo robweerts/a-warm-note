@@ -43,7 +43,7 @@
     { "id":"nl_028", "icon":"🦥", "text":"Productief? Ik noem het ‘selectief bewegen’.", "sentiments":["humor"], "special_day":null, "weight":1 },
     { "id":"nl_029", "icon":"🫶", "text":"Glimlach-check: even je gezicht updaten… klaar ✅", "sentiments":["humor","vriendschap"], "special_day":null, "weight":1 },
     { "id":"nl_030", "icon":"🕺", "text":"We hebben geen reden nodig — we hebben benen: dans!", "sentiments":["humor","succes"], "special_day":null, "weight":1 },
-    { "id":"nl_031", "icon":"☕", "text":"Status: koffie geladen, grapjes geactiveerd.", "sentiments":["humor"], "special_day":null, "weight":1 },
+    { "id":"nl_031", "icon":"☕",  "text":"Status: koffie geladen, grapjes geactiveerd.", "sentiments":["humor"], "special_day":null, "weight":1 },
     { "id":"nl_032", "icon":"🪞", "text":"Wie in de spiegel lacht, ziet dubbel geluk.", "sentiments":["humor"], "special_day":null, "weight":1 },
     { "id":"nl_033", "icon":"🚪", "text":"Als één deur dichtgaat, doe de ramen open.", "sentiments":["humor"], "special_day":null, "weight":1 },
     { "id":"nl_034", "icon":"🧱", "text":"Ook een omweg is een weg naar huis.", "sentiments":["humor"], "special_day":null, "weight":1 },
