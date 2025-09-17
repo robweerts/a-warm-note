@@ -40,6 +40,18 @@ body{
   transition:background .2s var(--ease), transform .06s var(--ease);
   backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
 }
+/* Topbar buttons met icon */
+.btn-ico{
+  display:inline-flex; align-items:center; gap:8px;
+  line-height:1; white-space:nowrap;
+}
+.btn-ico svg{ flex:0 0 auto; display:block }
+.btn-ico .btn-label{ display:inline-block }
+
+/* Heel smal scherm: alleen icon tonen, tekst verbergen */
+@media (max-width: 360px){
+  .btn-ico .btn-label{ display:none }
+}
 .btn.primary{background:rgba(255,255,255,.9); color:#222}
 .btn:hover{transform:translateY(-1px)}
 .btn:active{transform:translateY(1px)}
@@ -308,6 +320,15 @@ body{
 }
 .msgr-steps li{ margin: 2px 0; }
 
+/* QR sheet */
+.sheet--qr { background: rgba(20,20,20,.78); }
+.qr-hint { text-align:center; margin: 0 0 10px; opacity:.9; }
+.qr-box { display:grid; place-items:center; padding: 10px; }
+.qr-box canvas {
+  background: #fff; border-radius: 12px; padding: 10px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.35);
+}
+
 /* Icon en label */
 .tile-icon{
   width: var(--tile-ic);
@@ -331,6 +352,27 @@ body{
    maar we verbergen ze visueel omdat de tegel 'Deel' (#share-confirm)
    dezelfde functionaliteit aanbiedt. */
 .sheet-actions{ display: none; }
+
+.sheet-actions{
+  display:flex;
+  gap:8px;
+  justify-content:flex-end;
+  flex-wrap:wrap;
+  margin-top:10px;
+  justify-content: center; 
+}
+
+#qr-backdrop .sheet-actions .btn{
+  min-width: 140px;
+}
+@media (max-width: 420px){
+  #qr-backdrop .sheet-actions{
+    justify-content: center;
+  }
+  #qr-backdrop .sheet-actions .btn{
+    flex: 1 1 45%;
+  }
+}
 
 /* Share list (vertical, left-aligned, scalable) */
 .share-list{

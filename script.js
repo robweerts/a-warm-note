@@ -784,6 +784,122 @@ function onShareMessenger(){
   })();
 }
 
+// ===== QR helpers =====
+function openQR(){
+  const s = document.getElementById('qr-backdrop');
+  if (!s) return;
+  s.classList.remove('hidden');
+  s.setAttribute('aria-hidden','false');
+}
+function closeQR(){
+  const s = document.getElementById('qr-backdrop');
+  if (!s) return;
+  s.classList.add('hidden');
+  s.setAttribute('aria-hidden','true');
+}
+window.openQR = openQR;
+window.closeQR = closeQR;
+
+// Zorg dat er een <img id="qr-img"> is (voor fallback)
+(function ensureQrImg(){
+  const box = document.querySelector('.qr-box') || document.getElementById('qr-backdrop');
+  if (!box) return;
+  if (!document.getElementById('qr-img')) {
+    const img = document.createElement('img');
+    img.id = 'qr-img';
+    img.width = 240; img.height = 240;
+    img.alt = 'QR-code';
+    img.style.display = 'none';
+    img.className = 'qr-img';
+    box.appendChild(img);
+  }
+})();
+
+// Canvas render met lib
+async function renderWithLib(link){
+  if (typeof QRCode === 'undefined') return false;
+  const canvas = document.getElementById('qr-canvas');
+  if (!canvas) return false;
+  // verberg img-fallback
+  const img = document.getElementById('qr-img');
+  if (img) img.style.display = 'none';
+  canvas.style.display = 'block';
+
+  await QRCode.toCanvas(canvas, link, {
+    width: 240, margin: 2,
+    color: { dark: '#000000', light: '#ffffff' }
+  });
+  return true;
+}
+
+// Fallback naar QR-afbeelding (extern endpoint)
+async function renderWithImg(link){
+  const size = 240;
+  const url  = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&margin=16&data=${encodeURIComponent(link)}`;
+  const img  = document.getElementById('qr-img');
+  const cv   = document.getElementById('qr-canvas');
+  if (!img) return false;
+
+  if (cv) cv.style.display = 'none';
+  img.style.display = 'block';
+  img.onerror = ()=>{ console.warn('QR-afbeelding kon niet laden'); };
+  img.src = url;
+  return true;
+}
+
+// Publieke handler
+async function onShareQR(){
+  // permalink
+  const u = buildSharedURL(); u.searchParams.set('src','qr');
+  const link = u.toString();
+
+  // open sheet
+  openQR();
+
+  // probeer JS-lib
+  try {
+    const ok = await renderWithLib(link);
+    if (!ok) await renderWithImg(link);
+  } catch {
+    await renderWithImg(link);
+  }
+
+  // download knop (1x)
+  const dl = document.getElementById('qr-download');
+  if (dl){
+    dl.replaceWith(dl.cloneNode(true));
+    document.getElementById('qr-download').addEventListener('click', ()=>{
+      const cv  = document.getElementById('qr-canvas');
+      const img = document.getElementById('qr-img');
+      if (cv && cv.style.display !== 'none') {
+        const a = document.createElement('a');
+        a.href = cv.toDataURL('image/png');
+        a.download = 'a-warm-note-qr.png';
+        document.body.appendChild(a); a.click(); a.remove();
+      } else if (img && img.src) {
+        // open in tab → gebruiker kan opslaan
+        window.open(img.src, '_blank', 'noopener');
+      }
+    }, { once:true });
+  }
+
+  // copy knop (1x)
+  const cp = document.getElementById('qr-copy');
+  if (cp){
+    cp.replaceWith(cp.cloneNode(true));
+    document.getElementById('qr-copy').addEventListener('click', async ()=>{
+      try { await navigator.clipboard.writeText(link); showToast?.('Link gekopieerd 📋'); }
+      catch { prompt('Kopieer link:', link); }
+    }, { once:true });
+  }
+
+  // sluiten (X, button, backdrop)
+  const sheet = document.getElementById('qr-backdrop');
+  document.getElementById('qr-close')?.addEventListener('click', closeQR, { once:true });
+  sheet?.querySelector('.sheet-close')?.addEventListener('click', closeQR, { once:true });
+  sheet?.addEventListener('click', (e)=>{ if (e.target === sheet) closeQR(); }, { once:true });
+}
+window.onShareQR = onShareQR; // voor de zekerheid globaal
 // NIEUW: na succesvolle share → viering + coach-tekst "shared"
 function afterShareSuccess(){
   celebrate();
@@ -1257,8 +1373,24 @@ var actuallyOpenMessenger = window.actuallyOpenMessenger || function(){
     window.open("https://www.messenger.com/", "_blank", "noopener");
   }
 };
-
 window.actuallyOpenMessenger = actuallyOpenMessenger;
+
+// QR helpers – sheet tonen/verbergen (één bron van waarheid)
+function openQR(){
+  const sheet = document.getElementById('qr-backdrop');
+  if (!sheet) return;
+  sheet.classList.remove('hidden');
+  sheet.setAttribute('aria-hidden','false');
+}
+function closeQR(){
+  const sheet = document.getElementById('qr-backdrop');
+  if (!sheet) return;
+  sheet.classList.add('hidden');
+  sheet.setAttribute('aria-hidden','true');
+}
+// globaal maken (voor listeners die window.* aanroepen)
+window.openQR = openQR;
+window.closeQR = closeQR;
 
 function wireGlobalUI(){
   // Topbar
@@ -1280,18 +1412,22 @@ function wireGlobalUI(){
   els.shareMS = $("share-messenger");
   els.shareMS && els.shareMS.addEventListener("click", onShareMessenger);
   els.sheet && (els.sheet.onclick = (e)=>{ if (e.target === els.sheet) closeShareSheet(); });
-  els.msgrHelp   = document.getElementById("msgr-help-backdrop");
-  els.msgrOpen   = document.getElementById("msgr-open");
-  els.msgrClose  = document.getElementById("msgr-close");
 
-  els.msgrHelp && (els.msgrHelp.onclick = (e)=>{ if (e.target === els.msgrHelp) closeMessengerHelp(); });
-  els.msgrOpen && els.msgrOpen.addEventListener("click", ()=>{ actuallyOpenMessenger(); closeMessengerHelp(); });
+  // Messenger help (1x, geen dubbels)
+  els.msgrHelp  = document.getElementById("msgr-help-backdrop");
+  els.msgrOpen  = document.getElementById("msgr-open");
+  els.msgrClose = document.getElementById("msgr-close");
+  els.msgrHelp  && (els.msgrHelp.onclick = (e)=>{ if (e.target === els.msgrHelp) closeMessengerHelp(); });
+  els.msgrOpen  && els.msgrOpen.addEventListener("click", ()=>{ actuallyOpenMessenger(); closeMessengerHelp(); });
   els.msgrClose && els.msgrClose.addEventListener("click", closeMessengerHelp);
-  
-  
-  els.msgrHelp   = document.getElementById("msgr-help-backdrop");
-  els.msgrOpen   = document.getElementById("msgr-open");
-  els.msgrClose  = document.getElementById("msgr-close");
+
+  // QR
+  document.getElementById("share-qr")?.addEventListener("click", onShareQR);
+  document.getElementById("qr-close")?.addEventListener("click", ()=> window.closeQR());
+  document.querySelector("#qr-backdrop .sheet-close")?.addEventListener("click", ()=> window.closeQR());
+  document.getElementById("qr-backdrop")?.addEventListener("click", (e)=>{
+    if (e.target.id === "qr-backdrop") window.closeQR(); // ← alleen sluiten
+  });
 
   // ✕ in de header van de hulpsheet
   const msgrX = els.msgrHelp?.querySelector(".sheet-close");
