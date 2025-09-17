@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Messages & Sentiments Maintenance</title>
+  <link rel="stylesheet" href="admin.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>Messages Maintenance</h1>
+    <div class="actions">
+      <label class="file-btn">
+        <input id="fileInput" type="file" accept=".json" multiple />
+        + Taalbestand(en) laden
+      </label>
+      <button id="addLangBtn" title="Lege taal toevoegen">+ Taal</button>
+      <button id="exportBtn" title="Exporteer actieve taal">Exporteren</button>
+    </div>
+  </header>
+
+  <main>
+    <nav id="langTabs" class="tabs" aria-label="Languages"></nav>
+
+    <section class="panels">
+      <div class="panel">
+        <div class="panel-header">
+          <h2>Messages</h2>
+          <div class="panel-actions">
+            <button id="addMsgBtn">+ Nieuw</button>
+            <button id="delMsgBtn" class="danger">Verwijderen</button>
+            <input id="searchBox" type="search" placeholder="Zoek in text/tags/sentiment…" />
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table id="msgTable" aria-label="Messages">
+            <thead>
+              <tr>
+                <th><input type="checkbox" id="checkAll" /></th>
+                <th>ID</th>
+                <th>Icon</th>
+                <th>Text</th>
+                <th>Sentiment</th>
+                <th>Tags</th>
+              </tr>
+            </thead>
+            <tbody><!-- rows injected --></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel narrow">
+        <div class="panel-header">
+          <h2>Sentimenten</h2>
+          <div class="panel-actions">
+            <button id="addSentBtn">+ Nieuw</button>
+            <button id="delSentBtn" class="danger">Verwijderen</button>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table id="sentTable" aria-label="Sentiments">
+            <thead>
+              <tr>
+                <th><input type="checkbox" id="checkAllSent" /></th>
+                <th>ID</th>
+                <th>Label</th>
+                <th>Emoji</th>
+              </tr>
+            </thead>
+            <tbody><!-- rows injected --></tbody>
+          </table>
+        </div>
+
+        <details class="help">
+          <summary>Structuur & Tips</summary>
+          <pre>{
+  "sentiments": [
+    { "id": "love", "label": "Liefde", "emoji": "❤️" }
+  ],
+  "messages": [
+    {
+      "id": "m_abc123",
+      "icon": "💛",
+      "text": "Je bent goud waard.",
+      "sentiment": "love",
+      "tags": ["daily","short"]
+    }
+  ]
+}</pre>
+          <ul>
+            <li>Bestanden zonder <code>sentiments</code> zijn oké. Je kunt ze hier toevoegen.</li>
+            <li><code>tags</code> is optioneel; comma-separated in de tabel.</li>
+            <li>Export behoudt dezelfde vorm (voegt sentiments toe indien aanwezig).</li>
+          </ul>
+        </details>
+      </div>
+    </section>
+  </main>
+
+  <footer class="statusbar">
+    <div id="status">Klaar.</div>
+  </footer>
+
+  <script src="admin.js"></script>
+</body>
+</html>

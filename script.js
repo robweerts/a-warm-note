@@ -161,6 +161,35 @@ function init() {
 }
 init();
 
+// PWA: "Installeren" knop tonen wanneer toegestaan
+let __deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', (e)=>{
+  e.preventDefault();
+  __deferredPrompt = e;
+
+  const nav = document.querySelector('.actions'); // topbar nav
+  if (!nav) return;
+
+  // voorkom dubbele knop
+  if (document.getElementById('btn-install')) return;
+
+  const btn = document.createElement('button');
+  btn.id = 'btn-install';
+  btn.className = 'btn';
+  btn.type = 'button';
+  btn.textContent = 'Installeren';
+  nav.appendChild(btn);
+
+  btn.addEventListener('click', async ()=>{
+    try {
+      await __deferredPrompt.prompt();
+      await __deferredPrompt.userChoice; // optioneel: { outcome }
+    } catch {}
+    __deferredPrompt = null;
+    btn.remove();
+  });
+});
+
 // Eénmalige sentiment-hint nudge (alleen bij eerste load)
 if (!localStorage.getItem("awarm_sentiment_hint")) {
   const strip = document.querySelector(".sentiment-strip");
