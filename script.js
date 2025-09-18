@@ -1,5 +1,5 @@
 /* =============================================================================
-   a warm note — script.js (NL-only)
+   a warm note — script.js (NL-only)  Copyright (c) 2025 Rob Weerts 
    ---------------------------------------------------------------------------
    Sectie-index (patch-handles):
    [A] CONFIG & CONSTANTEN
@@ -8,8 +8,8 @@
    [C] APP-STATE
    [D] INIT (lifecycle)
    [E] DATA-LADEN (messages.nl.json + fallback)
-   [F] SENTIMENT-CHIPS (max 10)  ← patch hier voor chip-UX
-   [G] DECK & RANDOMISATIE       ← patch hier voor random/gewichten
+   [F] SENTIMENT-CHIPS (max 10)
+   [G] DECK & RANDOMISATIE
    [H] RENDERING (note & to/from)
    [I] COMPOSE (inputs Voor/Van)
    [J] COACH (microcopy)
@@ -65,34 +65,39 @@ function themeColors(theme){
 
 /* [B] DOM CACHE & HELPERS --------------------------------------------------- */
 const $ = (id) => document.getElementById(id);
-const els = {
-  note: $("note"),
-  msg: $("message"),
-  icon: $("iconline"),
-  toLine: $("toline"),
-  fromLine: $("fromline"),
-  chipRow: $("chip-row"),
-  btnNew: $("btn-new"),
-  btnShare: $("btn-share"),
-  btnAbout: $("btn-about"),
-  coach: $("coach-tip"),
-  toast: $("toast"),
-  sheet: $("sheet-backdrop"),
-  about: $("about-backdrop"),
-  aboutClose: $("about-close"),
-  toInput: $("to-inline"),
-  fromInput: $("from-inline"),
-  fromSymbol: $("from-symbol"),
-  sheetClose: $("sheet-backdrop")?.querySelector(".sheet-close"),
-  coachClose: $("coach-tip")?.querySelector(".coach-close"),
-  pairToVal: $("pair-to-val"),
-  pairFromVal: $("pair-from-val"),
-  shareCopy: $("share-copy"),
-  shareWA: $("share-whatsapp"),
-  shareMail: $("share-email"),
-  shareDL: $("share-download"),
-  shareConfirm: $("share-confirm"),
-};
+
+// Let op: init gebeurt ná DOMContentLoaded, dus we recachen elementen dan:
+let els = {};
+function recacheEls(){
+  els = {
+    note: $("note"),
+    msg: $("message"),
+    icon: $("iconline"),
+    toLine: $("toline"),
+    fromLine: $("fromline"),
+    chipRow: $("chip-row"),
+    btnNew: $("btn-new"),
+    btnShare: $("btn-share"),
+    btnAbout: $("btn-about"),
+    coach: $("coach-tip"),
+    toast: $("toast"),
+    sheet: $("sheet-backdrop"),
+    about: $("about-backdrop"),
+    aboutClose: $("about-close"),
+    toInput: $("to-inline"),
+    fromInput: $("from-inline"),
+    fromSymbol: $("from-symbol"),
+    sheetClose: $("sheet-backdrop")?.querySelector(".sheet-close"),
+    coachClose: $("coach-tip")?.querySelector(".coach-close"),
+    pairToVal: $("pair-to-val"),
+    pairFromVal: $("pair-from-val"),
+    shareCopy: $("share-copy"),
+    shareWA: $("share-whatsapp"),
+    shareMail: $("share-email"),
+    shareDL: $("share-download"),
+    shareConfirm: $("share-confirm"),
+  };
+}
 
 /* [C] APP-STATE ------------------------------------------------------------- */
 const STATE = {
@@ -108,27 +113,26 @@ const STATE = {
 
 /* [D] INIT (lifecycle) ------------------------------------------------------ */
 
+function autoCapitalizeInput(input) {
+  if (!input) return;
+  input.addEventListener('input', (e) => {
+    const val = e.target.value;
+    if (val.length > 0) {
+      e.target.value = val.charAt(0).toUpperCase() + val.slice(1);
+    }
+  });
+}
+
 function init() {
+  recacheEls();
   wireGlobalUI();
   loadMessages()
     .then(() => {
       buildSentimentChips();
-      if (els.toInput) {
-        els.toInput.addEventListener('input', function(e) {
-          const val = e.target.value;
-          if (val.length > 0) {
-            e.target.value = val.charAt(0).toUpperCase() + val.slice(1);
-          }
-        });
-      }
-      if (els.fromInput) {
-        els.fromInput.addEventListener('input', function(e) {
-          const val = e.target.value;
-          if (val.length > 0) {
-            e.target.value = val.charAt(0).toUpperCase() + val.slice(1);
-          }
-        });
-      }
+
+      autoCapitalizeInput(els.toInput);
+      autoCapitalizeInput(els.fromInput);
+
       const qp = new URLSearchParams(location.search);
       const toVal = qp.get('to');
       const fromVal = qp.get('from');
@@ -138,9 +142,8 @@ function init() {
       if (toVal && els.toInput) els.toInput.value = toVal;
       if (fromVal && els.fromInput) els.fromInput.value = fromVal;
 
-      // Nieuw: Welkomstboodschap tonen als van toepassing
+      // Welkomstboodschap of direct renderen
       if (!showWelcomeIfRelevant(els)) {
-        // Geen welkom getoond, dus direct message of random tonen
         let msgIdx = null;
         if (sharedMid) {
           msgIdx = STATE.allMessages.findIndex(m => m.id === sharedMid);
@@ -159,7 +162,9 @@ function init() {
       console.error("FOUT in init():", e);
     });
 }
-init();
+
+// Start pas wanneer DOM klaar is
+window.addEventListener("DOMContentLoaded", init);
 
 // PWA: "Installeren" knop tonen wanneer toegestaan
 let __deferredPrompt = null;
@@ -212,14 +217,14 @@ async function loadMessages(){
     if (!res.ok) throw new Error("HTTP " + res.status);
     const data = await res.json();
     const list = Array.isArray(data?.messages) ? data.messages : [];
-STATE.allMessages = list.map(m => ({
-  id: m.id || null, // <-- Add this line to store the id!
-  icon: m.icon || "",
-  text: String(m.text || ""),
-  sentiments: Array.isArray(m.sentiments) ? m.sentiments : [],
-  special_day: m.special_day || null,
-  weight: Number.isFinite(m.weight) ? m.weight : 1
-}));
+    STATE.allMessages = list.map(m => ({
+      id: m.id || null,
+      icon: m.icon || "",
+      text: String(m.text || ""),
+      sentiments: Array.isArray(m.sentiments) ? m.sentiments : [],
+      special_day: m.special_day || null,
+      weight: Number.isFinite(m.weight) ? m.weight : 1
+    }));
     const s = Array.isArray(data?.sentiments) ? data.sentiments : deriveSentiments(STATE.allMessages);
     STATE.sentiments = (s || []).slice(0,10);
     if (!STATE.allMessages.length) {
@@ -235,15 +240,15 @@ STATE.allMessages = list.map(m => ({
 function fallbackMessages(){
   return [
     { id: "fallback_001", icon:"✨", text:"Je bent genoeg, precies zoals je nu bent.",            sentiments:["bemoedigend","kalmte"],  weight:1 },
-    { id: "fallback_002",icon:"🌿", text:"Een kleine stap vooruit is óók vooruitgang.",          sentiments:["doorzetten","bemoedigend"], weight:1 },
-    { id: "fallback_003",icon:"💛", text:"Iets kleins kan vandaag veel betekenen.",              sentiments:["liefde","kalmte"],        weight:1 },
-    { id: "fallback_004",icon:"🌊", text:"Adem in. Adem uit. Je bent hier.",                     sentiments:["kalmte"],                 weight:1 },
-    { id: "fallback_005",icon:"🌻", text:"Je doet ertoe, meer dan je denkt.",                    sentiments:["bemoedigend","trots"],    weight:1 },
-    { id: "fallback_006",icon:"🎈", text:"Licht en zacht: één vriendelijk gebaar.",              sentiments:["vriendschap","liefde"],   weight:1 },
-    { id: "fallback_007",icon:"🧩", text:"Niet alles hoeft nu te passen.",                       sentiments:["troost","kalmte"],        weight:1 },
-    { id: "fallback_008",icon:"📯", text:"Trots op wat je (al) doet.",                           sentiments:["trots","bemoedigend"],    weight:1 },
-    { id: "fallback_009",icon:"🎉", text:"Je mag dit vieren — hoe klein ook.",                   sentiments:["succes","liefde"],        weight:1 },
-    { id: "fallback_010",icon:"☕", text:"Neem je tijd. Je mag traag beginnen.",                 sentiments:["kalmte"],                 weight:1 }
+    { id: "fallback_002", icon:"🌿", text:"Een kleine stap vooruit is óók vooruitgang.",          sentiments:["doorzetten","bemoedigend"], weight:1 },
+    { id: "fallback_003", icon:"💛", text:"Iets kleins kan vandaag veel betekenen.",              sentiments:["liefde","kalmte"],        weight:1 },
+    { id: "fallback_004", icon:"🌊", text:"Adem in. Adem uit. Je bent hier.",                     sentiments:["kalmte"],                 weight:1 },
+    { id: "fallback_005", icon:"🌻", text:"Je doet ertoe, meer dan je denkt.",                    sentiments:["bemoedigend","trots"],    weight:1 },
+    { id: "fallback_006", icon:"🎈", text:"Licht en zacht: één vriendelijk gebaar.",              sentiments:["vriendschap","liefde"],   weight:1 },
+    { id: "fallback_007", icon:"🧩", text:"Niet alles hoeft nu te passen.",                       sentiments:["troost","kalmte"],        weight:1 },
+    { id: "fallback_008", icon:"📯", text:"Trots op wat je (al) doet.",                           sentiments:["trots","bemoedigend"],    weight:1 },
+    { id: "fallback_009", icon:"🎉", text:"Je mag dit vieren — hoe klein ook.",                   sentiments:["succes","liefde"],        weight:1 },
+    { id: "fallback_010", icon:"☕", text:"Neem je tijd. Je mag traag beginnen.",                 sentiments:["kalmte"],                 weight:1 }
   ];
 }
 
@@ -254,7 +259,6 @@ function buildSentimentChips(){
   if (!row) return;
   row.innerHTML = "";
 
-  // ⟵ VERVANG label door klikbare thema-chip (indien actief thema)
   const activeTheme = getActiveTheme();
   if (activeTheme === THEME.VALENTINE) {
     row.appendChild(makeThemeChip('valentine', 'Valentijn ❤️'));
@@ -308,10 +312,9 @@ function setActiveFilter({ sentiment=null, special=null }){
     });
   }
 
-  rebuildDeck(true);                         // [G]
-  renderMessage({ newRandom:true, wiggle:true }); // [H]
+  rebuildDeck(true);
+  renderMessage({ newRandom:true, wiggle:true });
 }
-
 
 function makeChip(value, label){
   const b = document.createElement("button");
@@ -323,9 +326,8 @@ function makeChip(value, label){
   b.onclick = () => {
     STATE.activeSentiment = value;
     activateChip(value);
-    rebuildDeck(true);                         // [G]
-    renderMessage({ newRandom:true, wiggle:true }); // [H]
-    // Auto-center de gekozen chip
+    rebuildDeck(true);
+    renderMessage({ newRandom:true, wiggle:true });
     scrollChipIntoCenter(b);
   };
   return b;
@@ -369,7 +371,6 @@ function setupChipsAffordance(){
 
   const updateChevrons = ()=>{
     const hasOverflow = row.scrollWidth > row.clientWidth + 4;
-    // toggle container class → CSS geeft extra ruimte rechts vrij
     wrap.classList.toggle("has-chevrons", hasOverflow);
 
     if (!hasOverflow){
@@ -398,11 +399,9 @@ function showChipsHintOnce(){
   try{
     if (sessionStorage.getItem("chipsHintShown")==="1") return;
     const row = els.chipRow; if (!row) return;
-    // Mini “nudge”: heel klein auto-scrolltje en coach-tekst update
     const orig = row.scrollLeft;
     row.scrollTo({ left: Math.min(orig + 36, row.scrollWidth), behavior: "smooth" });
     setTimeout(()=> row.scrollTo({ left: orig, behavior: "smooth" }), 380);
-    // Coach aanvullen
     if (els.coach){
       const txt = els.coach.querySelector(".coach-text");
       if (txt && !getTo()) txt.textContent = "Swipe door de gevoelens en kies wat past.";
@@ -424,16 +423,14 @@ function rebuildDeck(resetRecent=false){
   const activeTheme = getActiveTheme();
 
   const pool = (STATE.allMessages||[]).map((m,idx)=>({m,idx})).filter(({m})=>{
-    // 1) filter op special day (als gekozen)
     if (STATE.filterSpecialDay && m.special_day !== STATE.filterSpecialDay) return false;
-    // 2) filter op sentiment (als gekozen)
     if (STATE.activeSentiment && !(Array.isArray(m.sentiments) && m.sentiments.includes(STATE.activeSentiment))) return false;
     return true;
   });
 
   const source = pool.length ? pool : (STATE.allMessages||[]).map((m,idx)=>({m,idx}));
 
-  // Gewichten + theme-boost (x3) bij special_day match
+  // Gewichten + theme-boost (x3)
   const weighted = source.flatMap(({m,idx})=>{
     const base = Math.max(1, Number(m.weight)||1);
     const themed =
@@ -469,7 +466,6 @@ const PAPER_PALETTES = {
   valentine: ["#FFF0F4","#FFE0E8","#FFD6E2","#FFEAF0","#FFF5F8"]
 };
 
-// [H] vervang setPaperLook() door:
 function setPaperLook(){
   const theme = getActiveTheme();
   const palette = (theme===THEME.VALENTINE) ? PAPER_PALETTES.valentine : PAPER_PALETTES.default;
@@ -486,29 +482,31 @@ function renderMessage({ newRandom=false, requestedIdx=null, wiggle=false } = {}
     idx = nextIndex();
   }
   if (idx == null || idx < 0 || idx >= STATE.allMessages.length) {
-    els.msg.textContent  = "Stuur een warme boodschap naar iemand.";
-    els.icon.textContent = "💌";
-    setPaperLook();
+    if (els.msg) els.msg.textContent  = "Stuur een warme boodschap naar iemand.";
+    if (els.icon) els.icon.textContent = "💌";
+    if (els.note) setPaperLook();
     return;
   }
 
   STATE.currentIdx = idx;
   bumpRecent(idx);
 
-  const { icon, text, sentiments } = STATE.allMessages[idx]; // ← voeg 'sentiments' toe
+  const { icon, text, sentiments } = STATE.allMessages[idx];
 
-  els.msg.style.opacity = 0; els.icon.style.opacity = 0;
-  setTimeout(()=>{
-    els.msg.textContent  = personalize(text);
-    els.icon.textContent = icon || "";
-    els.msg.style.opacity = 1; els.icon.style.opacity = 1;
-  }, 90);
-
-  setPaperLook();
+  if (els.msg && els.icon){
+    els.msg.style.opacity = 0; els.icon.style.opacity = 0;
+    setTimeout(()=>{
+      els.msg.textContent  = personalize(text);
+      els.icon.textContent = icon || "";
+      els.msg.style.opacity = 1; els.icon.style.opacity = 1;
+    }, 90);
+  }
+   
+  if (els.note) setPaperLook();
   renderToFrom();
   renderFromSymbol((sentiments && sentiments[0]) || STATE.activeSentiment || null);
 
-  if (wiggle && !prefersReducedMotion()){
+  if (wiggle && !prefersReducedMotion() && els.note){
     els.note.animate(
       [
         { transform: 'rotate(-2deg)' },
@@ -522,13 +520,14 @@ function renderMessage({ newRandom=false, requestedIdx=null, wiggle=false } = {}
 function renderToFrom(){
   const t = toLabel(getTo());
   const f = fromLabel(getFrom());
-  els.toLine.textContent   = t; els.toLine.style.display   = t ? "block":"none";
-  els.fromLine.textContent = f; els.fromLine.style.display = f ? "block":"none";
+  if (els.toLine){   els.toLine.textContent   = t; els.toLine.style.display   = t ? "block":"none"; }
+  if (els.fromLine){ els.fromLine.textContent = f; els.fromLine.style.display = f ? "block":"none"; }
 }
 
 /* Swipe op de note voor volgende boodschap (mobile friendly) */
 (function enableNoteSwipe(){
-  const el = els.note; if (!el) return;
+  const el = document.getElementById("note") || document.querySelector(".note");
+  if (!el) return;
   let startX=0, startY=0, dx=0, dy=0, active=false;
 
   el.addEventListener("touchstart", (e)=>{
@@ -542,14 +541,12 @@ function renderToFrom(){
     const t = e.touches[0];
     dx = t.clientX - startX;
     dy = t.clientY - startY;
-    // annuleer als verticaal dominant is
     if (Math.abs(dy) > Math.abs(dx) + 10) active = false;
   }, {passive:true});
 
   el.addEventListener("touchend", ()=>{
     if (!active) return;
     active = false;
-    // alleen next bij duidelijke horizontale swipe
     if (Math.abs(dx) > 30 && Math.abs(dx) > Math.abs(dy)) {
       renderMessage({ newRandom:true, wiggle:false });
     }
@@ -559,31 +556,25 @@ function renderToFrom(){
 /**
  * Toon een welkomstboodschap voor nieuwe bezoekers,
  * tenzij ze via een directe boodschap (mid/id in URL) komen.
- * @param {Object} els - Object met referenties naar DOM-elementen
- * @returns {boolean} true als welkom getoond is, anders false
  */
 function showWelcomeIfRelevant(els) {
   const qp = new URLSearchParams(location.search);
   const isDirectMessage = qp.has('mid') || qp.has('id');
   const welcomeAlready = sessionStorage.getItem('awn_welcome_shown') === "1";
-  const forceWelcome = qp.has('welcome'); // debug/test: ?welcome
+  const forceWelcome = qp.has('welcome');
 
-  // 1. Mensen die via een persoonlijke boodschap komen, krijgen geen welkom
   if (isDirectMessage && !forceWelcome) return false;
 
-  // 2. Welkomst tonen als nog niet gezien óf geforceerd
   if (!welcomeAlready || forceWelcome) {
-    // Vul element met instructies
     if (els.msg)  els.msg.textContent  = "Welkom! Kies een gevoel hierboven, vul ‘Voor wie?’ in en klik op ‘Verstuur’.";
     if (els.icon) els.icon.textContent = "💛";
     if (els.note) els.note.classList.add("note--welcome");
     if (typeof setPaperLook === 'function') setPaperLook();
     if (typeof updateCoach === 'function') updateCoach('init');
     sessionStorage.setItem('awn_welcome_shown','1');
-    return true; // welkom getoond
+    return true;
   }
-
-  return false; // welkom niet getoond
+  return false;
 }
 
 /* [I] COMPOSE (inputs Voor/Van) -------------------------------------------- */
@@ -594,16 +585,19 @@ function onComposeEdit(){
 }
 
 try{
-  els.fromInput?.addEventListener('change', ()=> localStorage.setItem('awn_from', getFrom()));
+  // persist "from"
+  window.addEventListener("DOMContentLoaded", () => {
+    els.fromInput?.addEventListener('change', ()=> {
+      try { localStorage.setItem('awn_from', getFrom()); } catch {}
+    });
+    try{
+      const v = localStorage.getItem('awn_from');
+      if (v && els.fromInput && !els.fromInput.value) { els.fromInput.value = v; onComposeEdit(); }
+    }catch{}
+  });
 }catch{}
-(function restoreFrom(){
-  try{
-    const v = localStorage.getItem('awn_from');
-    if (v && els.fromInput && !els.fromInput.value) { els.fromInput.value = v; onComposeEdit(); }
-  }catch{}
-})();
 
-// [J] COACH (microcopy)
+/* [J] COACH (microcopy) */
 function currentCoachState(){ return getTo() ? "toFilled" : "init"; }
 function updateCoach(state){
   if (!els.coach) return;
@@ -612,7 +606,6 @@ function updateCoach(state){
                      (theme===THEME.NEWYEAR)   ? "Nieuw begin ✨ Kies een gevoel en verstuur je note." :
                      (theme===THEME.EASTER)    ? "Zacht begin 🐣 Kies een gevoel en verstuur je note." : null;
 
-  // Basis-copies
   const copy = {
     init: themedInit || "Kies een gevoel en verstuur je note.",
     toFilled: `Mooi! Klik <button type="button" class="coach-inline">Verstuur</button> om je boodschap te delen.`,
@@ -621,7 +614,7 @@ function updateCoach(state){
 
   const html = copy[state] || copy.init;
   const t = els.coach.querySelector(".coach-text");
-  if (t) t.innerHTML = html;           // ← innerHTML zodat de inline-knop rendert
+  if (t) t.innerHTML = html;
   els.coach.classList.remove("hidden");
 }
 
@@ -675,29 +668,6 @@ function closeMessengerHelp(){
   if (wrap._key){ document.removeEventListener("keydown", wrap._key); wrap._key = null; }
 }
 
-(function enableSheetSwipeDown(){
-  const backdrop = els.sheet; if (!backdrop) return;
-  const panel = backdrop.querySelector('.sheet'); if (!panel) return;
-  let y0=0, dy=0, active=false;
-  backdrop.addEventListener('touchstart', (e)=>{
-    if (e.target.closest('.sheet') == null) return; // alleen binnen panel
-    const t=e.touches?.[0]; if (!t) return;
-    y0=t.clientY; dy=0; active=true;
-    panel.style.transition='none';
-  }, {passive:true});
-  backdrop.addEventListener('touchmove', (e)=>{
-    if (!active) return;
-    const t=e.touches?.[0]; if (!t) return;
-    dy = t.clientY - y0;
-    if (dy>0) { panel.style.transform = `translateY(${dy}px)`; panel.style.opacity = Math.max(0.6, 1 - dy/600); }
-  }, {passive:true});
-  backdrop.addEventListener('touchend', ()=>{
-    if (!active) return; active=false; panel.style.transition='';
-    if (dy>80){ closeShareSheet(); panel.style.transform=''; panel.style.opacity=''; }
-    else { panel.style.transform=''; panel.style.opacity=''; }
-  }, {passive:true});
-})();
-
 function renderShareSheetPairsInline(){
   els.pairToVal  && (els.pairToVal.textContent   = toLabel(getTo())     || "—");
   els.pairFromVal&& (els.pairFromVal.textContent = fromLabel(getFrom()) || "—");
@@ -723,7 +693,7 @@ function onShareWhatsApp(){
 }
 function onShareEmail(){
   const url = buildSharedURL().toString();
-  const noteText = els.msg.textContent || "";
+  const noteText = els.msg?.textContent || "";
   if (typeof window.shareByEmail === "function") {
     window.shareByEmail({ lang:"nl", toName:getTo(), fromName:getFrom(), noteText, permalink:url });
   } else {
@@ -770,7 +740,6 @@ async function onNativeShare(){
 
 function onShareMessenger(){
   const url = buildSharedURL().toString();
-  // 1) Kopieer naar klembord (met fallback)
   (async () => {
     try {
       await navigator.clipboard.writeText(url);
@@ -778,7 +747,6 @@ function onShareMessenger(){
     } catch {
       prompt("Kopieer deze link en plak straks in Messenger:", url);
     }
-    // 2) Sluit de share-sheet en open de help-sheet met stappen
     closeShareSheet();
     openMessengerHelp();
   })();
@@ -820,7 +788,6 @@ async function renderWithLib(link){
   if (typeof QRCode === 'undefined') return false;
   const canvas = document.getElementById('qr-canvas');
   if (!canvas) return false;
-  // verberg img-fallback
   const img = document.getElementById('qr-img');
   if (img) img.style.display = 'none';
   canvas.style.display = 'block';
@@ -849,14 +816,11 @@ async function renderWithImg(link){
 
 // Publieke handler
 async function onShareQR(){
-  // permalink
   const u = buildSharedURL(); u.searchParams.set('src','qr');
   const link = u.toString();
 
-  // open sheet
   openQR();
 
-  // probeer JS-lib
   try {
     const ok = await renderWithLib(link);
     if (!ok) await renderWithImg(link);
@@ -864,7 +828,6 @@ async function onShareQR(){
     await renderWithImg(link);
   }
 
-  // download knop (1x)
   const dl = document.getElementById('qr-download');
   if (dl){
     dl.replaceWith(dl.cloneNode(true));
@@ -877,13 +840,11 @@ async function onShareQR(){
         a.download = 'a-warm-note-qr.png';
         document.body.appendChild(a); a.click(); a.remove();
       } else if (img && img.src) {
-        // open in tab → gebruiker kan opslaan
         window.open(img.src, '_blank', 'noopener');
       }
     }, { once:true });
   }
 
-  // copy knop (1x)
   const cp = document.getElementById('qr-copy');
   if (cp){
     cp.replaceWith(cp.cloneNode(true));
@@ -893,27 +854,26 @@ async function onShareQR(){
     }, { once:true });
   }
 
-  // sluiten (X, button, backdrop)
   const sheet = document.getElementById('qr-backdrop');
   document.getElementById('qr-close')?.addEventListener('click', closeQR, { once:true });
   sheet?.querySelector('.sheet-close')?.addEventListener('click', closeQR, { once:true });
   sheet?.addEventListener('click', (e)=>{ if (e.target === sheet) closeQR(); }, { once:true });
 }
-window.onShareQR = onShareQR; // voor de zekerheid globaal
-// NIEUW: na succesvolle share → viering + coach-tekst "shared"
+window.onShareQR = onShareQR;
+
+// Na succesvolle share → viering + coach-tekst "shared"
 function afterShareSuccess(){
   celebrate();
-  updateCoach('shared'); // "Je boodschap is verstuurd 💛 Nog eentje maken?"
+  updateCoach('shared');
 }
 
 
 /* [L] CONFETTI & TOASTS ----------------------------------------------------- */
-
 function celebrate(){
   const qp = new URLSearchParams(location.search);
-  const debugForce = qp.get('debug_confetti') === '1';  // ?debug_confetti=1
+  const debugForce = qp.get('debug_confetti') === '1';
   if (!CONFETTI_ENABLED) return;
-  if (!debugForce && prefersReducedMotion()) return;    // respecteer user setting, tenzij debug
+  if (!debugForce && prefersReducedMotion()) return;
 
   const colors = themeColors(getActiveTheme());
   const layer = document.body;
@@ -952,16 +912,12 @@ function personalize(text){
   const hasToken = typeof text === "string" && text.includes("{{name}}");
 
   if (hasToken) {
-    // Met naam → vervang token
     if (to) return text.replaceAll("{{name}}", to);
-    // Zonder naam → beleefde fallback i.p.v. rauw token
     return text.replaceAll("{{name}}", "jou");
   }
 
-  // Geen token in de tekst
   if (!to) return text;
 
-  // Subtiele personalisatie zonder token (kleine kans)
   return Math.random() < 0.34
     ? `${to}, ` + lowerFirst(text)
     : text;
@@ -978,16 +934,10 @@ function buildSharedURL(){
   from ? u.searchParams.set("from", from) : u.searchParams.delete("from");
   u.searchParams.set("lang","nl");
 
-  // Add this block:
   const idx = STATE.currentIdx;
-  if (
-    idx != null &&
-    STATE.allMessages[idx] &&
-    STATE.allMessages[idx].id
-  ) {
+  if (idx != null && STATE.allMessages[idx] && STATE.allMessages[idx].id) {
     u.searchParams.set("mid", STATE.allMessages[idx].id);
   }
-
   return u;
 }
 function capitalize(s){ return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
@@ -1006,73 +956,70 @@ function renderFromSymbol(sent){
   const host = els.fromSymbol;
   if (!host) return;
 
-  // Alleen tonen als er een 'van' is ingevuld
   if (!getFrom()){
     host.innerHTML = "";
     return;
   }
 
-  // Map sentiment → eenvoudige, handgetekende SVG
   const svg = (key)=>{
     switch(key){
-      case "liefde":       // hartje
+      case "liefde":
         return `<svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M12 20s-7-4.5-9-8.2C1.7 9.5 3.3 6.8 6.2 6.5c1.6-.1 3 .6 3.8 1.8.8-1.2 2.2-1.9 3.8-1.8 2.9.3 4.5 3.1 3.2 5.3C19 15.5 12 20 12 20z"/>
         </svg>`;
-      case "humor":       // knipogende emoticon ; )
+      case "humor":
         return `<svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M5 12c0 3.9 3.1 7 7 7s7-3.1 7-7"/>
           <path d="M9 10h.01M15 10c.6-.4 1.2-.8 2-1"/>
           <path d="M8 15c1 .8 2.2 1.2 4 1.2s3-.4 4-1.2"/>
         </svg>`;
-      case "vriendschap": // twee simpele overlappende boogjes (verbondenheid)
+      case "vriendschap":
         return `<svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M6 14c0-2.5 2-4.5 4.5-4.5S15 11.5 15 14"/>
           <path d="M9 14c0-2.5 2-4.5 4.5-4.5S18 11.5 18 14"/>
         </svg>`;
-      case "succes":      // sterretje
+      case "succes":
         return `<svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M12 3l2.2 4.6 5.1.7-3.7 3.6.9 5.1-4.5-2.4-4.5 2.4.9-5.1L4.7 8.3l5.1-.7L12 3z"/>
         </svg>`;
-      case "doorzetten":  // pijl vooruit
+      case "doorzetten":
         return `<svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M4 12h12"/><path d="M12 6l6 6-6 6"/>
         </svg>`;
-      case "kalmte":      // bladje
+      case "kalmte":
         return `<svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M5 15c6 2 10-2 14-10-2 8-6 12-14 10z"/>
           <path d="M8 13c1.2-.2 2.4-.8 3.6-1.9"/>
         </svg>`;
-      case "troost":      // druppel
+      case "troost":
         return `<svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M12 4c2 3 5 6 5 9a5 5 0 1 1-10 0c0-3 3-6 5-9z"/>
         </svg>`;
-      case "trots":       // medaille
+      case "trots":
         return `<svg viewBox="0 0 24 24" aria-hidden="true">
           <circle cx="12" cy="10" r="4"/>
           <path d="M9 14l-2 6 5-3 5 3-2-6"/>
         </svg>`;
-      case "dankbaar":    // klein sprankeltje
+      case "dankbaar":
         return `<svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M12 4v4M12 16v4M4 12h4M16 12h4M6 6l2.5 2.5M15.5 15.5L18 18M6 18l2.5-2.5M15.5 8.5L18 6"/>
         </svg>`;
-      case "bemoedigend": // duim (geabstraheerd)
+      case "bemoedigend":
         return `<svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M7 11v7H4v-7h3z"/>
           <path d="M7 11l5-6c.9-1.1 2.5-.2 2.2 1l-.8 5.1H20c1.1 0 2 .9 2 2 0 .3-.1.7-.3 1l-2.2 3.5c-.4.7-1.1 1.1-1.9 1.1H7"/>
         </svg>`;
       default:
-        return ""; // geen symbool
+        return "";
     }
   };
 
-  // Kies symbool: voorkeur current sentiment; anders niets
   const g = String(sent || "").toLowerCase();
   const markup = svg(g);
   host.innerHTML = markup || "";
 }
 
-/* [N] SHARE / ABOUT-DIALOOG --------------------------------------------------------- */
+/* [N] SHARE / ABOUT-DIALOOG ------------------------------------------------ */
 function openAbout(){
   if (!els.about) return;
   els.about.classList.remove("hidden");
@@ -1084,14 +1031,10 @@ function closeAbout(){
   if (!backdrop) return;
   const sheet = backdrop.querySelector('.sheet');
 
-  // als er een sheet is: eerst zichtbaar weg laten zakken
   if (sheet) {
-    // reset eventuele vorige inline transform van een drag
     sheet.style.transform = '';
-    // trig de wegzak-animatie
     sheet.classList.add('closing');
 
-    // na de transition: backdrop verbergen
     const finish = () => {
       sheet.classList.remove('closing');
       backdrop.classList.add('hidden');
@@ -1099,215 +1042,22 @@ function closeAbout(){
     };
 
     sheet.addEventListener('transitionend', finish, { once: true });
-    // safety net voor oude webviews
     setTimeout(finish, 320);
   } else {
-    // fallback
     backdrop.classList.add('hidden');
     backdrop.setAttribute('aria-hidden','true');
   }
 }
 
-/* [N+] ABOUT — swipe-to-close mét visuele drag en indicator */
-(function setupShareSwipe(){
-  const backdrop = document.getElementById('sheet-backdrop');
-  if (!backdrop) return;
-
-  const sheet  = backdrop.querySelector('.sheet');
-  const handle = sheet?.querySelector('.sheet-header');
-  if (!sheet || !handle) return;
-
-  let dragging = false, startY = 0, lastY = 0, dy = 0, lastT = 0, velocity = 0;
-  const thresholdRatio = 0.23;
-  const velocityClose  = 1.0;
-
-  handle.style.touchAction = 'none';
-
-  function setDragging(active) {
-    if (active) {
-      sheet.classList.add('sheet--dragging');
-      backdrop.classList.add('sheet--dragging');
-    } else {
-      sheet.classList.remove('sheet--dragging');
-      backdrop.classList.remove('sheet--dragging');
-    }
-  }
-
-  function onPointerDown(e){
-    if ((e.button !== undefined && e.button !== 0) || dragging) return;
-    if (e.target.closest('.sheet-close')) return;
-    dragging = true; dy = 0; velocity = 0;
-    const y = e.clientY ?? e.touches?.[0]?.clientY ?? 0;
-    startY = lastY = y; lastT = performance.now();
-    sheet.style.transition = 'none';
-    setDragging(true);
-    document.body.style.userSelect = "none";
-    sheet.setPointerCapture?.(e.pointerId);
-  }
-
-  function onPointerMove(e){
-    if (!dragging) return;
-    const y = e.clientY ?? e.touches?.[0]?.clientY ?? lastY;
-    dy = Math.max(0, y - startY);
-    const h = sheet.getBoundingClientRect().height;
-    if (dy > h * 0.95) dy = h * 0.95;
-    sheet.style.transform = `translateY(${dy}px)`;
-    lastY = y;
-    const now = performance.now();
-    velocity = (y - lastY) / Math.max(1, now - lastT);
-    lastT = now;
-  }
-
-  function onPointerUp(e){
-    if (!dragging) return;
-    dragging = false;
-    setDragging(false);
-
-    const h    = sheet.getBoundingClientRect().height;
-    const pass = dy > h * thresholdRatio || velocity > velocityClose;
-
-    sheet.style.transition = 'transform .22s cubic-bezier(.2,.8,.2,1)';
-
-    if (pass) {
-      sheet.style.transform = `translateY(${h + 80}px)`;
-      sheet.classList.add('closing');
-      setTimeout(() => {
-        sheet.classList.remove('closing');
-        sheet.style.transform = '';
-        closeShareSheet();
-        document.body.style.userSelect = "";
-      }, 320);
-    } else {
-      sheet.style.transform = '';
-      setTimeout(() => { sheet.style.transition = ''; document.body.style.userSelect = ""; }, 240);
-    }
-  }
-
-  handle.addEventListener('pointerdown', onPointerDown, { passive: true });
-  window.addEventListener('pointermove',  onPointerMove, { passive: false });
-  window.addEventListener('pointerup',    onPointerUp,   { passive: true });
-  handle.addEventListener('touchstart',   onPointerDown, { passive: true });
-  window.addEventListener('touchmove',    onPointerMove, { passive: false });
-  window.addEventListener('touchend',     onPointerUp,   { passive: true });
-
-  // Reset transform bij openen
-  const _openShareSheet = window.openShareSheet;
-  if (typeof _openShareSheet === 'function') {
-    window.openShareSheet = function patchedOpenShareSheet(){
-      sheet.style.transform = '';
-      setDragging(false);
-      return _openShareSheet.apply(this, arguments);
-    };
-  }
-})();
-
-(function setupAboutSwipe(){
-  const backdrop = document.getElementById('about-backdrop');
-  if (!backdrop) return;
-
-  const sheet  = backdrop.querySelector('.sheet');
-  const handle = sheet?.querySelector('.sheet-header');
-  if (!sheet || !handle) return;
-
-  let dragging = false, startY = 0, lastY = 0, dy = 0, lastT = 0, velocity = 0;
-  const thresholdRatio = 0.23;   // 23% van sheet-hoogte moet je swipen voor sluiten
-  const velocityClose  = 1.0;    // px/ms; snelle flick sluit
-
-  handle.style.touchAction = 'none';
-
-  function setDragging(active) {
-    if (active) {
-      sheet.classList.add('sheet--dragging');
-      backdrop.classList.add('sheet--dragging');
-    } else {
-      sheet.classList.remove('sheet--dragging');
-      backdrop.classList.remove('sheet--dragging');
-    }
-  }
-  
-  function onPointerDown(e){
-  // Alleen drag starten als het NIET de X-knop is
-  if ((e.button !== undefined && e.button !== 0) || dragging) return;
-  if (e.target.closest('.sheet-close')) return; // Klik op X: geen drag!
-  dragging = true; dy = 0; velocity = 0;
-  const y = e.clientY ?? e.touches?.[0]?.clientY ?? 0;
-  startY = lastY = y; lastT = performance.now();
-  sheet.style.transition = 'none';
-  setDragging(true);
-  document.body.style.userSelect = "none";
-  sheet.setPointerCapture?.(e.pointerId);
-}
-
-  function onPointerMove(e){
-    if (!dragging) return;
-    const y = e.clientY ?? e.touches?.[0]?.clientY ?? lastY;
-    dy = Math.max(0, y - startY); // Alleen naar beneden
-    // Limiteer max drag (optioneel, bijv. tot 90% van sheet)
-    const h = sheet.getBoundingClientRect().height;
-    if (dy > h * 0.95) dy = h * 0.95;
-    sheet.style.transform = `translateY(${dy}px)`;
-    lastY = y;
-    const now = performance.now();
-    velocity = (y - lastY) / Math.max(1, now - lastT);
-    lastT = now;
-  }
-
-  function onPointerUp(e){
-    if (!dragging) return;
-    dragging = false;
-    setDragging(false);
-
-    const h    = sheet.getBoundingClientRect().height;
-    const pass = dy > h * thresholdRatio || velocity > velocityClose;
-
-    // Zet transition vóór transform!
-    sheet.style.transition = 'transform .22s cubic-bezier(.2,.8,.2,1)';
-
-    if (pass) {
-      sheet.style.transform = `translateY(${h + 80}px)`;
-      sheet.classList.add('closing');
-      setTimeout(() => { 
-        sheet.classList.remove('closing');
-        sheet.style.transform = '';
-        closeAbout();
-        document.body.style.userSelect = "";
-      }, 320);
-    } else {
-      sheet.style.transform = '';
-      setTimeout(() => { sheet.style.transition = ''; document.body.style.userSelect = ""; }, 240);
-    }
-  }
-
-  // Pointer + touch (breed compatibel)
-  handle.addEventListener('pointerdown', onPointerDown, { passive: true });
-  window.addEventListener('pointermove',  onPointerMove, { passive: false });
-  window.addEventListener('pointerup',    onPointerUp,   { passive: true });
-  handle.addEventListener('touchstart',   onPointerDown, { passive: true });
-  window.addEventListener('touchmove',    onPointerMove, { passive: false });
-  window.addEventListener('touchend',     onPointerUp,   { passive: true });
-
-  // Reset transform bij openen (voor het geval hij eerder half gesleept is)
-  const _openAbout = window.openAbout;
-  if (typeof _openAbout === 'function') {
-    window.openAbout = function patchedOpenAbout(){
-      sheet.style.transform = '';
-      setDragging(false);
-      return _openAbout.apply(this, arguments);
-    };
-  }
-})();
-
-/* ABOUT: robuuste close-handlers (delegation + ESC) */
+/* ABOUT: close-handlers (delegation + ESC) */
 (function bindAboutCloseDelegation(){
   const backdrop = document.getElementById('about-backdrop');
   if (!backdrop) return;
 
-  // Klik op backdrop sluit
   backdrop.addEventListener('click', (e)=>{
     if (e.target === backdrop) closeAbout();
   });
 
-  // Klik op ✕ of 'Sluiten' (werkt ook na DOM-wijzigingen)
   backdrop.addEventListener('click', (e)=>{
     const btn = e.target.closest?.('#about-backdrop .sheet-close, #about-backdrop #about-close');
     if (btn) {
@@ -1316,136 +1066,12 @@ function closeAbout(){
     }
   });
 
-  // ESC sluit (alleen als About open is)
   window.addEventListener('keydown', (e)=>{
     if (e.key === 'Escape' && !backdrop.classList.contains('hidden')) {
       closeAbout();
     }
   });
 })();
-
- 
-/* — Event-wiring (null-safe) ----------------------------------------------- */
-
-function guardShareOrNudge(){
-  const to = getTo();
-  if (!to) {
-    // Warme, duidelijke hint
-    showToast("Vul eerst in voor wie dit is 💛");
-    try {
-      els.toInput.classList.add("field-nudge");
-      els.toInput.focus();
-      // korte nudge
-      setTimeout(()=> els.toInput.classList.remove("field-nudge"), 600);
-    } catch {}
-    return; // STOP: sheet niet openen
-  }
-  // OK: mag delen
-  openShareSheet();
-}
-
-// --- Messenger helpers: gegarandeerd beschikbaar, ook als ze later nogmaals gedefinieerd worden
-var openMessengerHelp = window.openMessengerHelp || function(){
-  const wrap = document.getElementById("msgr-help-backdrop");
-  if (!wrap) return;
-  wrap.classList.remove("hidden");
-  wrap.setAttribute("aria-hidden","false");
-  setTimeout(()=> document.getElementById("msgr-open")?.focus(), 0);
-};
-window.openMessengerHelp = openMessengerHelp;
-
-var closeMessengerHelp = window.closeMessengerHelp || function(){
-  const wrap = document.getElementById("msgr-help-backdrop");
-  if (!wrap) return;
-  wrap.classList.add("hidden");
-  wrap.setAttribute("aria-hidden","true");
-};
-window.closeMessengerHelp = closeMessengerHelp;
-
-var actuallyOpenMessenger = window.actuallyOpenMessenger || function(){
-  const url = (typeof buildSharedURL === "function" ? buildSharedURL().toString() : location.href);
-  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-  if (isMobile){
-    const deeplink = "fb-messenger://share/?link=" + encodeURIComponent(url);
-    const w = window.open(deeplink, "_blank");
-    setTimeout(()=>{ try{ w?.close(); }catch(_){} window.open("https://www.messenger.com/", "_blank", "noopener"); }, 1200);
-  } else {
-    window.open("https://www.messenger.com/", "_blank", "noopener");
-  }
-};
-window.actuallyOpenMessenger = actuallyOpenMessenger;
-
-// QR helpers – sheet tonen/verbergen (één bron van waarheid)
-function openQR(){
-  const sheet = document.getElementById('qr-backdrop');
-  if (!sheet) return;
-  sheet.classList.remove('hidden');
-  sheet.setAttribute('aria-hidden','false');
-}
-function closeQR(){
-  const sheet = document.getElementById('qr-backdrop');
-  if (!sheet) return;
-  sheet.classList.add('hidden');
-  sheet.setAttribute('aria-hidden','true');
-}
-// globaal maken (voor listeners die window.* aanroepen)
-window.openQR = openQR;
-window.closeQR = closeQR;
-
-function wireGlobalUI(){
-  // Topbar
-  els.btnNew   && els.btnNew.addEventListener("click", ()=>{ renderMessage({ newRandom:true, wiggle:true }); showToast("Nieuwe boodschap geladen ✨"); });
-  els.btnShare && els.btnShare.addEventListener("click", guardShareOrNudge);
-  els.btnAbout && els.btnAbout.addEventListener("click", openAbout);
-
-  // Compose
-  els.toInput   && els.toInput.addEventListener("input", onComposeEdit);
-  els.fromInput && els.fromInput.addEventListener("input", onComposeEdit);
-
-  // Share-sheet
-  els.sheetClose   && els.sheetClose.addEventListener("click", closeShareSheet);
-  els.shareCopy    && els.shareCopy.addEventListener("click", onCopyLink);
-  els.shareWA      && els.shareWA.addEventListener("click", onShareWhatsApp);
-  els.shareMail    && els.shareMail.addEventListener("click", onShareEmail);
-  els.shareDL      && els.shareDL.addEventListener("click", onDownload);
-  els.shareConfirm && els.shareConfirm.addEventListener("click", onNativeShare);
-  els.shareMS = $("share-messenger");
-  els.shareMS && els.shareMS.addEventListener("click", onShareMessenger);
-  els.sheet && (els.sheet.onclick = (e)=>{ if (e.target === els.sheet) closeShareSheet(); });
-
-  // Messenger help (1x, geen dubbels)
-  els.msgrHelp  = document.getElementById("msgr-help-backdrop");
-  els.msgrOpen  = document.getElementById("msgr-open");
-  els.msgrClose = document.getElementById("msgr-close");
-  els.msgrHelp  && (els.msgrHelp.onclick = (e)=>{ if (e.target === els.msgrHelp) closeMessengerHelp(); });
-  els.msgrOpen  && els.msgrOpen.addEventListener("click", ()=>{ actuallyOpenMessenger(); closeMessengerHelp(); });
-  els.msgrClose && els.msgrClose.addEventListener("click", closeMessengerHelp);
-
-  // QR
-  document.getElementById("share-qr")?.addEventListener("click", onShareQR);
-  document.getElementById("qr-close")?.addEventListener("click", ()=> window.closeQR());
-  document.querySelector("#qr-backdrop .sheet-close")?.addEventListener("click", ()=> window.closeQR());
-  document.getElementById("qr-backdrop")?.addEventListener("click", (e)=>{
-    if (e.target.id === "qr-backdrop") window.closeQR(); // ← alleen sluiten
-  });
-
-  // ✕ in de header van de hulpsheet
-  const msgrX = els.msgrHelp?.querySelector(".sheet-close");
-  msgrX && msgrX.addEventListener("click", closeMessengerHelp);
-  
-  // About
-  els.about?.querySelector(".sheet-close")?.addEventListener("click", closeAbout);
-  els.aboutClose && els.aboutClose.addEventListener("click", closeAbout);
-
-  // Coach close
-  els.coachClose && els.coachClose.addEventListener("click", ()=> els.coach.classList.add("hidden"));
-}
-// Coach inline "Verstuur" → zelfde gedrag als topbarbutton
-els.coach && els.coach.addEventListener("click", (e)=>{
-  if (e.target && e.target.classList.contains("coach-inline")){
-    guardShareOrNudge();
-  }
-});
 
 /* ========================================================================
    DEBUG HARNESS — NIET PRODUCTIE, HELPT ZIEN WAT ER WEL/NIET TRIGGERT
@@ -1458,21 +1084,18 @@ els.coach && els.coach.addEventListener("click", (e)=>{
   const DEBUG = qp.has('debug');
   const log = (...args)=>{ if (DEBUG) console.log("[awn]", ...args); };
 
-  // Thema + motion check
   try {
     const theme = (typeof getActiveTheme === 'function') ? getActiveTheme() : "unknown";
     const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     log("theme:", theme, "reducedMotion:", reduce);
   } catch(_) {}
 
-  // Note pop-in bij elke renderMessage()
   try {
     const _render = window.renderMessage;
     if (typeof _render === "function") {
       window.renderMessage = function patchedRenderMessage(opts){
         log("renderMessage()", opts);
         const res = _render.apply(this, arguments);
-        // Pop-in op .note
         const note = document.getElementById("note") || document.querySelector(".note");
         if (note) { note.classList.remove("anim-pop"); void note.offsetWidth; note.classList.add("anim-pop"); }
         return res;
@@ -1483,7 +1106,6 @@ els.coach && els.coach.addEventListener("click", (e)=>{
     }
   } catch(e) { log("hook error:", e); }
 
-  // Optionele sparkle fallback na “verstuur” als confetti/motion uit staat
   window.__awnSparkle = function(){
     try{
       const el = document.createElement("div");
@@ -1495,6 +1117,7 @@ els.coach && els.coach.addEventListener("click", (e)=>{
   };
 })();
 
+/* Generieke swipe-to-close met velocity fix -------------------------------- */
 function setupSheetSwipe({ backdropId, closeFunction, openFunctionName }) {
   const backdrop = document.getElementById(backdropId);
   if (!backdrop) return;
@@ -1543,17 +1166,18 @@ function setupSheetSwipe({ backdropId, closeFunction, openFunctionName }) {
   function onPointerMove(e){
     if (!dragging) return;
     const y = e.clientY ?? e.touches?.[0]?.clientY ?? lastY;
+    const prevY = lastY;
     dy = Math.max(0, y - startY);
     const h = sheet.getBoundingClientRect().height;
     if (dy > h * 0.95) dy = h * 0.95;
     sheet.style.transform = `translateY(${dy}px)`;
-    lastY = y;
     const now = performance.now();
-    velocity = (y - lastY) / Math.max(1, now - lastT);
+    velocity = (y - prevY) / Math.max(1, now - lastT); // FIX: gebruik vorige Y
+    lastY = y;
     lastT = now;
   }
 
-  function onPointerUp(e){
+  function onPointerUp(){
     if (!dragging) return;
     dragging = false;
     setDragging(false);
@@ -1583,7 +1207,6 @@ function setupSheetSwipe({ backdropId, closeFunction, openFunctionName }) {
   window.addEventListener('touchmove',    onPointerMove, { passive: false });
   window.addEventListener('touchend',     onPointerUp,   { passive: true });
 
-  // Reset alles bij openen (VOOR het sheet getoond wordt!)
   if (openFunctionName && typeof window[openFunctionName] === 'function') {
     const originalOpen = window[openFunctionName];
     window[openFunctionName] = function(){
@@ -1594,15 +1217,271 @@ function setupSheetSwipe({ backdropId, closeFunction, openFunctionName }) {
 }
 
 // Gebruik de generieke functie voor beide sheets:
-setupSheetSwipe({
-  backdropId: 'about-backdrop',
-  closeFunction: window.closeAbout,
-  openFunctionName: 'openAbout'
-});
-setupSheetSwipe({
-  backdropId: 'sheet-backdrop',
-  closeFunction: window.closeShareSheet,
-  openFunctionName: 'openShareSheet'
+window.addEventListener("DOMContentLoaded", () => {
+  setupSheetSwipe({
+    backdropId: 'about-backdrop',
+    closeFunction: window.closeAbout,
+    openFunctionName: 'openAbout'
+  });
+  setupSheetSwipe({
+    backdropId: 'sheet-backdrop',
+    closeFunction: window.closeShareSheet,
+    openFunctionName: 'openShareSheet'
+  });
 });
 
+/* — Event-wiring (null-safe) ----------------------------------------------- */
+function guardShareOrNudge(){
+  const to = getTo();
+  if (!to) {
+    showToast("Vul eerst in voor wie dit is 💛");
+    try {
+      els.toInput.classList.add("field-nudge");
+      els.toInput.focus();
+      setTimeout(()=> els.toInput.classList.remove("field-nudge"), 600);
+    } catch {}
+    return;
+  }
+  openShareSheet();
+}
 
+function actuallyOpenMessenger(){
+  const url = (typeof buildSharedURL === "function" ? buildSharedURL().toString() : location.href);
+  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if (isMobile){
+    const deeplink = "fb-messenger://share/?link=" + encodeURIComponent(url);
+    const w = window.open(deeplink, "_blank");
+    setTimeout(()=>{ try{ w?.close(); }catch(_){} window.open("https://www.messenger.com/", "_blank", "noopener"); }, 1200);
+  } else {
+    window.open("https://www.messenger.com/", "_blank", "noopener");
+  }
+}
+window.openMessengerHelp = openMessengerHelp;
+window.closeMessengerHelp = closeMessengerHelp;
+window.actuallyOpenMessenger = actuallyOpenMessenger;
+
+function wireGlobalUI(){
+  // Topbar
+  els.btnNew   && els.btnNew.addEventListener("click", ()=>{ renderMessage({ newRandom:true, wiggle:true }); showToast("Nieuwe boodschap geladen ✨"); });
+  els.btnShare && els.btnShare.addEventListener("click", guardShareOrNudge);
+  els.btnAbout && els.btnAbout.addEventListener("click", openAbout);
+
+  // Compose
+  els.toInput   && els.toInput.addEventListener("input", onComposeEdit);
+  els.fromInput && els.fromInput.addEventListener("input", onComposeEdit);
+
+  // Share-sheet
+  els.sheetClose   && els.sheetClose.addEventListener("click", closeShareSheet);
+  els.shareCopy    && els.shareCopy.addEventListener("click", onCopyLink);
+  els.shareWA      && els.shareWA.addEventListener("click", onShareWhatsApp);
+  els.shareMail    && els.shareMail.addEventListener("click", onShareEmail);
+  els.shareDL      && els.shareDL.addEventListener("click", onDownload);
+  els.shareConfirm && els.shareConfirm.addEventListener("click", onNativeShare);
+  els.shareMS = $("share-messenger");
+  els.shareMS && els.shareMS.addEventListener("click", onShareMessenger);
+  els.sheet && els.sheet.addEventListener("click", (e)=>{ if (e.target === els.sheet) closeShareSheet(); });
+
+  // Messenger help
+  els.msgrHelp  = document.getElementById("msgr-help-backdrop");
+  els.msgrOpen  = document.getElementById("msgr-open");
+  els.msgrClose = document.getElementById("msgr-close");
+  els.msgrHelp  && els.msgrHelp.addEventListener("click", (e)=>{ if (e.target === els.msgrHelp) closeMessengerHelp(); });
+  els.msgrOpen  && els.msgrOpen.addEventListener("click", ()=>{ actuallyOpenMessenger(); closeMessengerHelp(); });
+  els.msgrClose && els.msgrClose.addEventListener("click", closeMessengerHelp);
+
+  // QR
+  document.getElementById("share-qr")?.addEventListener("click", onShareQR);
+  document.getElementById("qr-close")?.addEventListener("click", closeQR);
+  document.querySelector("#qr-backdrop .sheet-close")?.addEventListener("click", closeQR);
+  document.getElementById("qr-backdrop")?.addEventListener("click", (e)=>{
+    if (e.target.id === "qr-backdrop") closeQR();
+  });
+
+  // About
+  els.about?.querySelector(".sheet-close")?.addEventListener("click", closeAbout);
+  els.aboutClose && els.aboutClose.addEventListener("click", closeAbout);
+
+  // Coach close + inline "Verstuur"
+  els.coachClose && els.coachClose.addEventListener("click", ()=> els.coach.classList.add("hidden"));
+  els.coach && els.coach.addEventListener("click", (e)=>{
+    if (e.target && e.target.classList.contains("coach-inline")){
+      guardShareOrNudge();
+    }
+  });
+}
+
+/* =========================================================================
+   LEAN SPLASH + BUTTON WIRING
+   - Geen DOM-swap/inject; alleen overlay tonen en knoppen koppelen.
+   - SPA-vriendelijk zonder MutationObserver (luistert alleen naar route events).
+   ========================================================================== */
+
+/* -------------------------- A) SPLASH (overlay) -------------------------- */
+(function SplashLiveClone(){
+  // Settings
+  const MARGINS = { vw: 0.96, vh: 0.86 };
+  const LIMITS  = { min: 1.2, max: 3.0 };
+  const TIMES   = { hold: 4200, out: 280 };
+  const NOTE_SEL = [
+    '[data-note-root]', '.note', '.postit', '.note-card', '.noteRoot', 'article.note'
+  ];
+
+  // Helpers
+  const waitFonts = () =>
+    (document.fonts && document.fonts.ready) ? document.fonts.ready.catch(()=>{}) : Promise.resolve();
+  const pick = (root, sels) => { for (const s of sels){ const el=root.querySelector(s); if (el) return el; } return null; };
+  function findLiveNote(){ return pick(document, NOTE_SEL); }
+  function computeScale(box){
+    const vw = innerWidth * MARGINS.vw;
+    const vh = innerHeight * MARGINS.vh;
+    const sx = vw / box.width;
+    const sy = vh / box.height;
+    let s = Math.min(sx, sy);
+    if (!isFinite(s) || s <= 0) s = 1;
+    if (s < LIMITS.min) s = LIMITS.min;
+    if (s > LIMITS.max) s = LIMITS.max;
+    return s;
+  }
+  function makeOverlay(){
+    // opruimen vorige overlay (fail-safe)
+    const old = document.querySelector('.splash-overlay');
+    if (old) old.remove();
+    const overlay = document.createElement('div');
+    overlay.className = 'splash-overlay';
+    const stage = document.createElement('div');
+    stage.className = 'splash-stage';
+    overlay.appendChild(stage);
+    document.body.appendChild(overlay);
+    return { overlay, stage };
+  }
+
+  async function showSplash(){
+    await waitFonts();
+    const live = findLiveNote();
+    if (!live){ console.warn('[splash] geen live note gevonden'); return; }
+
+    const clone = live.cloneNode(true);                // 1:1 deep clone (alles mee)
+    const { overlay, stage } = makeOverlay();
+    stage.appendChild(clone);
+
+    // schaal bepalen nadat clone is ingevoegd
+    requestAnimationFrame(()=>{
+      const rect = (stage.firstElementChild || stage).getBoundingClientRect();
+      stage.style.setProperty('--splash-scale', String(computeScale(rect)));
+      overlay.classList.add('is-in');
+    });
+
+    // sluiters (klik buiten / ESC / automatische hold)
+    const close = ()=>{
+      overlay.classList.remove('is-in');
+      setTimeout(()=> overlay.remove(), TIMES.out);
+      document.removeEventListener('keydown', onEsc, true);
+      window.removeEventListener('resize', onResize, true);
+    };
+    const onEsc = e => { if (e.key === 'Escape') close(); };
+    const onResize = ()=>{
+      const rect = (stage.firstElementChild || stage).getBoundingClientRect();
+      stage.style.setProperty('--splash-scale', String(computeScale(rect)));
+    };
+
+    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+    document.addEventListener('keydown', onEsc, true);
+    window.addEventListener('resize', onResize, true);
+    setTimeout(close, TIMES.hold);
+  }
+
+  // Public API
+  window.openNoteSplash = showSplash;
+})();
+
+/* --------------------- B) BUTTONS (expand + about) ---------------------- */
+(function WireExpandAndAbout(){
+  const EXPAND_SEL        = '[data-action="expand-note"]';  // ⤢ in topbar (uit HTML)
+  const ABOUT_FAB_ID      = 'about-fab-fixed';               // ℹ︎ rechtsonder (uit HTML)
+  const ABOUT_BACKDROP_ID = 'about-backdrop';                // sheet wrapper
+  const HOT_CLS           = 'is-hot';
+
+  // About open/close
+  function openAbout(){
+    const bd = document.getElementById(ABOUT_BACKDROP_ID);
+    if (!bd) return;
+    bd.classList.remove('hidden');
+    bd.setAttribute('aria-hidden','false');
+
+    // sluiters (X-knoppen)
+    bd.querySelectorAll('.sheet-close, #about-close').forEach(btn=>{
+      if (!btn.dataset.wired){
+        btn.dataset.wired = '1';
+        btn.addEventListener('click', closeAbout);
+      }
+    });
+    // klik op backdrop
+    if (!bd.dataset.wiredBackdrop){
+      bd.dataset.wiredBackdrop = '1';
+      bd.addEventListener('click', e => { if (e.target === bd) closeAbout(); });
+    }
+  }
+  function closeAbout(){
+    const bd = document.getElementById(ABOUT_BACKDROP_ID);
+    if (!bd) return;
+    bd.classList.add('hidden');
+    bd.setAttribute('aria-hidden','true');
+  }
+  window.openAbout = openAbout;
+  window.closeAbout = closeAbout;
+
+  // Hot-state voor Expand bij ?mid=
+  function getMID(){
+    const qs = new URLSearchParams(location.search);
+    if (qs.get('mid')) return qs.get('mid');
+    const h = location.hash || '';
+    const m = /(?:[?#]|^)mid=([^&]+)/.exec(h);
+    if (m && m[1]) return decodeURIComponent(m[1]);
+    const p = location.pathname || '';
+    const mp = p.match(/\/(?:mid|m)\/([^/]+)/i);
+    if (mp && mp[1]) return decodeURIComponent(mp[1]);
+    return null;
+  }
+  function applyHotState(){
+    const btn = document.querySelector(EXPAND_SEL);
+    if (!btn) return;
+    const mid = getMID();
+    if (mid){
+      btn.classList.add(HOT_CLS);
+      btn.dataset.mid = mid;
+      btn.setAttribute('aria-pressed','true');
+      if (!btn.title) btn.title = 'Bericht beschikbaar – klik om te vergroten';
+    } else {
+      btn.classList.remove(HOT_CLS);
+      btn.removeAttribute('data-mid');
+      btn.removeAttribute('aria-pressed');
+    }
+  }
+
+  // Wire (eenmalig per element)
+  function wire(){
+    const expand = document.querySelector(EXPAND_SEL);
+    if (expand && !expand.dataset.wired){
+      expand.dataset.wired = '1';
+      expand.addEventListener('click', ()=> {
+        if (typeof window.openNoteSplash === 'function') openNoteSplash();
+      });
+    }
+    const about = document.getElementById(ABOUT_FAB_ID);
+    if (about && !about.dataset.wired){
+      about.dataset.wired = '1';
+      about.addEventListener('click', openAbout);
+    }
+    applyHotState();
+  }
+
+  // Init + route events (zonder MutationObserver)
+  if (document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', wire, { once:true });
+  } else {
+    wire();
+  }
+  ['hashchange','popstate','pageshow'].forEach(evt=>{
+    window.addEventListener(evt, ()=> setTimeout(applyHotState, 0));
+  });
+})();
