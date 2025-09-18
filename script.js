@@ -1515,3 +1515,47 @@ function wireGlobalUI(){
     window.addEventListener(evt, ()=> setTimeout(applyHotState, 0));
   });
 })();
+
+/* === Mobile Boot Intro (lightweight) ===================================== */
+(function MobileBootIntro(){
+  const el = document.getElementById('intro-boot');
+  if (!el) return;
+
+  // Alleen “mobiel”: coarse pointer of small viewport
+  const isCoarse = matchMedia('(pointer: coarse)').matches;
+  const isSmall  = matchMedia('(max-width: 768px)').matches;
+  if (!(isCoarse || isSmall)) { el.classList.add('is-hide'); return; }
+
+  // Minimum toontijd zodat het niet flitst
+  const MIN_SHOW = 1200; // ms — pas aan naar smaak (bijv. 800–1200)
+  const t0 = performance.now();
+  let canSkip = false, hidden = false;
+
+  // Skip na min. tijd op tap
+  const maybeEnableSkip = () => { canSkip = true; };
+  setTimeout(maybeEnableSkip, MIN_SHOW);
+
+  function hideIntro(){
+    if (hidden) return;
+    hidden = true;
+    el.classList.add('is-hide');
+    // opruimen listeners
+    el.removeEventListener('click', onTap, { capture: true });
+    window.removeEventListener('load', onLoad);
+  }
+
+  function onTap(){
+    if (canSkip) hideIntro();
+  }
+
+  function onLoad(){
+    const dt = performance.now() - t0;
+    const waitLeft = Math.max(0, MIN_SHOW - dt);
+    setTimeout(hideIntro, waitLeft);
+  }
+
+  // Start wiring
+  el.addEventListener('click', onTap, { capture: true });
+  if (document.readyState === 'complete') onLoad();
+  else window.addEventListener('load', onLoad, { once: true });
+})();
