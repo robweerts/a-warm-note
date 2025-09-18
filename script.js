@@ -1309,19 +1309,14 @@ function wireGlobalUI(){
     }
   });
 }
-
-/* =========================================================================
-   LEAN SPLASH + BUTTON WIRING
-   - Geen DOM-swap/inject; alleen overlay tonen en knoppen koppelen.
-   - SPA-vriendelijk zonder MutationObserver (luistert alleen naar route events).
-   ========================================================================== */
-
 /* -------------------------- A) SPLASH (overlay) -------------------------- */
 (function SplashLiveClone(){
   // Settings
   const MARGINS = { vw: 0.96, vh: 0.86 };
   const LIMITS  = { min: 1.2, max: 3.0 };
   const TIMES   = { hold: 4200, out: 280 };
+  const AUTO_OPEN_ON_MID = true;               // auto-open aan
+
   const NOTE_SEL = [
     '[data-note-root]', '.note', '.postit', '.note-card', '.noteRoot', 'article.note'
   ];
@@ -1331,6 +1326,17 @@ function wireGlobalUI(){
     (document.fonts && document.fonts.ready) ? document.fonts.ready.catch(()=>{}) : Promise.resolve();
   const pick = (root, sels) => { for (const s of sels){ const el=root.querySelector(s); if (el) return el; } return null; };
   function findLiveNote(){ return pick(document, NOTE_SEL); }
+  function getMID(){
+    const qs = new URLSearchParams(location.search);
+    if (qs.get('mid')) return qs.get('mid');
+    const h = location.hash || '';
+    const m = /(?:[?#]|^)mid=([^&]+)/.exec(h);
+    if (m && m[1]) return decodeURIComponent(m[1]);
+    const p = location.pathname || '';
+    const mp = p.match(/\/(?:mid|m)\/([^/]+)/i);
+    if (mp && mp[1]) return decodeURIComponent(mp[1]);
+    return null;
+  }
   function computeScale(box){
     const vw = innerWidth * MARGINS.vw;
     const vh = innerHeight * MARGINS.vh;
@@ -1343,7 +1349,6 @@ function wireGlobalUI(){
     return s;
   }
   function makeOverlay(){
-    // opruimen vorige overlay (fail-safe)
     const old = document.querySelector('.splash-overlay');
     if (old) old.remove();
     const overlay = document.createElement('div');
@@ -1364,7 +1369,6 @@ function wireGlobalUI(){
     const { overlay, stage } = makeOverlay();
     stage.appendChild(clone);
 
-    // schaal bepalen nadat clone is ingevoegd
     requestAnimationFrame(()=>{
       const rect = (stage.firstElementChild || stage).getBoundingClientRect();
       stage.style.setProperty('--splash-scale', String(computeScale(rect)));
@@ -1390,8 +1394,34 @@ function wireGlobalUI(){
     setTimeout(close, TIMES.hold);
   }
 
-  // Public API
+  // Publiek voor ⤢
   window.openNoteSplash = showSplash;
+
+  // Auto-open bij ?mid=… (precies 1× per sessie/tab)
+  function maybeAutoOpenOnce(){
+    if (!AUTO_OPEN_ON_MID) return;
+    const mid = getMID();
+    if (!mid) return;
+    const key = `splashShown:${mid}`;
+    if (sessionStorage.getItem(key)) return;   // al getoond in deze tab
+
+    Promise.resolve()
+      .then(waitFonts)
+      .then(()=> new Promise(r => setTimeout(r, 120))) // rustmomentje voor render
+      .then(()=>{
+        const live = findLiveNote();
+        if (!live) return;
+        showSplash();
+        sessionStorage.setItem(key, '1');
+      })
+      .catch(()=>{ /* stil falen */ });
+  }
+
+  if (document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', maybeAutoOpenOnce, { once:true });
+  } else {
+    maybeAutoOpenOnce();
+  }
 })();
 
 /* --------------------- B) BUTTONS (expand + about) ---------------------- */
