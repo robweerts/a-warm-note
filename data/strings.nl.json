@@ -1,0 +1,44 @@
+{
+  "lang": "nl",
+  "version": 1,
+  "strings": {
+    "app": {
+      "title": "a warm note to someone You care about",
+      "payoff": "Stuur iemand vandaag een warm berichtje."
+    },
+    "actions": {
+      "share": "Delen",
+      "whatsapp": "WhatsApp",
+      "email": "E-mail",
+      "download": "Download",
+      "copyLink": "Kopieer link"
+    },
+    "compose": {
+      "toLabel": "Voor",
+      "fromLabel": "Van",
+      "withNameCheckbox": "Met naam tonen",
+      "notePlaceholder": "Schrijf hier je warme noot…",
+      "pickSentiment": "Kies een gevoel"
+    },
+    "buttons": {
+      "another": "Nog een",
+      "send": "Verstuur",
+      "close": "Sluiten"
+    },
+    "shareSheet": {
+      "title": "Delen",
+      "footerShare": "Systeem delen",
+      "footerWhatsapp": "WhatsApp",
+      "footerEmail": "E-mail",
+      "footerDownload": "Download",
+      "footerCopy": "Kopieer link"
+    },
+    "about": {
+      "title": "Over",
+      "body": "A warm note… een klein bericht met groot effect."
+    },
+    "errors": {
+      "loadFailed": "Kon data niet laden. Probeer het later opnieuw."
+    }
+  }
+}

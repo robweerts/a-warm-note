@@ -1,23 +1,27 @@
-/* =============================================================================
-   a warm note — script.js (NL-only)  Copyright (c) 2025 Rob Weerts 
-   ---------------------------------------------------------------------------
-   Sectie-index (patch-handles):
-   [A] CONFIG & CONSTANTEN
-   [A+] THEME DETECT & KLEUREN
-   [B] DOM CACHE & HELPERS
-   [C] APP-STATE
-   [D] INIT (lifecycle)
-   [E] DATA-LADEN (messages.nl.json + fallback)
-   [F] SENTIMENT-CHIPS (max 10)
-   [G] DECK & RANDOMISATIE
-   [H] RENDERING (note & to/from)
-   [I] COMPOSE (inputs Voor/Van)
-   [J] COACH (microcopy)
-   [K] SHARE-SHEET (WA/E-mail/Download/Kopieer/Native)
-   [L] CONFETTI & TOASTS
-   [M] UTILITIES (URL, shuffle, etc.)
-   [N] ABOUT-DIALOOG
-============================================================================= */
+/* ==========================================================================
+ === SECTION INDEX (A…T) ===
+ [A] CONFIG & CONSTANTS           – toggles, paths, defaults
+ [A+] THEME & COLORS              – theme detection (Valentine/NewYear/Easter)
+ [B] DOM CACHE & HELPERS          – cache elements & micro-helpers
+ [C] APP STATE                    – central state (lang, messages, filters, deck)
+ [D] INIT (LIFECYCLE)             – bootstrap: wiring, load, welcome, first render
+ [E] DATA LOAD                    – fetch messages.<lang>.json (fallback to nl)
+ [F] SENTIMENT CHIPS              – build chips, filter handlers
+ [G] DECK & RANDOMIZATION         – weighted pool, anti-repeats
+ [H] RENDERING                    – note/paper render, wiggle, swipe-next
+ [I] COMPOSE                      – inputs To/From, localStorage for "From"
+ [J] COACH                        – microcopy states
+ [K] SHARE SHEET                  – open/close, actions (Link/WA/Mail/Download/Native/QR)
+ [L] CONFETTI & TOASTS            – celebrate, accessible motion
+ [M] UTILITIES                    – URL builders, throttles, misc helpers
+ [N] ABOUT DIALOG                 – open/close, ESC/backdrop
+ [O] DEBUG HARNESS                – ?debug=1 hooks
+ [P] GENERIC SHEET SWIPE          – swipe-to-close behavior
+ [Q] GLOBAL EVENT WIRING          – wiring buttons/handlers
+ [R] SPLASH OVERLAY               – open splash, clone note
+ [S] BUTTONS (EXPAND & ABOUT)     – topbar expand + about FAB
+ [T] MOBILE BOOT INTRO            – small mobile intro
+ ========================================================================== */
 
 /* [A] CONFIG & CONSTANTEN --------------------------------------------------- */
 const NL_ONLY_MODE       = true;
@@ -25,9 +29,26 @@ const CONFETTI_ENABLED   = true;
 const IS_FILE            = (location.protocol === "file:");
 const RECENT_LIMIT       = 5;
 const PAPER_COLORS       = ["#FFE66D","#FFD3B6","#C5FAD5","#CDE7FF","#FFECB3","#E1F5FE"];
-const MESSAGES_JSON_PATH = "messages.nl.json"; // optioneel; werkt ook zonder
 const MOTION = (new URLSearchParams(location.search).get('motion') || 'subtle').toLowerCase(); // 'subtle' | 'normal'
 document.documentElement.setAttribute("lang","nl");
+
+/* [A] PATCH A1: language helpers + path builder */
+const DEFAULT_LANG = 'nl';
+
+function resolveLang() {
+  try {
+    const p = new URL(location).searchParams.get('lang');
+    return (p && p.trim().toLowerCase()) || DEFAULT_LANG;
+  } catch {
+    return DEFAULT_LANG;
+  }
+}
+
+/* relatief pad werkt in root én submap-deployments */
+function messagesPathFor(lang) {
+  const ts = Date.now(); // simpele cache-bust
+  return `data/messages.${lang}.json?ts=${ts}`;
+}
 
 /* [A+] THEME DETECT & KLEUREN ---------------------------------------------- */
 const THEME = { NONE:'none', VALENTINE:'valentine', NEWYEAR:'newyear', EASTER:'easter' };
@@ -206,16 +227,71 @@ if (!localStorage.getItem("awarm_sentiment_hint")) {
 }
 
 /* [E] DATA-LADEN (messages.nl.json + fallback) ------------------------------ */
+
+/* === [E] DATA LOAD ================================== */
+/* Purpose: load /data/messages.<lang>.json with NL fallback
+   Notes  : - Behoudt jouw IS_FILE → fallbackMessages() gedrag
+            - Probeert eerst gewenste taal (?lang=.. of STATE.lang)
+            - Valt terug op NL; daarna (globale catch) op fallbackMessages()
+            - Werkt met relatieve paden (root én submap compatible)
+*/
+/* [D] taal kiezen en <html lang> syncen */
+STATE.lang = resolveLang();
+document.documentElement.setAttribute("lang", STATE.lang);
+
 async function loadMessages(){
-  if (IS_FILE) {
+  // 0) Offline/local file modus → jouw bestaande fallback
+  if (typeof IS_FILE !== 'undefined' && IS_FILE) {
     STATE.allMessages = fallbackMessages();
     STATE.sentiments  = deriveSentiments(STATE.allMessages);
     return;
   }
+
+  // Kleine helpers (alleen gebruiken als [A] ze niet definieert)
+  const _DEFAULT_LANG = (typeof DEFAULT_LANG !== 'undefined') ? DEFAULT_LANG : 'nl';
+  const _resolveLang  = (typeof resolveLang === 'function')
+    ? resolveLang
+    : () => {
+        try {
+          const p = new URL(location).searchParams.get('lang');
+          return (p && p.trim().toLowerCase()) || _DEFAULT_LANG;
+        } catch { return _DEFAULT_LANG; }
+      };
+  const _messagesPathFor = (typeof messagesPathFor === 'function')
+    ? messagesPathFor
+    : (lang) => `data/messages.${lang}.json?ts=${Date.now()}`;
+
   try{
-    const res = await fetch(MESSAGES_JSON_PATH, { cache:"no-store" });
-    if (!res.ok) throw new Error("HTTP " + res.status);
-    const data = await res.json();
+    /* 1) Kies gewenste taal en probeer die file te laden */
+    const wantLang = (STATE && STATE.lang) ? STATE.lang : _resolveLang();
+    let data = null;
+
+    try {
+      const resA = await fetch(_messagesPathFor(wantLang), { cache:"no-store" });
+      if (!resA.ok) throw new Error("HTTP " + resA.status);
+      data = await resA.json();
+      STATE.lang = wantLang;
+      console.debug('[i18n] loaded:', _messagesPathFor(wantLang));
+    } catch (e1) {
+      /* 2) Fallback naar NL (alleen als requested ≠ nl) */
+      if (wantLang !== 'nl') {
+        try {
+          const resB = await fetch(_messagesPathFor('nl'), { cache:"no-store" });
+          if (!resB.ok) throw new Error("HTTP " + resB.status);
+          data = await resB.json();
+          STATE.lang = 'nl';
+          console.warn('[i18n] fallback → nl:', e1?.message || e1);
+        } catch (e2) {
+          // Geen netwerkdata → laat globale catch de ingebouwde fallback doen
+          throw e2;
+        }
+      } else {
+        // Bij nl direct door naar globale catch → fallbackMessages()
+        throw e1;
+      }
+    }
+
+    /* === ONGEWIJZIGD: jouw normalisatie + sentiments afleiding === */
     const list = Array.isArray(data?.messages) ? data.messages : [];
     STATE.allMessages = list.map(m => ({
       id: m.id || null,
@@ -225,17 +301,26 @@ async function loadMessages(){
       special_day: m.special_day || null,
       weight: Number.isFinite(m.weight) ? m.weight : 1
     }));
-    const s = Array.isArray(data?.sentiments) ? data.sentiments : deriveSentiments(STATE.allMessages);
-    STATE.sentiments = (s || []).slice(0,10);
+
+    const s = Array.isArray(data?.sentiments)
+      ? data.sentiments
+      : deriveSentiments(STATE.allMessages);
+
+    STATE.sentiments = (s || []).slice(0, 10);
+
+    // Safety-net: leeg? → ingebouwde fallback
     if (!STATE.allMessages.length) {
       STATE.allMessages = fallbackMessages();
       STATE.sentiments  = deriveSentiments(STATE.allMessages);
     }
-  }catch(e){
+  } catch(e){
+    // Globale fallback: jouw bestaande lijst
     STATE.allMessages = fallbackMessages();
     STATE.sentiments  = deriveSentiments(STATE.allMessages);
   }
 }
+
+/* === ONGEWIJZIGD: ingebouwde fallback =========================== */
 
 function fallbackMessages(){
   return [
@@ -251,7 +336,6 @@ function fallbackMessages(){
     { id: "fallback_010", icon:"☕", text:"Neem je tijd. Je mag traag beginnen.",                 sentiments:["kalmte"],                 weight:1 }
   ];
 }
-
 
 /* [F] SENTIMENT-CHIPS (max 10) --------------------------------------------- */
 function buildSentimentChips(){
@@ -927,19 +1011,39 @@ function lowerFirst(s){ return s ? s.charAt(0).toLowerCase() + s.slice(1) : s; }
 function prefersReducedMotion(){
   return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
+
+
+/* === [M] UTILITIES ================================ */
+/* [M] PATCH 3: share current language
+   - Neemt de actieve taal mee in de gedeelde URL
+   - Laat overige query params (to/from/mid) intact
+*/
 function buildSharedURL(){
   const u = new URL(location.href);
-  const to = getTo(), from = getFrom();
-  to ? u.searchParams.set("to", to) : u.searchParams.delete("to");
-  from ? u.searchParams.set("from", from) : u.searchParams.delete("from");
-  u.searchParams.set("lang","nl");
 
+  // to/from updaten op basis van huidige compose-waarden
+  const to = getTo();
+  const from = getFrom();
+  to   ? u.searchParams.set("to", to)     : u.searchParams.delete("to");
+  from ? u.searchParams.set("from", from) : u.searchParams.delete("from");
+
+  // << PATCH 3: taal uit STATE.lang of resolver >>
+  u.searchParams.set(
+    "lang",
+    (typeof STATE !== "undefined" && STATE.lang) ? STATE.lang : resolveLang()
+  );
+
+  // huidige message-id (mid) meesturen als die bekend is
   const idx = STATE.currentIdx;
   if (idx != null && STATE.allMessages[idx] && STATE.allMessages[idx].id) {
     u.searchParams.set("mid", STATE.allMessages[idx].id);
+  } else {
+    u.searchParams.delete("mid"); // schoon houden wanneer geen selectie
   }
-  return u;
+
+  return u; // elders kun je u.toString() gebruiken indien string nodig is
 }
+
 function capitalize(s){ return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
 
 function throttle(fn, wait){

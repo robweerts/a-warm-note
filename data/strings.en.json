@@ -1,0 +1,44 @@
+{
+  "lang": "en",
+  "version": 1,
+  "strings": {
+    "app": {
+      "title": "a warm note to someone You care about",
+      "payoff": "Send someone a warm note today."
+    },
+    "actions": {
+      "share": "Share",
+      "whatsapp": "WhatsApp",
+      "email": "Email",
+      "download": "Download",
+      "copyLink": "Copy link"
+    },
+    "compose": {
+      "toLabel": "To",
+      "fromLabel": "From",
+      "withNameCheckbox": "Show my name",
+      "notePlaceholder": "Write your warm note here…",
+      "pickSentiment": "Pick a sentiment"
+    },
+    "buttons": {
+      "another": "Another",
+      "send": "Send",
+      "close": "Close"
+    },
+    "shareSheet": {
+      "title": "Share",
+      "footerShare": "System share",
+      "footerWhatsapp": "WhatsApp",
+      "footerEmail": "Email",
+      "footerDownload": "Download",
+      "footerCopy": "Copy link"
+    },
+    "about": {
+      "title": "About",
+      "body": "A warm note… a small message with a big impact."
+    },
+    "errors": {
+      "loadFailed": "Couldn’t load data. Please try again later."
+    }
+  }
+}
