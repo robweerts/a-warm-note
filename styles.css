@@ -374,6 +374,49 @@ body::before{
 }
 .splash-overlay.is-in { opacity: 1; transform: scale(1); }
 
+/* === Fade achter de splash ============================================== */
+.splash-overlay{
+  position: fixed;
+  inset: 0;
+  z-index: 100000;                 /* boven app UI */
+  display: grid;
+  place-items: center;
+  /* begin transparant, geen blur */
+  background: rgba(0,0,0,0);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  opacity: 0;
+  transition:
+    background .28s ease,
+    backdrop-filter .28s ease,
+    -webkit-backdrop-filter .28s ease,
+    opacity .28s ease;
+}
+
+/* wanneer splash actief is (JS voegt .is-in toe) */
+.splash-overlay.is-in{
+  /* zachte dim — pas de alpha naar smaak aan (0.20–0.40) */
+  background: rgba(0,0,0,.28);
+  /* optioneel subtiele blur achter de note */
+  backdrop-filter: saturate(1.05) blur(4px);
+  -webkit-backdrop-filter: saturate(1.05) blur(4px);
+  opacity: 1;
+}
+
+/* Het canvas dat jouw note-clone bevat, blijft zoals je had */
+.splash-stage{
+  transform: translate3d(0,0,0) scale(var(--splash-scale, 1));
+  will-change: transform;
+}
+
+/* Respect voor reduced motion */
+@media (prefers-reduced-motion: reduce){
+  .splash-overlay{
+    transition: opacity .2s ease;       /* geen zware animaties */
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+}
 .splash-stage {
   position: relative;
   transform-origin: center center;
@@ -529,6 +572,20 @@ button[data-action="expand-note"].is-hot::after{
 }
 
 /* ===== Mobile Boot Intro ===== */
+/* Basis: desktop = uit */
+.intro-boot { display: none; }
+
+/* Alleen op mobiel tonen en positioneren */
+@media (max-width: 768px) {
+  .intro-boot {
+    display: grid;
+    position: fixed; inset: 0; z-index: 100000;
+    place-items: center;
+    background: var(--boot-bg, #fffef8);
+    color: var(--boot-fg, #2a2a2a);
+    transition: opacity .32s ease, visibility .32s ease;
+  }
+}
 @media (max-width: 768px) {
   .intro-boot{
     position: fixed; inset: 0; z-index: 100000;  /* boven alles, hoger dan note-splash */
@@ -576,3 +633,7 @@ button[data-action="expand-note"].is-hot::after{
 @media (prefers-color-scheme: dark) {
   .intro-boot{ --boot-bg: #0f0f0f; --boot-fg: #f5f5f5; }
 }
+/* Hotfix: 'Verstuur' niet vol-zwart, icon nooit geknipt */
+#btn-share { background: rgba(255,255,255,.10); line-height: 1; }
+#btn-share, #btn-share * { overflow: visible; }
+#btn-share svg { width: 20px; height: 20px; display: block; }
