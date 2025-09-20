@@ -2,43 +2,68 @@
   "lang": "nl",
   "version": 1,
   "strings": {
-    "app": {
-      "title": "a warm note to someone You care about",
-      "payoff": "Stuur iemand vandaag een warm berichtje."
-    },
     "actions": {
-      "share": "Delen",
-      "whatsapp": "WhatsApp",
+      "new": "Nieuwe boodschap",
+      "install": "Installeer",
+      "share": "Verstuur",
       "email": "E-mail",
+      "whatsapp": "WhatsApp",
+      "copy": "Kopieer link",
       "download": "Download",
-      "copyLink": "Kopieer link"
-    },
-    "compose": {
-      "toLabel": "Voor",
-      "fromLabel": "Van",
-      "withNameCheckbox": "Met naam tonen",
-      "notePlaceholder": "Schrijf hier je warme noot…",
-      "pickSentiment": "Kies een gevoel"
-    },
-    "buttons": {
-      "another": "Nog een",
-      "send": "Verstuur",
+      "messenger": "Messenger",
+      "qr": "QR-code",
       "close": "Sluiten"
     },
-    "shareSheet": {
-      "title": "Delen",
-      "footerShare": "Systeem delen",
-      "footerWhatsapp": "WhatsApp",
-      "footerEmail": "E-mail",
-      "footerDownload": "Download",
-      "footerCopy": "Kopieer link"
+    "share": {
+      "sheetTitle": "Verstuur je boodschap",
+      "shareLabel": "Deel via",
+      "copyPrompt": "Kopieer link",
+      "copiedToast": "Link gekopieerd 📋",
+      "messengerPrompt": "Kopieer deze link en plak straks in Messenger:",
+      "messengerCopied": "Link van jouw persoonlijke bericht is gekopieerd. 📋"
+    },
+    "toast": {
+    "copied": "Link gekopieerd 📋",
+    "whatsappOpened": "WhatsApp geopend 📲",
+    "emailOpened": "E-mail geopend ✉️",
+    "downloadStart": "Afbeelding wordt opgeslagen ⬇️",
+    "downloadUnavailable": "Download niet beschikbaar",
+    "shared": "Gedeeld 💛",
+    "shareCancelled": "Delen geannuleerd",
+    "messengerCopied": "Link van jouw persoonlijke bericht is gekopieerd. 📋",
+    "toRequired": "Vul eerst in voor wie dit is 💛",
+    "newLoaded": "Nieuwe boodschap geladen ✨"
+    },
+    "compose": {
+      "to": "Voor",
+      "from": "Van",
+      "toPlaceholder": "Voor wie?",
+      "fromPlaceholder": "Van jou (optioneel)"
+    },
+    "qr": {
+      "title": "QR-code",
+      "hint": "Scan deze code met je telefoon om de note te openen.",
+      "download": "Download QR"
+    },
+    "messenger": {
+      "title": "Messenger",
+      "notice": "Link van jouw persoonlijke bericht is gekopieerd. 📋",
+      "steps": [
+        "Kies een contact in Messenger.",
+        "Plak de link in het berichtveld.",
+        "Verstuur je warme note. 💛"
+      ],
+      "open": "Open Messenger"
     },
     "about": {
-      "title": "Over",
-      "body": "A warm note… een klein bericht met groot effect."
+      "title": "Over deze site",
+      "p1_strong": "a warm note — to someone you care about",
+      "p2": "Kleine kattebelletjes met grote betekenis. Een app waar je liefdevolle, grappige of bemoedigende notities kunt sturen. Even, al is het maar kort, laten weten dat je aan iemand denkt.",
+      "tag": "Iets kleins, veel betekenis",
+      "fabLabel": "Over deze site"
     },
-    "errors": {
-      "loadFailed": "Kon data niet laden. Probeer het later opnieuw."
+    "intro": {
+      "hint": "Tip: swipe door de Gevoelens & Boodschap →"
     }
   }
 }

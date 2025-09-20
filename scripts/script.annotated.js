@@ -29,32 +29,9 @@ const CONFETTI_ENABLED   = true;
 const IS_FILE            = (location.protocol === "file:");
 const RECENT_LIMIT       = 5;
 const PAPER_COLORS       = ["#FFE66D","#FFD3B6","#C5FAD5","#CDE7FF","#FFECB3","#E1F5FE"];
+const MESSAGES_JSON_PATH = "messages.nl.json"; // optioneel; werkt ook zonder
 const MOTION = (new URLSearchParams(location.search).get('motion') || 'subtle').toLowerCase(); // 'subtle' | 'normal'
 document.documentElement.setAttribute("lang","nl");
-
-/* [A] resolveLang met prioriteit: URL > localStorage > browser > default */
-const DEFAULT_LANG = 'nl';
-
-function resolveLang() {
-  try {
-    const urlLang = new URL(location.href).searchParams.get('lang');
-    if (urlLang) return urlLang.trim().toLowerCase();
-
-    const stored = localStorage.getItem('prefLang');
-    if (stored) return stored.trim().toLowerCase();
-
-    const nav = (navigator.language || navigator.userLanguage || 'nl').slice(0,2).toLowerCase();
-    return nav || DEFAULT_LANG;
-  } catch {
-    return DEFAULT_LANG;
-  }
-}
-
-/* relatief pad werkt in root én submap-deployments */
-function messagesPathFor(lang) {
-  const ts = Date.now(); // simpele cache-bust
-  return `data/messages.${lang}.json?ts=${ts}`;
-}
 
 /* [A+] THEME DETECT & KLEUREN ---------------------------------------------- */
 const THEME = { NONE:'none', VALENTINE:'valentine', NEWYEAR:'newyear', EASTER:'easter' };
@@ -151,38 +128,23 @@ function autoCapitalizeInput(input) {
 }
 
 function init() {
-  /* [D] taal initialiseren en <html lang> syncen */
-  STATE.lang = resolveLang();
-  document.documentElement.setAttribute('lang', STATE.lang);
-  
-  if (typeof installComposeAutoLocalizer === 'function') {
-  installComposeAutoLocalizer();
-}
-
   recacheEls();
   wireGlobalUI();
-  if (typeof wireLanguagePicker === 'function') wireLanguagePicker();
-
-  /* [D] eerst UI-strings laden, dán messages (voor meertalige toasts/prompts) */
-  ensureStringsLoaded()
-    .then(() => {
-      // [D] PATCH: UI labels/aria direct updaten vanuit strings.{lang}.json
-      if (typeof refreshUIStrings === 'function') refreshUIStrings();
-      // daarna pas messages inladen
-      return loadMessages();
-    })
+  loadMessages()
     .then(() => {
       buildSentimentChips();
+
+      autoCapitalizeInput(els.toInput);
       autoCapitalizeInput(els.fromInput);
 
       const qp = new URLSearchParams(location.search);
-      const toVal     = qp.get('to');
-      const fromVal   = qp.get('from');
+      const toVal = qp.get('to');
+      const fromVal = qp.get('from');
       const sharedMid = qp.get('mid');
-      const sharedId  = qp.get('id');
+      const sharedId = qp.get('id');
 
-      if (toVal && els.toInput)      els.toInput.value = toVal;
-      if (fromVal && els.fromInput)  els.fromInput.value = fromVal;
+      if (toVal && els.toInput) els.toInput.value = toVal;
+      if (fromVal && els.fromInput) els.fromInput.value = fromVal;
 
       // Welkomstboodschap of direct renderen
       if (!showWelcomeIfRelevant(els)) {
@@ -198,7 +160,6 @@ function init() {
           renderMessage({ newRandom: true, wiggle: false });
         }
       }
-      // Coach laten we nu even voor wat het is; call blijft staan
       updateCoach(currentCoachState());
     })
     .catch((e) => {
@@ -209,7 +170,7 @@ function init() {
 // Start pas wanneer DOM klaar is
 window.addEventListener("DOMContentLoaded", init);
 
-// PWA: "Installeren" APP knop tonen wanneer toegestaan
+// PWA: "Installeren" knop tonen wanneer toegestaan
 let __deferredPrompt = null;
 window.addEventListener('beforeinstallprompt', (e)=>{
   e.preventDefault();
@@ -248,64 +209,20 @@ if (!localStorage.getItem("awarm_sentiment_hint")) {
   try { localStorage.setItem("awarm_sentiment_hint","1"); } catch {}
 }
 
-STATE.lang = resolveLang();
-document.documentElement.setAttribute("lang", STATE.lang);
-
-/* === [E] DATA LOAD ================================== */
-
+/* [E] DATA-LADEN (messages.nl.json + fallback) ------------------------------ */
 async function loadMessages(){
-  // 0) Offline/local file modus → jouw bestaande fallback
-  if (typeof IS_FILE !== 'undefined' && IS_FILE) {
+  if (IS_FILE) {
     STATE.allMessages = fallbackMessages();
     STATE.sentiments  = deriveSentiments(STATE.allMessages);
     return;
   }
-
-  // Kleine helpers (alleen gebruiken als [A] ze niet definieert)
-  const _DEFAULT_LANG = (typeof DEFAULT_LANG !== 'undefined') ? DEFAULT_LANG : 'nl';
-  const _resolveLang  = (typeof resolveLang === 'function')
-    ? resolveLang
-    : () => {
-        try {
-          const p = new URL(location).searchParams.get('lang');
-          return (p && p.trim().toLowerCase()) || _DEFAULT_LANG;
-        } catch { return _DEFAULT_LANG; }
-      };
-  const _messagesPathFor = (typeof messagesPathFor === 'function')
-    ? messagesPathFor
-    : (lang) => `data/messages.${lang}.json?ts=${Date.now()}`;
-
   try{
-    /* 1) Kies gewenste taal en probeer die file te laden */
-    const wantLang = (STATE && STATE.lang) ? STATE.lang : _resolveLang();
-    let data = null;
+    const res = await fetch(MESSAGES_JSON_PATH, { cache:"no-store" });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const data = await res.json();
+/* [E] Set active lang after successful load */
+try { STATE.lang = resolveLang(); } catch {}
 
-    try {
-      const resA = await fetch(_messagesPathFor(wantLang), { cache:"no-store" });
-      if (!resA.ok) throw new Error("HTTP " + resA.status);
-      data = await resA.json();
-      STATE.lang = wantLang;
-      console.debug('[i18n] loaded:', _messagesPathFor(wantLang));
-    } catch (e1) {
-      /* 2) Fallback naar NL (alleen als requested ≠ nl) */
-      if (wantLang !== 'nl') {
-        try {
-          const resB = await fetch(_messagesPathFor('nl'), { cache:"no-store" });
-          if (!resB.ok) throw new Error("HTTP " + resB.status);
-          data = await resB.json();
-          STATE.lang = 'nl';
-          console.warn('[i18n] fallback → nl:', e1?.message || e1);
-        } catch (e2) {
-          // Geen netwerkdata → laat globale catch de ingebouwde fallback doen
-          throw e2;
-        }
-      } else {
-        // Bij nl direct door naar globale catch → fallbackMessages()
-        throw e1;
-      }
-    }
-
-    /* === ONGEWIJZIGD: jouw normalisatie + sentiments afleiding === */
     const list = Array.isArray(data?.messages) ? data.messages : [];
     STATE.allMessages = list.map(m => ({
       id: m.id || null,
@@ -315,26 +232,17 @@ async function loadMessages(){
       special_day: m.special_day || null,
       weight: Number.isFinite(m.weight) ? m.weight : 1
     }));
-
-    const s = Array.isArray(data?.sentiments)
-      ? data.sentiments
-      : deriveSentiments(STATE.allMessages);
-
-    STATE.sentiments = (s || []).slice(0, 10);
-
-    // Safety-net: leeg? → ingebouwde fallback
+    const s = Array.isArray(data?.sentiments) ? data.sentiments : deriveSentiments(STATE.allMessages);
+    STATE.sentiments = (s || []).slice(0,10);
     if (!STATE.allMessages.length) {
       STATE.allMessages = fallbackMessages();
       STATE.sentiments  = deriveSentiments(STATE.allMessages);
     }
-  } catch(e){
-    // Globale fallback: jouw bestaande lijst
+  }catch(e){
     STATE.allMessages = fallbackMessages();
     STATE.sentiments  = deriveSentiments(STATE.allMessages);
   }
 }
-
-/* === ingebouwde fallback =========================== */
 
 function fallbackMessages(){
   return [
@@ -350,6 +258,7 @@ function fallbackMessages(){
     { id: "fallback_010", icon:"☕", text:"Neem je tijd. Je mag traag beginnen.",                 sentiments:["kalmte"],                 weight:1 }
   ];
 }
+
 
 /* [F] SENTIMENT-CHIPS (max 10) --------------------------------------------- */
 function buildSentimentChips(){
@@ -653,8 +562,8 @@ function renderToFrom(){
 
 /**
  * Toon een welkomstboodschap voor nieuwe bezoekers,
- * tenzij ze via een directe boodschap (mid/id in URL) komen.*/
-
+ * tenzij ze via een directe boodschap (mid/id in URL) komen.
+ */
 function showWelcomeIfRelevant(els) {
   const qp = new URLSearchParams(location.search);
   const isDirectMessage = qp.has('mid') || qp.has('id');
@@ -676,24 +585,6 @@ function showWelcomeIfRelevant(els) {
 }
 
 /* [I] COMPOSE (inputs Voor/Van) -------------------------------------------- */
-
-function toLabel(name){
-  if (!name) return "";
-  // 1) probeer t('compose.to'); 2) anders EN/NL fallback
-  const base =
-    (typeof t === 'function' && t('compose.to')) ||
-    (((STATE?.lang) || resolveLang()) === 'en' ? 'To' : 'Voor');
-  return `${base} ${name}`;
-}
-
-function fromLabel(name){
-  if (!name) return "";
-  const base =
-    (typeof t === 'function' && t('compose.from')) ||
-    (((STATE?.lang) || resolveLang()) === 'en' ? 'From' : 'Van');
-  return `${base} ${name}`;
-}
-
 function onComposeEdit(){
   renderToFrom();
   updateCoach(currentCoachState());
@@ -713,50 +604,25 @@ try{
   });
 }catch{}
 
-/* === [J] COACH ====================================== */
-
+/* [J] COACH (microcopy) */
 function currentCoachState(){ return getTo() ? "toFilled" : "init"; }
-
-/* [J] PATCH: updateCoach meertalig (zelfde functienaam) */
 function updateCoach(state){
   if (!els.coach) return;
-
   const theme = getActiveTheme();
-  const lang  = (STATE?.lang) || resolveLang();
-  const isEn  = (lang === 'en');
+  const themedInit = (theme===THEME.VALENTINE) ? "Fijne Valentijn 💛 Kies een gevoel en verstuur je note." :
+                     (theme===THEME.NEWYEAR)   ? "Nieuw begin ✨ Kies een gevoel en verstuur je note." :
+                     (theme===THEME.EASTER)    ? "Zacht begin 🐣 Kies een gevoel en verstuur je note." : null;
 
-  // Thematisch openingszinnetje (EN/NL)
-  const themedInit = (theme===THEME.VALENTINE)
-    ? (isEn ? "Happy Valentine 💛 Pick a feeling and send your note."
-            : "Fijne Valentijn 💛 Kies een gevoel en verstuur je note.")
-    : (theme===THEME.NEWYEAR)
-      ? (isEn ? "Fresh start ✨ Pick a feeling and send your note."
-              : "Nieuw begin ✨ Kies een gevoel en verstuur je note.")
-      : (theme===THEME.EASTER)
-        ? (isEn ? "Gentle start 🐣 Pick a feeling and send your note."
-                : "Zacht begin 🐣 Kies een gevoel en verstuur je note.")
-        : null;
-
-  // Basis-copy (EN/NL), inline zodat we geen extra helper hoeven te introduceren
-  const copy = isEn ? {
-    init:    themedInit || "Pick a feeling and send your note.",
-    toFilled:`Nice! Click <button type="button" class="coach-inline">Send</button> to share your message.`,
-    shared:  "Your message has been sent 💛 Make another one?"
-  } : {
-    init:    themedInit || "Kies een gevoel en verstuur je note.",
-    toFilled:`Mooi! Klik <button type="button" class="coach-inline">Verstuur</button> om je boodschap te delen.`,
-    shared:  "Je boodschap is verstuurd 💛 Nog eentje maken?"
+  const copy = {
+    init: themedInit || "Kies een gevoel en verstuur je note.",
+    toFilled: `Mooi! Klik <button type="button" class="coach-inline">Verstuur</button> om je boodschap te delen.`,
+    shared: "Je boodschap is verstuurd 💛 Nog eentje maken?"
   };
 
-  // Render op basis van state
-  let html;
-  switch (state) {
-    case 'toFilled': html = copy.toFilled; break;
-    case 'shared'  : html = copy.shared;   break;
-    case 'init':
-    default        : html = copy.init;
-  }
-  els.coach.innerHTML = html;
+  const html = copy[state] || copy.init;
+  const t = els.coach.querySelector(".coach-text");
+  if (t) t.innerHTML = html;
+  els.coach.classList.remove("hidden");
 }
 
 /* [K] SHARE-SHEET (WA/E-mail/Download/Kopieer/Native) ---------------------- */
@@ -768,7 +634,6 @@ function trapFocusIn(el, e){
   if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
   else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
 }
-
 function openShareSheet(){
   renderShareSheetPairsInline();
   if (!els.sheet) return;
@@ -783,7 +648,6 @@ function openShareSheet(){
   };
   document.addEventListener('keydown', els._sheetKey);
 }
-
 function closeShareSheet(){
   if (!els.sheet) return;
   els.sheet.classList.add("hidden");
@@ -815,73 +679,40 @@ function renderShareSheetPairsInline(){
   els.pairToVal  && (els.pairToVal.textContent   = toLabel(getTo())     || "—");
   els.pairFromVal&& (els.pairFromVal.textContent = fromLabel(getFrom()) || "—");
 }
-
-/* PATCH: onCopyLink → meertalig prompt + toast */
 async function onCopyLink(){
-  const url  = buildSharedURL().toString();
-  const lang = (STATE?.lang) || resolveLang();
-
-  // mini vertaaltafel (alleen wat we hier nodig hebben)
-  const i18n = (lang === 'en')
-    ? { prompt: 'Copy link', toast: 'Link copied 📋' }
-    : { prompt: 'Kopieer link', toast: 'Link gekopieerd 📋' };
-
-  try {
-    await navigator.clipboard.writeText(url);
-  } catch {
-    // Fallback prompt (kan in sommige browsers verdwijnen — prima als laatste redmiddel)
-    prompt(i18n.prompt, url);
-  }
-
-  showToast(i18n.toast);
+  const url = buildSharedURL().toString();
+  try { await navigator.clipboard.writeText(url); }
+  catch { prompt("Kopieer link", url); }
+  showToast("Link gekopieerd 📋");
   closeShareSheet();
 }
-/* WhatsApp share → gebruikt meertalige whatsapp.js API (shareByWhatsApp) */
-function onShareWhatsApp() {
-  const lang    = (STATE?.lang) || resolveLang();
-  const toName  = (typeof getTo === 'function')   ? getTo()   : '';
-  const permalink = (typeof buildSharedURL === 'function')
-    ? buildSharedURL().toString()
-    : location.href;
-
-  if (typeof window.shareByWhatsApp === 'function') {
-    window.shareByWhatsApp({ lang, toName, permalink });
+function onShareWhatsApp(){
+  const url = buildSharedURL().toString();
+  if (typeof window.shareByWhatsApp === "function") {
+    window.shareByWhatsApp({ lang:"nl", toName:getTo(), permalink:url });
   } else {
-    console.warn('[share] shareByWhatsApp() ontbreekt');
+    window.open(`https://wa.me/?text=${encodeURIComponent(`Voor ${getTo()||"jou"} — omdat jij belangrijk voor me bent. 💛 ${url}`)}`,"_blank","noopener");
   }
-
-showToastI18n('toast.whatsappOpened','WhatsApp geopend 📲');
+  showToast("WhatsApp geopend 📲");
   celebrate();
   closeShareSheet();
   afterShareSuccess();
 }
-
-/* Backwards-compat alias als er nog oude calls bestaan */
-window.onShareWhatsApp = onShareWhatsApp;
-window.shareViaWhatsApp = onShareWhatsApp;
-
-/* E-mail share → gebruikt je meertalige mail.js API (shareByEmail) */
-function onShareEmail() {
-  const lang = (STATE?.lang) || resolveLang();
-  const toName = (typeof getTo === 'function') ? getTo() : '';
-  const fromName = (typeof getFrom === 'function') ? getFrom() : '';
-
-  // Permalink met juiste lang/mid
-  const permalink = (typeof buildSharedURL === 'function')
-    ? buildSharedURL().toString()
-    : location.href;
-
-  if (typeof window.shareByEmail === 'function') {
-    window.shareByEmail({ lang, toName, fromName, permalink });
+function onShareEmail(){
+  const url = buildSharedURL().toString();
+  const noteText = els.msg?.textContent || "";
+  if (typeof window.shareByEmail === "function") {
+    window.shareByEmail({ lang:"nl", toName:getTo(), fromName:getFrom(), noteText, permalink:url });
   } else {
-    console.warn('[share] shareByEmail() ontbreekt');
+    const subject = encodeURIComponent(getTo() ? `Een warme note voor ${getTo()}` : `Een warme note voor jou`);
+    const body = encodeURIComponent(`${getTo()?`Voor ${getTo()},\n\n`:""}${noteText}\n\n${getFrom()?`— van ${getFrom()}`:""}\n\nBekijk de note: ${url}`);
+    location.href = `mailto:?subject=${subject}&body=${body}`;
   }
-showToastI18n('toast.emailOpened','E-mail geopend ✉️');
+  showToast("E-mail geopend ✉️");
   celebrate();
   closeShareSheet();
   afterShareSuccess();
 }
-
 function onDownload(){
   if (typeof window.downloadNoteAsImage === "function") {
     window.downloadNoteAsImage(
@@ -890,23 +721,23 @@ function onDownload(){
       (_l,n)=> n?`Van ${n}`:"",
       getTo, getFrom
     );
-	showToastI18n('toast.downloadStart','Afbeelding wordt opgeslagen ⬇️');
+    showToast("Afbeelding wordt opgeslagen ⬇️");
     celebrate();
   } else {
-	showToastI18n('toast.downloadUnavailable','Download niet beschikbaar');  }
-	closeShareSheet();
-	afterShareSuccess();
+    showToast("Download niet beschikbaar");
+  }
+  closeShareSheet();
+  afterShareSuccess();
 }
-
 async function onNativeShare(){
   const shareURL = buildSharedURL().toString();
   if (navigator.share) {
     try {
       await navigator.share({ title:"a warm note", text:"Een warm bericht voor jou 💛", url:shareURL });
-	  showToastI18n('toast.shared','Gedeeld 💛');
+      showToast("Gedeeld 💛");
       celebrate();
     } catch {
-      showToastI18n('toast.shareCancelled','Delen geannuleerd');
+      showToast("Delen geannuleerd");
     }
   } else {
     await onCopyLink();
@@ -915,17 +746,14 @@ async function onNativeShare(){
 }
 
 function onShareMessenger(){
-  const url  = buildSharedURL().toString();
-  const lang = (STATE?.lang) || resolveLang();
-  const i18n = (lang === 'en')
-    ? { toast: 'Link to your personal note has been copied. 📋',
-        prompt: 'Copy this link and paste it in Messenger:' }
-    : { toast: 'Link van jouw persoonlijke bericht is gekopieerd. 📋',
-        prompt: 'Kopieer deze link en plak straks in Messenger:' };
-
+  const url = buildSharedURL().toString();
   (async () => {
-    try { await navigator.clipboard.writeText(url); showToast(i18n.toast); }
-    catch { prompt(i18n.prompt, url); }
+    try {
+      await navigator.clipboard.writeText(url);
+      showToast("Link van jouw persoonlijke bericht is gekopieerd. 📋");
+    } catch {
+      prompt("Kopieer deze link en plak straks in Messenger:", url);
+    }
     closeShareSheet();
     openMessengerHelp();
   })();
@@ -977,6 +805,7 @@ async function renderWithLib(link){
   });
   return true;
 }
+
 // Fallback naar QR-afbeelding (extern endpoint)
 async function renderWithImg(link){
   const size = 240;
@@ -1027,7 +856,7 @@ async function onShareQR(){
   if (cp){
     cp.replaceWith(cp.cloneNode(true));
     document.getElementById('qr-copy').addEventListener('click', async ()=>{
-      try { await navigator.clipboard.writeText(link); toast('share.copiedToast','Link gekopieerd 📋'); }
+      try { await navigator.clipboard.writeText(link); showToast?.('Link gekopieerd 📋'); }
       catch { prompt('Kopieer link:', link); }
     }, { once:true });
   }
@@ -1070,9 +899,6 @@ function celebrate(){
   const live = $("confetti-layer");
   if (live) live.textContent = "Viering: note verstuurd.";
 }
-
-/* [M] UTILITIES (URL, shuffle, etc.) --------------------------------------- */
-
 function showToast(msg){
   if (!els.toast) return;
   els.toast.textContent = msg;
@@ -1081,24 +907,12 @@ function showToast(msg){
   showToast.__t = setTimeout(()=> els.toast.classList.add("hidden"), 3600);
 }
 
-// Alleen te gebruiken voor echte toasts (deliberate user feedback)
-function showToastI18n(key, fallback){
-  // Alleen keys uit 'toast.*' of 'share.*' accepteren
-  if (!/^toast\.|^share\./.test(String(key || ''))) {
-    // bescherm tegen per ongeluk gebruik in UI-label code
-    return;
-  }
-  try {
-    if (typeof t === 'function') {
-      const msg = t(key);
-      if (typeof msg === 'string' && msg) return showToast(msg);
-    }
-  } catch {}
-  if (fallback) return showToast(fallback);
-}
-
+/* [M] UTILITIES (URL, shuffle, etc.) --------------------------------------- */
 function getTo(){   return (els.toInput?.value || "").trim(); }
 function getFrom(){ return (els.fromInput?.value || "").trim(); }
+
+function toLabel(name){   return name ? `Voor ${name}` : ""; }
+function fromLabel(name){ return name ? `Van ${name}` : ""; }
 
 function personalize(text){
   const to = getTo();
@@ -1120,222 +934,19 @@ function lowerFirst(s){ return s ? s.charAt(0).toLowerCase() + s.slice(1) : s; }
 function prefersReducedMotion(){
   return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
-
-
-/* === [M] UTILITIES ================================ */
-/* Mini i18n: t('path.to.key', {vars}) met NL-fallback */
-let STRINGS = null;          // actieve taal
-let STRINGS_FALLBACK = null; // nl-fallback
-
-function interpolate(str, vars) {
-  if (!vars) return str;
-  return str.replace(/\{\{(\w+)\}\}/g, (_, k) => (vars[k] ?? ''));
-}
-function readPath(obj, path) {
-  return path.split('.').reduce((o,k)=> (o && o[k] != null ? o[k] : null), obj);
-}
-function t(key, vars) {
-  const v = readPath(STRINGS?.strings, key) ?? readPath(STRINGS_FALLBACK?.strings, key) ?? key;
-  return typeof v === 'string' ? interpolate(v, vars) : v;
-}
-
-/* Strings laden (relatief pad; submap-vriendelijk) */
-async function loadStrings(lang) {
-  const url = `data/strings.${lang}.json?ts=${Date.now()}`;
-  const res = await fetch(url, { cache: 'no-store' });
-  if (!res.ok) throw new Error('strings not found');
-  return res.json();
-}
-async function ensureStringsLoaded() {
-  const lang = STATE?.lang || resolveLang();
-  try { STRINGS = await loadStrings(lang); }
-  catch { STRINGS = await loadStrings('nl'); }
-  // Fallbackbuffer (nl), tenzij we al nl zijn
-  STRINGS_FALLBACK = (lang === 'nl') ? STRINGS : await loadStrings('nl').catch(()=>STRINGS);
-}
-/* refreshUIStrings: schrijf labels/aria vanuit strings.{lang}.json (HTML-aware) */
-function refreshUIStrings() {
-  // Topbar – Share-knop: alleen zichtbare label-span updaten
-  const btnShare = document.getElementById('btn-share');
-  if (btnShare) {
-    btnShare.setAttribute('aria-label', t('actions.share'));
-    const lbl = btnShare.querySelector('.btn-label');
-    if (lbl) lbl.textContent = t('actions.share'); // "Verstuur" / "Share"
-  }
-  // Topbar – Nieuwe boodschap
-  // Probeer #btn-new, val terug op data-attr/selectors als jouw HTML anders is
-  const btnNew = document.getElementById('btn-new')
-             || document.querySelector('[data-action="new"]')
-             || document.querySelector('#new');
-  if (btnNew) {
-    btnNew.setAttribute('aria-label', t('actions.new'));
-    const lbl = btnNew.querySelector('.btn-label');
-    if (lbl) lbl.textContent = t('actions.new'); // "Nieuwe boodschap" / "New message"
-  }
-
-  // Topbar – Installeer (PWA)
-  // Mogelijke ids/classes; kies wat bij jouw HTML past
-  const btnInstall = document.getElementById('btn-install')
-                    || document.querySelector('[data-install]')
-                    || document.getElementById('install');
-  if (btnInstall) {
-    btnInstall.setAttribute('aria-label', t('actions.install'));
-    const lbl = btnInstall.querySelector('.btn-label');
-    if (lbl) lbl.textContent = t('actions.install'); // "Installeer" / "Install"
-    // Als de knop enkel tekst heeft:
-    if (!lbl && btnInstall.childElementCount === 0) {
-      btnInstall.textContent = t('actions.install');
-    }
-  }
-  // === Compose placeholders (multilanguage) ===
-  if (els?.toInput) {
-    els.toInput.setAttribute('placeholder', t('compose.toPlaceholder'));
-    els.toInput.setAttribute('aria-label',  t('compose.to'));
-  }
-  if (els?.fromInput) {
-    els.fromInput.setAttribute('placeholder', t('compose.fromPlaceholder'));
-    els.fromInput.setAttribute('aria-label',  t('compose.from'));
-  } 
-  
-  // Intro-hint by id
-const introHint = document.getElementById('intro-hint');
-if (introHint) introHint.textContent = t('intro.hint') || introHint.textContent;
-
-// (optioneel) generiek via data-i18n-key="intro.hint"
-document.querySelectorAll('[data-i18n-key="intro.hint"]').forEach(el => {
-  el.textContent = t('intro.hint');
-});
-
-  // === SHARE SHEET tegels ===
-  const setTile = (id, labelKey, ariaPrefixKey) => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    const label = t(labelKey);
-    const aria  = ariaPrefixKey ? `${t(ariaPrefixKey)} ${label}` : label;
-    el.setAttribute('aria-label', aria);
-    const span = el.querySelector('.tile-label');
-    if (span) span.textContent = label;
-  };
-
-  setTile('share-whatsapp',  'actions.whatsapp', 'share.shareLabel');
-  setTile('share-email',     'actions.email',    'share.shareLabel');
-  setTile('share-download',  'actions.download', null);
-  setTile('share-copy',      'actions.copy',     null);
-  setTile('share-confirm',   'actions.share',    null);
-  setTile('share-messenger', 'actions.messenger','share.shareLabel');
-  setTile('share-qr',        'actions.qr',       null);
-
-  // Share-sheet titel en "Voor/Van" labels (als aanwezig)
-  const shareTitle = document.getElementById('share-title');
-  if (shareTitle) shareTitle.textContent = t('share.sheetTitle') || shareTitle.textContent;
-
-  document.querySelectorAll('#sheet-backdrop .pair-label').forEach((el, i) => {
-    el.textContent = i === 0 ? (t('compose.to') + ':') : (t('compose.from') + ':');
-  });
-
-  // QR-sheet (optioneel)
-  const qrTitle = document.getElementById('qr-title'); if (qrTitle) qrTitle.textContent = t('qr.title') || qrTitle.textContent;
-  const qrHint  = document.querySelector('.qr-hint');  if (qrHint)  qrHint.textContent  = t('qr.hint')  || qrHint.textContent;
-  const btnQrDownload = document.getElementById('qr-download'); if (btnQrDownload) btnQrDownload.textContent = t('qr.download') || btnQrDownload.textContent;
-  const btnQrCopy     = document.getElementById('qr-copy');     if (btnQrCopy)     btnQrCopy.textContent     = t('actions.copy') || btnQrCopy.textContent;
-
-  // About-sheet (alleen titels/knoppen; body mag NL blijven voorlopig)
-  const aboutTitle = document.getElementById('about-title'); if (aboutTitle) aboutTitle.textContent = t('about.title') || aboutTitle.textContent;
-  const aboutClose = document.getElementById('about-close'); if (aboutClose) aboutClose.textContent = t('actions.close') || aboutClose.textContent;
-
-  // Messenger help knoppen (optioneel)
-  const msgrOpen  = document.getElementById('msgr-open');  if (msgrOpen)  msgrOpen.textContent  = t('messenger.open') || msgrOpen.textContent;
-  const msgrClose = document.getElementById('msgr-close'); if (msgrClose) msgrClose.textContent = t('actions.close')    || msgrClose.textContent;
-
-// === Messenger sheet ===
-{
-  // Titel (#msgr-title) bevat eerst een <img>, daarna een tekstnode "Messenger"
-  const msgrTitle = document.getElementById('msgr-title');
-  if (msgrTitle) {
-    // behoud het icoon; vervang alleen de tekst erna
-    const nodes = Array.from(msgrTitle.childNodes);
-    const textNode = nodes.find(n => n.nodeType === Node.TEXT_NODE);
-    if (textNode) textNode.nodeValue = ' ' + (t('messenger.title') || 'Messenger');
-    msgrTitle.setAttribute('aria-label', t('messenger.title') || 'Messenger');
-  }
-
-  const msgrNotice = document.querySelector('.msgr-notice');
-  if (msgrNotice) msgrNotice.textContent = t('messenger.notice') || msgrNotice.textContent;
-
-  const stepLis = document.querySelectorAll('.msgr-steps li');
-  if (stepLis && stepLis.length >= 3) {
-    const steps = t('messenger.steps') || [];
-    if (Array.isArray(steps)) {
-      stepLis[0].textContent = steps[0] ?? stepLis[0].textContent;
-      stepLis[1].textContent = steps[1] ?? stepLis[1].textContent;
-      stepLis[2].textContent = steps[2] ?? stepLis[2].textContent;
-    }
-  }
-
-  const msgrOpen = document.getElementById('msgr-open');
-  if (msgrOpen) msgrOpen.textContent = t('messenger.open') || msgrOpen.textContent;
-
-  const msgrClose = document.getElementById('msgr-close');
-  if (msgrClose) msgrClose.textContent = t('actions.close') || msgrClose.textContent;
-}
-
-// === About sheet ===
-{
-  const aboutTitle = document.getElementById('about-title');
-  if (aboutTitle) aboutTitle.textContent = t('about.title') || aboutTitle.textContent;
-
-  const aboutClose = document.getElementById('about-close');
-  if (aboutClose) aboutClose.textContent = t('actions.close') || aboutClose.textContent;
-
-  // Body paragrafen: eerste <p><strong>…</strong></p>, tweede <p>…</p>
-  const aboutBody = document.querySelector('#about-backdrop .sheet-body');
-  if (aboutBody) {
-    const ps = aboutBody.querySelectorAll('p');
-    if (ps[0]) {
-      const strong = ps[0].querySelector('strong');
-      if (strong) strong.textContent = t('about.p1_strong') || strong.textContent;
-    }
-    if (ps[1]) {
-      ps[1].textContent = t('about.p2') || ps[1].textContent;
-    }
-  }
-
-  const aboutTag = document.querySelector('.about-tag');
-  if (aboutTag) aboutTag.textContent = t('about.tag') || aboutTag.textContent;
-
-  const aboutFab = document.getElementById('about-fab-fixed');
-  if (aboutFab) {
-    const lbl = t('about.fabLabel');
-    if (lbl) {
-      aboutFab.setAttribute('aria-label', lbl);
-      aboutFab.setAttribute('title', lbl);
-    }
-  }
-}
-}
-
 function buildSharedURL(){
   const u = new URL(location.href);
+  const to = getTo(), from = getFrom();
+  to ? u.searchParams.set("to", to) : u.searchParams.delete("to");
+  from ? u.searchParams.set("from", from) : u.searchParams.delete("from");
+  u.searchParams.set('lang', (typeof STATE!=='undefined' && STATE.lang) ? STATE.lang : resolveLang());
 
-  // to/from uit huidige compose-waarden (als helpers bestaan)
-  const to   = (typeof getTo   === 'function') ? getTo()   : '';
-  const from = (typeof getFrom === 'function') ? getFrom() : '';
-
-  to   ? u.searchParams.set('to', to)     : u.searchParams.delete('to');
-  from ? u.searchParams.set('from', from) : u.searchParams.delete('from');
-
-  // taal vastleggen (STATE.lang > resolveLang), altijd 2-letter lower
-  const lang = (typeof STATE !== 'undefined' && STATE.lang) ? STATE.lang : resolveLang();
-  u.searchParams.set('lang', String(lang || 'nl').slice(0,2).toLowerCase());
-
-  // huidige message-id (mid) meesturen indien beschikbaar
-  const idx = (typeof STATE !== 'undefined') ? STATE.currentIdx : null;
-  const mid = (idx != null && STATE?.allMessages?.[idx]?.id) ? STATE.allMessages[idx].id : null;
-  mid ? u.searchParams.set('mid', mid) : u.searchParams.delete('mid');
-
-  return u; // gebruik u.toString() als je een string nodig hebt
+  const idx = STATE.currentIdx;
+  if (idx != null && STATE.allMessages[idx] && STATE.allMessages[idx].id) {
+    u.searchParams.set("mid", STATE.allMessages[idx].id);
+  }
+  return u;
 }
-
 function capitalize(s){ return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
 
 function throttle(fn, wait){
@@ -1469,6 +1080,50 @@ function closeAbout(){
   });
 })();
 
+/* ========================================================================
+   DEBUG HARNESS — NIET PRODUCTIE, HELPT ZIEN WAT ER WEL/NIET TRIGGERT
+   - activeer via ?debug=1
+   - forceert een lichte pop-in animatie op .note bij elke renderMessage
+   - logt theme + motion
+   ===================================================================== */
+(function awnDebugHarness(){
+  const qp = new URLSearchParams(location.search);
+  const DEBUG = qp.has('debug');
+  const log = (...args)=>{ if (DEBUG) console.log("[awn]", ...args); };
+
+  try {
+    const theme = (typeof getActiveTheme === 'function') ? getActiveTheme() : "unknown";
+    const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    log("theme:", theme, "reducedMotion:", reduce);
+  } catch(_) {}
+
+  try {
+    const _render = window.renderMessage;
+    if (typeof _render === "function") {
+      window.renderMessage = function patchedRenderMessage(opts){
+        log("renderMessage()", opts);
+        const res = _render.apply(this, arguments);
+        const note = document.getElementById("note") || document.querySelector(".note");
+        if (note) { note.classList.remove("anim-pop"); void note.offsetWidth; note.classList.add("anim-pop"); }
+        return res;
+      };
+      log("hooked: renderMessage");
+    } else {
+      log("renderMessage NIET gevonden — dan weten we waar we moeten kijken.");
+    }
+  } catch(e) { log("hook error:", e); }
+
+  window.__awnSparkle = function(){
+    try{
+      const el = document.createElement("div");
+      el.className = "awn-sparkle";
+      el.textContent = "✨ Verstuurd";
+      document.body.appendChild(el);
+      setTimeout(()=> el.remove(), 900);
+    }catch(_){}
+  };
+})();
+
 /* Generieke swipe-to-close met velocity fix -------------------------------- */
 function setupSheetSwipe({ backdropId, closeFunction, openFunctionName }) {
   const backdrop = document.getElementById(backdropId);
@@ -1582,49 +1237,11 @@ window.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-/* === [Q] GLOBAL EVENT WIRING ======================== */
-/* [Q] setLanguage: één centrale flow bij taalwissel */
-async function setLanguage(nextLang) {
-  STATE.lang = (nextLang || resolveLang()).slice(0,2).toLowerCase();
-  document.documentElement.setAttribute('lang', STATE.lang);
-
-  await ensureStringsLoaded();
-  if (typeof refreshUIStrings === 'function') refreshUIStrings();
-
-  await loadMessages();
-
-  // ⬇️ BELANGRIJK: chips heropbouwen op basis van de nieuwe dataset/taal
-  if (typeof buildSentimentChips === 'function') buildSentimentChips();
-
-  // eventueel filters/deck opnieuw opzetten en meteen renderen
-  rebuildDeck?.(true);
-  updateCoach?.(currentCoachState());
-  renderMessage?.({ newRandom: true });
-}
-
-/* wireLanguagePicker gebruikt nu setLanguage() */
-function wireLanguagePicker() {
-  const sel = document.getElementById('langSelect');
-  if (!sel) return;
-  sel.value = STATE.lang;
-  sel.addEventListener('change', async () => {
-    const next = (sel.value || 'nl').toLowerCase();
-    // URL + storage netjes bijwerken
-    const u = new URL(location.href);
-    u.searchParams.set('lang', next);
-    history.replaceState({}, '', u.toString());
-    localStorage.setItem('prefLang', next);
-
-    await setLanguage(next);
-  });
-}
-/* PATCH: language picker koppelen (als aanwezig) */
-wireLanguagePicker();
-
+/* — Event-wiring (null-safe) ----------------------------------------------- */
 function guardShareOrNudge(){
   const to = getTo();
   if (!to) {
-	  showToastI18n('toast.toRequired', 'Vul eerst in voor wie dit is 💛');
+    showToast("Vul eerst in voor wie dit is 💛");
     try {
       els.toInput.classList.add("field-nudge");
       els.toInput.focus();
@@ -1652,8 +1269,7 @@ window.actuallyOpenMessenger = actuallyOpenMessenger;
 
 function wireGlobalUI(){
   // Topbar
-  els.btnNew && els.btnNew.addEventListener("click", () => {
-  renderMessage({ newRandom: true, wiggle: true }); showToastI18n('toast.newLoaded', 'Nieuwe boodschap geladen ✨');});
+  els.btnNew   && els.btnNew.addEventListener("click", ()=>{ renderMessage({ newRandom:true, wiggle:true }); showToast("Nieuwe boodschap geladen ✨"); });
   els.btnShare && els.btnShare.addEventListener("click", guardShareOrNudge);
   els.btnAbout && els.btnAbout.addEventListener("click", openAbout);
 
@@ -1949,48 +1565,4 @@ function wireGlobalUI(){
   el.addEventListener('click', onTap, { capture: true });
   if (document.readyState === 'complete') onLoad();
   else window.addEventListener('load', onLoad, { once: true });
-})();
-
-/* ========================================================================
-   DEBUG HARNESS — NIET PRODUCTIE, HELPT ZIEN WAT ER WEL/NIET TRIGGERT
-   - activeer via ?debug=1
-   - forceert een lichte pop-in animatie op .note bij elke renderMessage
-   - logt theme + motion
-   ===================================================================== */
-(function awnDebugHarness(){
-  const qp = new URLSearchParams(location.search);
-  const DEBUG = qp.has('debug');
-  const log = (...args)=>{ if (DEBUG) console.log("[awn]", ...args); };
-
-  try {
-    const theme = (typeof getActiveTheme === 'function') ? getActiveTheme() : "unknown";
-    const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    log("theme:", theme, "reducedMotion:", reduce);
-  } catch(_) {}
-
-  try {
-    const _render = window.renderMessage;
-    if (typeof _render === "function") {
-      window.renderMessage = function patchedRenderMessage(opts){
-        log("renderMessage()", opts);
-        const res = _render.apply(this, arguments);
-        const note = document.getElementById("note") || document.querySelector(".note");
-        if (note) { note.classList.remove("anim-pop"); void note.offsetWidth; note.classList.add("anim-pop"); }
-        return res;
-      };
-      log("hooked: renderMessage");
-    } else {
-      log("renderMessage NIET gevonden — dan weten we waar we moeten kijken.");
-    }
-  } catch(e) { log("hook error:", e); }
-
-  window.__awnSparkle = function(){
-    try{
-      const el = document.createElement("div");
-      el.className = "awn-sparkle";
-      el.textContent = "✨ Verstuurd";
-      document.body.appendChild(el);
-      setTimeout(()=> el.remove(), 900);
-    }catch(_){}
-  };
 })();

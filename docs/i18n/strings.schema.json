@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/strings.schema.json",
+  "title": "UI Strings per language",
+  "type": "object",
+  "required": ["lang", "strings", "version"],
+  "additionalProperties": false,
+  "properties": {
+    "lang": {
+      "type": "string",
+      "description": "BCP-47 taalcode (nl, en, pap, ...)"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "strings": {
+      "type": "object",
+      "description": "Gestructureerde UI-teksten",
+      "additionalProperties": false,
+      "properties": {
+        "app": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "title": { "type": "string" },
+            "payoff": { "type": "string" }
+          },
+          "required": ["title"]
+        },
+        "actions": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "share": { "type": "string" },
+            "whatsapp": { "type": "string" },
+            "email": { "type": "string" },
+            "download": { "type": "string" },
+            "copyLink": { "type": "string" }
+          }
+        },
+        "compose": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "toLabel": { "type": "string" },
+            "fromLabel": { "type": "string" },
+            "withNameCheckbox": { "type": "string" },
+            "notePlaceholder": { "type": "string" },
+            "pickSentiment": { "type": "string" }
+          },
+          "required": ["toLabel", "fromLabel"]
+        },
+        "buttons": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "another": { "type": "string" },
+            "send": { "type": "string" },
+            "close": { "type": "string" }
+          }
+        },
+        "shareSheet": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "title": { "type": "string" },
+            "footerShare": { "type": "string" },
+            "footerWhatsapp": { "type": "string" },
+            "footerEmail": { "type": "string" },
+            "footerDownload": { "type": "string" },
+            "footerCopy": { "type": "string" }
+          }
+        },
+        "about": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "title": { "type": "string" },
+            "body": { "type": "string" }
+          },
+          "required": ["title", "body"]
+        },
+        "errors": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Foutmeldingen (vrij veld, keys naar keuze)"
+        }
+      },
+      "required": ["app"]
+    }
+  }
+}

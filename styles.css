@@ -637,3 +637,41 @@ button[data-action="expand-note"].is-hot::after{
 #btn-share { background: rgba(255,255,255,.10); line-height: 1; }
 #btn-share, #btn-share * { overflow: visible; }
 #btn-share svg { width: 20px; height: 20px; display: block; }
+
+/* Language select in de topbar */
+.actions #langSelect {
+  appearance: none;
+  background: rgba(0,0,0,.45);
+  color: #fff;
+  font-weight: 600;
+  font-size: .92rem;
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 0;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.06);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  transition: background .2s var(--ease), transform .06s var(--ease);
+}
+
+.actions #langSelect:hover {
+  background: rgba(0,0,0,.6);
+  transform: translateY(-1px);
+}
+
+.actions #langSelect:active {
+  transform: translateY(1px);
+}
+
+.actions #langSelect:focus-visible {
+  outline: 2px solid rgba(255,255,255,.9);
+  outline-offset: 2px;
+}
+
+@media (max-width: 420px) {
+  .actions #langSelect {
+    font-size: .85rem;
+    padding: 5px 8px;
+  }
+}
