@@ -40,6 +40,13 @@
       "toPlaceholder": "Voor wie?",
       "fromPlaceholder": "Van jou (optioneel)"
     },
+    "ui": {
+     "aiNew": "AI-boodschap"
+    },
+   	"ai": {
+     "generated": "AI-boodschap gemaakt ✨",
+     "failed": "Kon geen boodschap genereren"
+  },
     "qr": {
       "title": "QR-code",
       "hint": "Scan deze code met je telefoon om de note te openen.",

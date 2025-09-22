@@ -151,28 +151,22 @@ function autoCapitalizeInput(input) {
 }
 
 function init() {
-  /* [D] taal initialiseren en <html lang> syncen */
   STATE.lang = resolveLang();
   document.documentElement.setAttribute('lang', STATE.lang);
-  
-  if (typeof installComposeAutoLocalizer === 'function') {
-  installComposeAutoLocalizer();
-}
-
   recacheEls();
   wireGlobalUI();
   if (typeof wireLanguagePicker === 'function') wireLanguagePicker();
-
-  /* [D] eerst UI-strings laden, dán messages (voor meertalige toasts/prompts) */
-  ensureStringsLoaded()
+	wireLangDropdown?.();
+	renderLangDropdownUI?.();
+    ensureStringsLoaded()
     .then(() => {
-      // [D] PATCH: UI labels/aria direct updaten vanuit strings.{lang}.json
       if (typeof refreshUIStrings === 'function') refreshUIStrings();
       // daarna pas messages inladen
       return loadMessages();
     })
     .then(() => {
       buildSentimentChips();
+      autoCapitalizeInput(els.toInput);
       autoCapitalizeInput(els.fromInput);
 
       const qp = new URLSearchParams(location.search);
@@ -204,6 +198,9 @@ function init() {
     .catch((e) => {
       console.error("FOUT in init():", e);
     });
+      if (typeof installComposeAutoLocalizer === 'function') {
+  installComposeAutoLocalizer();
+}
 }
 
 // Start pas wanneer DOM klaar is
@@ -574,32 +571,65 @@ function setPaperLook(){
 function renderMessage({ newRandom=false, requestedIdx=null, wiggle=false } = {}){
   let idx = STATE.currentIdx;
 
+  // 1) Direct aangevraagde index krijgt voorrang
   if (requestedIdx != null) {
     idx = requestedIdx;
-  } else if (newRandom || idx == null) {
-    idx = nextIndex();
   }
+  // 2) Nieuwe random (of nog geen index) → gewogen selectie
+  else if (newRandom || idx == null) {
+    // begin met hele lijst
+    let pool = STATE.allMessages;
+
+    // actieve sentiment-filter respecteren (alleen toepassen als er resultaten zijn)
+    if (STATE.activeSentiment) {
+      const s = STATE.activeSentiment;
+      const filtered = pool.filter(m => Array.isArray(m.sentiments) && m.sentiments.includes(s));
+      if (filtered.length) pool = filtered;
+    }
+
+    // kies gewogen index binnen pool
+    let localIdx = null;
+    if (typeof pickWeightedIndex === 'function') {
+      localIdx = pickWeightedIndex(pool);
+    }
+    // fallback: normale random als helper ontbreekt of niets teruggeeft
+    if (localIdx == null) {
+      localIdx = Math.floor(Math.random() * Math.max(pool.length, 1));
+    }
+
+    // map terug naar globale index
+    const chosen = pool[localIdx];
+    idx = STATE.allMessages.indexOf(chosen);
+    if (idx < 0) idx = localIdx; // defensieve fallback (zou zelden gebeuren)
+  }
+
+  // 3) Guard: geen geldige index → lege staat tonen
   if (idx == null || idx < 0 || idx >= STATE.allMessages.length) {
-    if (els.msg) els.msg.textContent  = "Stuur een warme boodschap naar iemand.";
-    if (els.icon) els.icon.textContent = "💌";
+    if (els.msg)  els.msg.textContent   = "Stuur een warme boodschap naar iemand.";
+    if (els.icon) els.icon.textContent  = "💌";
     if (els.note) setPaperLook();
     return;
   }
 
+  // 4) State + recent bijwerken
   STATE.currentIdx = idx;
   bumpRecent(idx);
 
   const { icon, text, sentiments } = STATE.allMessages[idx];
 
+  // 5) Animatie + invullen
   if (els.msg && els.icon){
-    els.msg.style.opacity = 0; els.icon.style.opacity = 0;
+    els.msg.style.opacity = 0; 
+    els.icon.style.opacity = 0;
     setTimeout(()=>{
       els.msg.textContent  = personalize(text);
       els.icon.textContent = icon || "";
-      els.msg.style.opacity = 1; els.icon.style.opacity = 1;
+      els.msg.style.opacity = 1; 
+      els.icon.style.opacity = 1;
     }, 90);
   }
-   
+
+  // 6) rest van de UI
   if (els.note) setPaperLook();
   renderToFrom();
   renderFromSymbol((sentiments && sentiments[0]) || STATE.activeSentiment || null);
@@ -1071,7 +1101,7 @@ function celebrate(){
   if (live) live.textContent = "Viering: note verstuurd.";
 }
 
-/* [M] UTILITIES (URL, shuffle, etc.) --------------------------------------- */
+/*  UTILITIES (URL, shuffle, etc.) --------------------------------------- */
 
 function showToast(msg){
   if (!els.toast) return;
@@ -1121,6 +1151,7 @@ function prefersReducedMotion(){
   return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
+function capitalize(s){ return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
 
 /* === [M] UTILITIES ================================ */
 /* Mini i18n: t('path.to.key', {vars}) met NL-fallback */
@@ -1175,18 +1206,26 @@ function refreshUIStrings() {
 
   // Topbar – Installeer (PWA)
   // Mogelijke ids/classes; kies wat bij jouw HTML past
-  const btnInstall = document.getElementById('btn-install')
-                    || document.querySelector('[data-install]')
-                    || document.getElementById('install');
-  if (btnInstall) {
-    btnInstall.setAttribute('aria-label', t('actions.install'));
-    const lbl = btnInstall.querySelector('.btn-label');
-    if (lbl) lbl.textContent = t('actions.install'); // "Installeer" / "Install"
-    // Als de knop enkel tekst heeft:
-    if (!lbl && btnInstall.childElementCount === 0) {
-      btnInstall.textContent = t('actions.install');
-    }
-  }
+  
+// === PWA Install button (robust selectors) ===
+(function(){
+  const el =
+    document.getElementById('btn-install') ||
+    document.getElementById('pwa-install') ||
+    document.querySelector('[data-install]') ||
+    document.querySelector('[data-i18n-key="actions.install"]');
+
+  if (!el) return;
+
+  const label = t('actions.install') || ( (STATE?.lang)==='en' ? 'Install' : 'Installeer' );
+  el.setAttribute('aria-label', label);
+
+  // voorkeursstructuur: <button><span class="btn-label">…</span></button>
+  const span = el.querySelector('.btn-label');
+  if (span) span.textContent = label;
+  else if (!el.children.length) el.textContent = label; // platte knop fallback
+})();
+
   // === Compose placeholders (multilanguage) ===
   if (els?.toInput) {
     els.toInput.setAttribute('placeholder', t('compose.toPlaceholder'));
@@ -1336,7 +1375,42 @@ function buildSharedURL(){
   return u; // gebruik u.toString() als je een string nodig hebt
 }
 
-function capitalize(s){ return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
+async function fetchAIGeneratedMessage({ lang, sentiments, to, from, special_day }){
+  const body = { lang, sentiments, to, from, special_day: special_day ?? null };
+  const res = await fetch("/api/generate-message", {
+    method: "POST",
+    headers: { "Content-Type":"application/json" },
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) throw new Error("AI_HTTP_"+res.status);
+  const data = await res.json();
+  if (!data?.ok || !data?.message?.text) throw new Error("AI_EMPTY");
+  return data.message; // {icon,text,sentiments,special_day}
+}
+
+/* [M] Weighted random helper
+   - Neemt een lijst van messages (elk met optionele 'weight')
+   - weight <= 0 wordt genegeerd; default = 1
+   - Retourneert index in de meegegeven lijst (niet de globale index)
+*/
+function pickWeightedIndex(list){
+  const arr = Array.isArray(list) ? list : [];
+  let total = 0;
+  for (const m of arr){
+    const w = Number.isFinite(m?.weight) ? m.weight : 1;
+    if (w > 0) total += w;
+  }
+  if (total <= 0) return null;
+
+  let r = Math.random() * total;
+  for (let i = 0; i < arr.length; i++){
+    const w = Number.isFinite(arr[i]?.weight) ? arr[i].weight : 1;
+    if (w <= 0) continue;
+    r -= w;
+    if (r < 0) return i;
+  }
+  return null;
+}
 
 function throttle(fn, wait){
   let t=0, lastArgs=null;
@@ -1413,6 +1487,29 @@ function renderFromSymbol(sent){
   const g = String(sent || "").toLowerCase();
   const markup = svg(g);
   host.innerHTML = markup || "";
+}
+/* [M] Weighted random helper
+   - Neemt een lijst van messages (elk met optionele 'weight')
+   - weight <= 0 wordt genegeerd; default = 1
+   - Retourneert index in de meegegeven lijst (niet de globale index)
+*/
+function pickWeightedIndex(list){
+  const arr = Array.isArray(list) ? list : [];
+  let total = 0;
+  for (const m of arr){
+    const w = Number.isFinite(m?.weight) ? m.weight : 1;
+    if (w > 0) total += w;
+  }
+  if (total <= 0) return null;
+
+  let r = Math.random() * total;
+  for (let i = 0; i < arr.length; i++){
+    const w = Number.isFinite(arr[i]?.weight) ? arr[i].weight : 1;
+    if (w <= 0) continue;
+    r -= w;
+    if (r < 0) return i;
+  }
+  return null;
 }
 
 /* [N] SHARE / ABOUT-DIALOOG ------------------------------------------------ */
@@ -1602,24 +1699,100 @@ async function setLanguage(nextLang) {
   renderMessage?.({ newRandom: true });
 }
 
-/* wireLanguagePicker gebruikt nu setLanguage() */
-function wireLanguagePicker() {
-  const sel = document.getElementById('langSelect');
-  if (!sel) return;
-  sel.value = STATE.lang;
-  sel.addEventListener('change', async () => {
-    const next = (sel.value || 'nl').toLowerCase();
-    // URL + storage netjes bijwerken
-    const u = new URL(location.href);
-    u.searchParams.set('lang', next);
+els.btnAI && els.btnAI.addEventListener("click", onNewAIClick);
+
+async function onNewAIClick(){
+  const lang = STATE?.lang || resolveLang();
+  const sentiments = STATE.activeSentiment ? [STATE.activeSentiment] : [];
+  const to   = getTo();
+  const from = getFrom();
+  const day  = getActiveThemeSpecialDay?.() || null; // of haal ‘m uit STATE
+
+  setBusy(true); // optioneel spinner
+  try {
+    const m = await fetchAIGeneratedMessage({ lang, sentiments, to, from, special_day: day });
+    // render als ‘ad-hoc’ message zonder het deck te vervuilen:
+    STATE.currentIdx = null; // forceer losse render
+    applyMessage({ icon: m.icon, text: m.text, sentiments: m.sentiments || sentiments });
+    renderToFrom();
+    renderFromSymbol((m.sentiments && m.sentiments[0]) || STATE.activeSentiment || null);
+    toast('ai.generated', t?.('ai.generated') || (lang==='en'?'AI message generated ✨':'AI-boodschap gemaakt ✨'));
+  } catch(e){
+    console.error(e);
+    showToast(t?.('ai.failed') || (lang==='en'?'Could not generate message':'Kon geen boodschap genereren'));
+  } finally {
+    setBusy(false);
+  }
+}
+
+/* PATCH: language picker koppelen (als aanwezig) 
+wireLanguagePicker();
+*/
+
+function renderLangDropdownUI(){
+  const cur = (STATE?.lang || resolveLang()).slice(0,2).toLowerCase();
+  const btn = document.getElementById('lang-dd-btn');
+  if (btn){
+    const flag = cur === 'en' ? '🇬🇧' : '🇳🇱';
+    const code = cur === 'en' ? 'EN'  : 'NL';
+    btn.querySelector('.flag').textContent = flag;
+    btn.querySelector('.code').textContent = code;
+    btn.setAttribute('aria-label', cur==='en' ? 'Language: English' : 'Taal: Nederlands');
+  }
+  document.querySelectorAll('#lang-dd-menu .lang-item').forEach(it=>{
+    it.setAttribute('aria-checked', String(it.dataset.lang === cur));
+  });
+}
+
+function wireLangDropdown(){
+  const wrap = document.getElementById('lang-dd');
+  const btn  = document.getElementById('lang-dd-btn');
+  const menu = document.getElementById('lang-dd-menu');
+  if (!wrap || !btn || !menu) return;
+
+  const open  = ()=>{
+    wrap.classList.add('open');
+    btn.setAttribute('aria-expanded','true');
+    menu.hidden = false;           // << belangrijk op iOS
+  };
+  const close = ()=>{
+    wrap.classList.remove('open');
+    btn.setAttribute('aria-expanded','false');
+    menu.hidden = true;
+  };
+
+  btn.addEventListener('click', (e)=>{
+    e.preventDefault();            // << voorkomt form/scroll-quirks
+    e.stopPropagation();           // << voorkomt dat doc-handler 'm meteen sluit
+    if (wrap.classList.contains('open')) { close(); return; }
+    renderLangDropdownUI(); open();
+  });
+
+  // kies taal
+  menu.addEventListener('click', async (e)=>{
+    e.stopPropagation();
+    const item = e.target.closest('.lang-item'); if (!item) return;
+    const next = item.dataset.lang; if (!next) return;
+
+    const u = new URL(location.href); u.searchParams.set('lang', next);
     history.replaceState({}, '', u.toString());
     localStorage.setItem('prefLang', next);
 
-    await setLanguage(next);
+    if (typeof setLanguage === 'function') await setLanguage(next);
+    renderLangDropdownUI(); close();
   });
+
+  // klik buiten + ESC (sluiten)
+  document.addEventListener('click', (e)=>{
+    if (!wrap.contains(e.target)) close();
+  }, { passive: true });
+
+  document.addEventListener('keydown', (e)=>{
+    if (e.key === 'Escape') close();
+  });
+
+  renderLangDropdownUI();
 }
-/* PATCH: language picker koppelen (als aanwezig) */
-wireLanguagePicker();
 
 function guardShareOrNudge(){
   const to = getTo();

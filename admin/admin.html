@@ -1,35 +1,37 @@
 <!doctype html>
-<html lang="nl">
+<html lang="nl" data-theme="dark">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Messages & Sentiments Maintenance</title>
+  <title>Messages Admin</title>
   <link rel="stylesheet" href="admin.css" />
 </head>
 <body>
   <header class="topbar">
-    <h1>Messages Maintenance</h1>
+    <h1>Messages Admin</h1>
     <div class="actions">
       <label class="file-btn">
         <input id="fileInput" type="file" accept=".json" multiple />
-        + Taalbestand(en) laden
+        JSON importeren
       </label>
-      <button id="addLangBtn" title="Lege taal toevoegen">+ Taal</button>
       <button id="exportBtn" title="Exporteer actieve taal">Exporteren</button>
+      <button id="themeBtn" title="Dag/Nacht modus">🌙 / ☀️</button>
     </div>
   </header>
 
   <main>
+    <!-- Taal-tabs -->
     <nav id="langTabs" class="tabs" aria-label="Languages"></nav>
 
     <section class="panels">
+      <!-- LINKS: messages-tabel -->
       <div class="panel">
         <div class="panel-header">
           <h2>Messages</h2>
           <div class="panel-actions">
             <button id="addMsgBtn">+ Nieuw</button>
             <button id="delMsgBtn" class="danger">Verwijderen</button>
-            <input id="searchBox" type="search" placeholder="Zoek in text/tags/sentiment…" />
+            <input id="searchBox" type="search" placeholder="Zoek in text/icon/id…" />
           </div>
         </div>
 
@@ -41,8 +43,8 @@
                 <th>ID</th>
                 <th>Icon</th>
                 <th>Text</th>
-                <th>Sentiment</th>
-                <th>Tags</th>
+                <th>Special day</th>
+                <th>Weight</th>
               </tr>
             </thead>
             <tbody><!-- rows injected --></tbody>
@@ -50,57 +52,45 @@
         </div>
       </div>
 
+      <!-- RECHTS: sentiments-editor voor 1 geselecteerde message -->
       <div class="panel narrow">
         <div class="panel-header">
-          <h2>Sentimenten</h2>
+          <h2>Sentiments voor selectie</h2>
           <div class="panel-actions">
-            <button id="addSentBtn">+ Nieuw</button>
-            <button id="delSentBtn" class="danger">Verwijderen</button>
+            <span class="muted" id="sentStatus">Selecteer precies 1 message</span>
           </div>
         </div>
 
-        <div class="table-wrap">
-          <table id="sentTable" aria-label="Sentiments">
-            <thead>
-              <tr>
-                <th><input type="checkbox" id="checkAllSent" /></th>
-                <th>ID</th>
-                <th>Label</th>
-                <th>Emoji</th>
-              </tr>
-            </thead>
-            <tbody><!-- rows injected --></tbody>
-          </table>
-        </div>
+        <div id="sentEditor" class="sent-editor"><!-- checkbox-pills injected --></div>
 
         <details class="help">
-          <summary>Structuur & Tips</summary>
+          <summary>Uitleg</summary>
+          <ul>
+            <li>Selecteer <strong>één</strong> message aan de linkerkant.</li>
+            <li>Vink één of meer sentiments aan in dit paneel.</li>
+            <li>Wijzigingen worden direct opgeslagen en meegenomen in export.</li>
+          </ul>
           <pre>{
-  "sentiments": [
-    { "id": "love", "label": "Liefde", "emoji": "❤️" }
-  ],
+  "lang": "nl",
+  "sentiments": ["bemoedigend","kalmte","liefde","..."],
   "messages": [
     {
-      "id": "m_abc123",
-      "icon": "💛",
-      "text": "Je bent goud waard.",
-      "sentiment": "love",
-      "tags": ["daily","short"]
+      "id": "nl_001",
+      "icon": "✨",
+      "text": "Je bent genoeg…",
+      "sentiments": ["bemoedigend","kalmte"],
+      "special_day": null,
+      "weight": 1
     }
   ]
 }</pre>
-          <ul>
-            <li>Bestanden zonder <code>sentiments</code> zijn oké. Je kunt ze hier toevoegen.</li>
-            <li><code>tags</code> is optioneel; comma-separated in de tabel.</li>
-            <li>Export behoudt dezelfde vorm (voegt sentiments toe indien aanwezig).</li>
-          </ul>
         </details>
       </div>
     </section>
   </main>
 
   <footer class="statusbar">
-    <div id="status">Klaar.</div>
+    <div id="status">Klaar. Importeer één of meer JSON-bestanden om te beginnen.</div>
   </footer>
 
   <script src="admin.js"></script>

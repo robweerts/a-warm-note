@@ -5,7 +5,7 @@
     "actions": {
       "new": "New message",
       "install": "Install",
-      "share": "Share",
+      "share": "Send",
       "email": "Email",
       "whatsapp": "WhatsApp",
       "copy": "Copy link",
@@ -40,6 +40,13 @@
       "toPlaceholder": "For whom?",
       "fromPlaceholder": "From you (optional)"
     },
+    "ui": {
+     "aiNew": "AI message"
+  	},
+  	"ai": {
+     "generated": "AI message generated ✨",
+     "failed": "Could not generate message"
+  	},
     "qr": {
       "title": "QR code",
       "hint": "Scan this code with your phone to open the note.",

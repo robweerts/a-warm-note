@@ -1,8 +1,8 @@
 /* ==========
-   Data Model
+   Data Model (per lang)
    ========== */
 const DB = {
-  // langKey -> { lang, messages:[], sentiments:[] }
+  // langKey -> { lang, sentiments: string[], messages: Message[] }
   langs: new Map(),
   active: null
 };
@@ -12,60 +12,141 @@ const $$ = sel => document.querySelectorAll(sel);
 
 const els = {
   fileInput: $('#fileInput'),
-  addLangBtn: $('#addLangBtn'),
   exportBtn: $('#exportBtn'),
+  themeBtn: $('#themeBtn'),
   tabs: $('#langTabs'),
   addMsgBtn: $('#addMsgBtn'),
   delMsgBtn: $('#delMsgBtn'),
-  addSentBtn: $('#addSentBtn'),
-  delSentBtn: $('#delSentBtn'),
   checkAll: $('#checkAll'),
-  checkAllSent: $('#checkAllSent'),
   searchBox: $('#searchBox'),
   msgTableBody: $('#msgTable tbody'),
-  sentTableBody: $('#sentTable tbody'),
   status: $('#status'),
 };
 
-function uid() {
-  return 'm_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+/* ==========
+   Helpers
+   ========== */
+
+function setStatus(msg){ if (els.status) els.status.textContent = msg; }
+
+// Parse hoogste nummer uit IDs als "nl_001"
+function parseNumericId(id){
+  if (typeof id !== 'string') return null;
+  const m = id.match(/(\d+)\s*$/);
+  return m ? parseInt(m[1], 10) : null;
 }
 
-function setStatus(msg) {
-  els.status.textContent = msg;
+// Genereer volgende ID op basis van hoogste suffix
+function nextIdFor(langKey, messages){
+  const prefix = (langKey || 'id').toLowerCase() + '_';
+  let max = 0;
+  for (const m of (messages || [])) {
+    const n = parseNumericId(m.id);
+    if (Number.isFinite(n) && n > max) max = n;
+  }
+  const next = String(max + 1).padStart(3, '0');
+  return `${prefix}${next}`;
+}
+
+function currentLangData(){ return DB.active ? DB.langs.get(DB.active) : null; }
+function getSelectedIds(){
+  return [...els.msgTableBody.querySelectorAll('input[type="checkbox"]:checked')]
+    .map(cb => cb.dataset.id);
 }
 
 /* ==========
    Persistence
    ========== */
-const STORAGE_KEY = 'msg_maint_v1';
+const STORAGE_KEY = 'msg_admin_v2';
 
-function saveLocal() {
+function saveLocal(){
   const obj = {};
-  for (const [k, v] of DB.langs) {
-    obj[k] = v;
-  }
+  for (const [k, v] of DB.langs) obj[k] = v;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(obj));
 }
 
-function loadLocal() {
+function loadLocal(){
   const raw = localStorage.getItem(STORAGE_KEY);
   if (!raw) return;
-  try {
+  try{
     const obj = JSON.parse(raw);
-    for (const k of Object.keys(obj)) {
-      DB.langs.set(k, obj[k]);
-    }
+    for (const k of Object.keys(obj)) DB.langs.set(k, obj[k]);
     if (DB.langs.size) DB.active = DB.active ?? [...DB.langs.keys()][0];
-  } catch (e) {
-    console.error(e);
+  }catch(e){ console.error(e); }
+}
+
+/* ==========
+   Import / Export  (messages.{lang}.json schema)
+   ========== */
+function normalizeImported(jsonObj, fallbackLangFromFileName){
+  const lang = String(jsonObj?.lang || fallbackLangFromFileName || '').toLowerCase() || 'xx';
+  const sentiments = Array.isArray(jsonObj?.sentiments) ? jsonObj.sentiments.filter(Boolean) : [];
+  const messages = Array.isArray(jsonObj?.messages) ? jsonObj.messages.map(m => ({
+    id: String(m.id || '').trim(),
+    icon: String(m.icon || ''),
+    text: String(m.text || ''),
+    sentiments: Array.isArray(m.sentiments) ? m.sentiments.filter(Boolean) : [],
+    special_day: (m.special_day === null || typeof m.special_day === 'string') ? (m.special_day || null) : null,
+    weight: Number.isFinite(m.weight) ? m.weight : 1
+  })) : [];
+  return { lang, sentiments, messages };
+}
+
+async function importFiles(fileList){
+  for (const file of fileList) {
+    const text = await file.text();
+    let json; try{ json = JSON.parse(text); }
+    catch{ setStatus(`❌ ${file.name}: geen geldige JSON`); continue; }
+
+    const langGuess = (json.lang || file.name.replace(/\.[^.]+$/, '')).toLowerCase();
+    const data = normalizeImported(json, langGuess);
+
+    // lege of dubbele id's fixen bij import
+    const used = new Set();
+    for (const m of data.messages) {
+      if (!m.id || used.has(m.id)) m.id = nextIdFor(data.lang, data.messages);
+      used.add(m.id);
+    }
+
+    DB.langs.set(data.lang, data);
+    DB.active = DB.active || data.lang;
+    setStatus(`✅ Geïmporteerd: ${file.name} → taal "${data.lang}" (${data.messages.length} messages)`);
   }
+  saveLocal();
+  renderAll();
+}
+
+function exportActive(){
+  const data = currentLangData();
+  if (!data) { setStatus('Geen actieve taal.'); return; }
+
+  const out = {
+    lang: data.lang,
+    sentiments: (data.sentiments || []).slice(),
+    messages: (data.messages || []).map(m => ({
+      id: m.id,
+      icon: m.icon,
+      text: m.text,
+      sentiments: Array.isArray(m.sentiments) ? m.sentiments.slice() : [],
+      special_day: (m.special_day ?? null),
+      weight: Number.isFinite(m.weight) ? m.weight : 1
+    }))
+  };
+
+  const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `messages.${data.lang}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setStatus(`⬇️ Geëxporteerd: messages.${data.lang}.json`);
 }
 
 /* ==========
    Rendering
    ========== */
-function renderTabs() {
+function renderTabs(){
   els.tabs.innerHTML = '';
   for (const [lang] of DB.langs) {
     const btn = document.createElement('button');
@@ -76,222 +157,156 @@ function renderTabs() {
   }
 }
 
-function currentLangData() {
-  if (!DB.active) return null;
-  return DB.langs.get(DB.active);
-}
-
-function ensureSentiments(obj) {
-  obj.sentiments = Array.isArray(obj.sentiments) ? obj.sentiments : [];
-}
-
-function renderMessages() {
+function renderMessages(){
   const data = currentLangData();
   els.msgTableBody.innerHTML = '';
   if (!data) return;
 
   const q = (els.searchBox.value || '').trim().toLowerCase();
 
-  const sentimentsSet = new Set((data.sentiments || []).map(s => s.id));
-
-  data.messages.forEach(msg => {
+  (data.messages || []).forEach(msg => {
     if (q) {
-      const inText = (msg.text || '').toLowerCase().includes(q);
-      const inTags = (Array.isArray(msg.tags) ? msg.tags.join(',') : '').toLowerCase().includes(q);
-      const inSent = (msg.sentiment || '').toLowerCase().includes(q);
-      if (!inText && !inTags && !inSent) return;
+      const hay = [(msg.id||''), (msg.icon||''), (msg.text||'')].join(' ').toLowerCase();
+      if (!hay.includes(q)) return;
     }
+
     const tr = document.createElement('tr');
 
     // select
     const tdSel = document.createElement('td');
     const cb = document.createElement('input'); cb.type = 'checkbox'; cb.dataset.id = msg.id;
-    tdSel.appendChild(cb);
-    tr.appendChild(tdSel);
+    cb.addEventListener('change', () => renderSentimentEditor()); // herteken rechterpaneel
+    tdSel.appendChild(cb); tr.appendChild(tdSel);
 
     // id (readonly)
     const tdId = document.createElement('td');
-    tdId.textContent = msg.id || '';
-    tr.appendChild(tdId);
+    tdId.textContent = msg.id || ''; tr.appendChild(tdId);
 
     // icon
     const tdIcon = document.createElement('td');
     const inIcon = document.createElement('input'); inIcon.type = 'text'; inIcon.value = msg.icon || '';
     inIcon.addEventListener('input', () => { msg.icon = inIcon.value; saveLocal(); });
-    tdIcon.appendChild(inIcon);
-    tr.appendChild(tdIcon);
+    tdIcon.appendChild(inIcon); tr.appendChild(tdIcon);
 
     // text
     const tdText = document.createElement('td');
     const ta = document.createElement('textarea'); ta.value = msg.text || '';
     ta.addEventListener('input', () => { msg.text = ta.value; saveLocal(); });
-    tdText.appendChild(ta);
-    tr.appendChild(tdText);
+    tdText.appendChild(ta); tr.appendChild(tdText);
 
-    // sentiment
-    const tdSent = document.createElement('td');
-    const sel = document.createElement('select');
-    // empty option
-    const emptyOpt = document.createElement('option'); emptyOpt.value = ''; emptyOpt.textContent = '—';
-    sel.appendChild(emptyOpt);
-    (data.sentiments || []).forEach(s => {
+    // special_day
+    const tdDay = document.createElement('td');
+    const selDay = document.createElement('select');
+    SPECIAL_DAYS.forEach(opt => {
       const o = document.createElement('option');
-      o.value = s.id;
-      o.textContent = `${s.emoji || ''} ${s.label || s.id}`;
-      sel.appendChild(o);
+      o.value = String(opt.val);
+      o.textContent = opt.label;
+      selDay.appendChild(o);
     });
-    sel.value = sentimentsSet.has(msg.sentiment) ? msg.sentiment : '';
-    sel.addEventListener('change', () => { msg.sentiment = sel.value || ''; saveLocal(); });
-    tdSent.appendChild(sel);
-    tr.appendChild(tdSent);
-
-    // tags
-    const tdTags = document.createElement('td');
-    const inTags = document.createElement('input'); inTags.type = 'text';
-    inTags.value = Array.isArray(msg.tags) ? msg.tags.join(',') : (msg.tags || '');
-    inTags.placeholder = 'comma,separated';
-    inTags.addEventListener('input', () => {
-      const raw = inTags.value.trim();
-      if (!raw) { msg.tags = []; saveLocal(); return; }
-      msg.tags = raw.split(',').map(s => s.trim()).filter(Boolean);
+    selDay.value = String(msg.special_day ?? null);
+    selDay.addEventListener('change', () => {
+      const v = selDay.value;
+      msg.special_day = (v === 'null') ? null : (v || null);
       saveLocal();
     });
-    tdTags.appendChild(inTags);
-    tr.appendChild(tdTags);
+    tdDay.appendChild(selDay); tr.appendChild(tdDay);
+
+    // weight
+    const tdW = document.createElement('td');
+    const inW = document.createElement('input'); inW.type = 'number'; inW.min = '0'; inW.step = '1';
+    inW.value = Number.isFinite(msg.weight) ? msg.weight : 1;
+    inW.addEventListener('input', () => { msg.weight = parseInt(inW.value || '1', 10) || 1; saveLocal(); });
+    tdW.appendChild(inW); tr.appendChild(tdW);
+
+    // hele rij aanklikbaar voor single-select gemak
+    tr.addEventListener('click', (e) => {
+      if (e.target.closest('input,textarea,select,button,label')) return; // niet togglen bij editen
+      cb.checked = !cb.checked;
+      // enforce single-select: zet andere uit als deze aan gaat
+      if (cb.checked) {
+        els.msgTableBody.querySelectorAll('input[type="checkbox"]').forEach(other => {
+          if (other !== cb) other.checked = false;
+        });
+      }
+      renderSentimentEditor();
+    });
 
     els.msgTableBody.appendChild(tr);
   });
+
+  // na render: herteken rechterpaneel voor (nieuwe) selectie
+  renderSentimentEditor();
 }
 
-function renderSentiments() {
+const SPECIAL_DAYS = [
+  { val: null, label: '—' },
+  { val: 'valentine', label: 'valentine' },
+  { val: 'newyear',   label: 'newyear' },
+  { val: 'easter',    label: 'easter' }
+];
+
+function renderSentimentEditor(){
   const data = currentLangData();
-  els.sentTableBody.innerHTML = '';
-  if (!data) return;
-  ensureSentiments(data);
+  const wrap = document.getElementById('sentEditor');
+  const status = document.getElementById('sentStatus');
+  if (!data || !wrap || !status) return;
 
-  data.sentiments.forEach(s => {
-    const tr = document.createElement('tr');
+  const ids = getSelectedIds();
+  wrap.innerHTML = '';
 
-    const tdSel = document.createElement('td');
-    const cb = document.createElement('input'); cb.type = 'checkbox'; cb.dataset.id = s.id;
-    tdSel.appendChild(cb);
-    tr.appendChild(tdSel);
+  if (ids.length !== 1) {
+    status.textContent = (ids.length === 0) ? 'Selecteer precies 1 message' : 'Meerdere geselecteerd — kies er 1';
+    return;
+  }
 
-    const tdId = document.createElement('td');
-    const inId = document.createElement('input'); inId.type = 'text'; inId.value = s.id || '';
-    inId.addEventListener('input', () => { s.id = inId.value.trim(); saveLocal(); });
-    tdId.appendChild(inId);
-    tr.appendChild(tdId);
+  status.textContent = `Message: ${ids[0]}`;
+  const msg = (data.messages || []).find(m => m.id === ids[0]);
+  if (!msg) return;
 
-    const tdLabel = document.createElement('td');
-    const inLabel = document.createElement('input'); inLabel.type = 'text'; inLabel.value = s.label || '';
-    inLabel.addEventListener('input', () => { s.label = inLabel.value; saveLocal(); });
-    tdLabel.appendChild(inLabel);
-    tr.appendChild(tdLabel);
+  const all = data.sentiments || [];
+  const selected = new Set(msg.sentiments || []);
 
-    const tdEmoji = document.createElement('td');
-    const inEmoji = document.createElement('input'); inEmoji.type = 'text'; inEmoji.value = s.emoji || '';
-    inEmoji.addEventListener('input', () => { s.emoji = inEmoji.value; saveLocal(); });
-    tdEmoji.appendChild(inEmoji);
-    tr.appendChild(tdEmoji);
+  // bouw checkbox-pills in rechterpaneel
+  const box = document.createElement('div');
+  box.className = 'chipset';
 
-    els.sentTableBody.appendChild(tr);
+  all.forEach(id => {
+    const pill = document.createElement('label');
+    pill.className = 'pill';
+    pill.innerHTML = `
+      <input type="checkbox" value="${id}" ${selected.has(id) ? 'checked' : ''}/>
+      <span>${id}</span>
+    `;
+    pill.querySelector('input').addEventListener('change', (e) => {
+      const val = e.target.value;
+      if (e.target.checked) selected.add(val); else selected.delete(val);
+      msg.sentiments = Array.from(selected);
+      saveLocal();
+    });
+    box.appendChild(pill);
   });
+
+  wrap.appendChild(box);
 }
 
-function renderAll() {
+function renderAll(){
   renderTabs();
   renderMessages();
-  renderSentiments();
-}
-
-/* ==========
-   Import / Export
-   ========== */
-function normalizeImported(jsonObj) {
-  const obj = {};
-  obj.messages = Array.isArray(jsonObj?.messages) ? jsonObj.messages.map(m => ({
-    id: m.id || uid(),
-    icon: m.icon || '',
-    text: m.text || '',
-    sentiment: m.sentiment || '',
-    tags: Array.isArray(m.tags) ? m.tags : (typeof m.tags === 'string' ? m.tags.split(',').map(s => s.trim()).filter(Boolean) : [])
-  })) : [];
-  obj.sentiments = Array.isArray(jsonObj?.sentiments) ? jsonObj.sentiments.map(s => ({
-    id: s.id || '',
-    label: s.label || (s.id || ''),
-    emoji: s.emoji || ''
-  })) : [];
-  return obj;
-}
-
-async function importFiles(fileList) {
-  for (const file of fileList) {
-    const text = await file.text();
-    let json;
-    try { json = JSON.parse(text); }
-    catch (e) { setStatus(`❌ ${file.name}: geen geldige JSON`); continue; }
-
-    const langGuess =
-      (json.lang || '') ||
-      file.name.replace(/\.[^.]+$/, '').toLowerCase(); // filename as lang key
-
-    const data = normalizeImported(json);
-    DB.langs.set(langGuess, { lang: langGuess, ...data });
-    DB.active = DB.active || langGuess;
-    setStatus(`✅ Geïmporteerd: ${file.name} → taal "${langGuess}" (${data.messages.length} messages)`);
-  }
-  saveLocal();
-  renderAll();
-}
-
-function exportActive() {
-  const data = currentLangData();
-  if (!data) { setStatus('Geen actieve taal.'); return; }
-
-  // Clean clone
-  const out = {
-    sentiments: (data.sentiments || []).map(s => ({ id: s.id, label: s.label, emoji: s.emoji })),
-    messages: (data.messages || []).map(m => ({
-      id: m.id, icon: m.icon, text: m.text, sentiment: m.sentiment,
-      ...(m.tags && m.tags.length ? { tags: m.tags } : {})
-    }))
-  };
-
-  const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `messages_${data.lang || 'lang'}.json`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setStatus(`⬇️ Geëxporteerd: messages_${data.lang}.json`);
 }
 
 /* ==========
    Actions
    ========== */
-function addLanguage() {
-  const key = prompt('Nieuwe taalcode (bijv. nl, en, pap):', '');
-  if (!key) return;
-  const lang = key.trim().toLowerCase();
-  if (!lang) return;
-  if (DB.langs.has(lang)) { alert('Taal bestaat al.'); return; }
-  DB.langs.set(lang, { lang, messages: [], sentiments: [] });
-  DB.active = lang;
-  saveLocal();
-  renderAll();
-}
-
-function addMessage() {
+function addMessage(){
   const data = currentLangData(); if (!data) return;
-  const row = { id: uid(), icon: '', text: '', sentiment: '', tags: [] };
+  const id = nextIdFor(data.lang, data.messages);
+  const row = { id, icon: '', text: '', sentiments: [], special_day: null, weight: 1 };
   data.messages.unshift(row);
   saveLocal();
   renderMessages();
 }
 
-function deleteSelectedMessages() {
+function deleteSelectedMessages(){
   const data = currentLangData(); if (!data) return;
   const ids = [...els.msgTableBody.querySelectorAll('input[type="checkbox"]:checked')].map(cb => cb.dataset.id);
   if (!ids.length) return;
@@ -302,61 +317,44 @@ function deleteSelectedMessages() {
   els.checkAll.checked = false;
 }
 
-function addSentiment() {
-  const data = currentLangData(); if (!data) return;
-  ensureSentiments(data);
-  data.sentiments.unshift({ id: 'nieuw', label: 'Nieuw', emoji: '✨' });
-  saveLocal();
-  renderSentiments();
-}
-
-function deleteSelectedSentiments() {
-  const data = currentLangData(); if (!data) return;
-  ensureSentiments(data);
-  const ids = [...els.sentTableBody.querySelectorAll('input[type="checkbox"]:checked')].map(cb => cb.dataset.id);
-  if (!ids.length) return;
-  // Waarschuwing: verwijdering kan messages "orphans" geven
-  if (!confirm(`Verwijder ${ids.length} sentiment(en)? Messages die dit sentiment gebruiken krijgen een lege waarde.`)) return;
-  data.sentiments = data.sentiments.filter(s => !ids.includes(s.id));
-  // maak orphan sentiments leeg in messages
-  const setIds = new Set(data.sentiments.map(s => s.id));
-  data.messages.forEach(m => { if (m.sentiment && !setIds.has(m.sentiment)) m.sentiment = ''; });
-  saveLocal();
-  renderAll();
-  els.checkAllSent.checked = false;
-}
-
 /* ==========
    Events
    ========== */
-function bindEvents() {
+function bindEvents(){
   els.fileInput.addEventListener('change', e => {
     const files = e.target.files;
     if (files && files.length) importFiles(files);
     els.fileInput.value = '';
   });
-  els.addLangBtn.addEventListener('click', addLanguage);
   els.exportBtn.addEventListener('click', exportActive);
 
   els.addMsgBtn.addEventListener('click', addMessage);
   els.delMsgBtn.addEventListener('click', deleteSelectedMessages);
-  els.addSentBtn.addEventListener('click', addSentiment);
-  els.delSentBtn.addEventListener('click', deleteSelectedSentiments);
 
   els.checkAll.addEventListener('change', () => {
     els.msgTableBody.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = els.checkAll.checked);
-  });
-  els.checkAllSent.addEventListener('change', () => {
-    els.sentTableBody.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = els.checkAllSent.checked);
+    renderSentimentEditor();
   });
 
-  els.searchBox.addEventListener('input', () => renderMessages());
+  els.searchBox.addEventListener('input', renderMessages);
+
+  // Theme toggle
+  els.themeBtn.addEventListener('click', () => {
+    const cur = document.documentElement.getAttribute('data-theme') || 'dark';
+    const next = (cur === 'dark') ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('adminTheme', next);
+  });
 }
 
 /* ==========
    Init
    ========== */
-(function init() {
+(function init(){
+  // theme restore
+  const theme = localStorage.getItem('adminTheme') || 'dark';
+  document.documentElement.setAttribute('data-theme', theme);
+
   loadLocal();
   bindEvents();
   renderAll();

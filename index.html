@@ -10,48 +10,67 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Patrick+Hand&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=dev5" />
+  <link rel="stylesheet" href="styles.css" />
   <link rel="manifest" href="manifest.webmanifest">
-  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link rel="apple-touch-icon" href="assets/icons/app-192.png">
+  <link rel="apple-touch-icon" href="assets/icons/logo_128.png">
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32"  href="assets/icons/logo_transparent_32px.png">
+  <link rel="icon" type="image/png" sizes="64x64"  href="assets/icons/logo_transparent_64px.png">
+  <link rel="icon" type="image/png" sizes="128x128" href="assets/icons/logo_transparent_128px.png">
+  <!-- iOS home screen --> 
+  <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png"> <!-- 180×180 -->
+  <!-- Android / PWA (optioneel, wel handig) -->
+  <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/android-chrome-192x192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="assets/icons/android-chrome-512x512.png">
+  <!-- (optioneel) themekleur voor mobiele UI chrome -->
+  <meta name="theme-color" content="#000000">
 </head>
 <body>
 
   <!-- =================== TOPBAR =================== -->
   <header class="topbar" data-topbar>
     <h1 class="brand">a warm note to someone You care about<span class="brand-payoff"></span></h1>
-
-    <!-- Één enkele actions-nav -->
     <nav class="actions" aria-label="Acties">
-      <button id="btn-new" class="btn btn-ico primary" type="button" aria-label="Nieuwe boodschap">
-        <!-- “plus/note” icoon -->
-        <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M7 3h7l5 5v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" fill="currentColor" opacity=".18"/>
-          <path d="M14 3v5a2 2 0 0 0 2 2h5" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".6"/>
-          <path d="M12 10v6M9 13h6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-        </svg>
+      <button id="btn-new" class="btn btn-ico" type="button" aria-label="Nieuwe boodschap">
+		<!-- “sticky note” icoon (voor Nieuwe boodschap) -->
         <span class="btn-label">Nieuwe boodschap</span>
       </button>
+        <!-- =================== AI Message =================== 
+
+      <button id="btn-ai" class="btn icon" type="button">
+  		<span class="icon" aria-hidden="true">✨</span>
+  		<span class="btn-label" data-i18n="ui.aiNew">AI</span>
+	  </button> 
+	  -->
       <button id="btn-share" class="btn btn-ico" type="button" aria-label="Verstuur">
         <!-- “paper plane” icoon -->
-<!-- “paper plane” icoon – met ruimere viewBox om stroke-bleed niet te clippen -->
-<svg width="18" height="18" viewBox="-1 -1 26 26" aria-hidden="true">
-  <path d="M21.5 3.5 10 14l-1 6 4-3 8.5-13.5z" fill="currentColor" opacity=".18"/>
-  <path d="M21.5 3.5 10 14 9 20 13 17M10 14 2.5 12"
-        fill="none" stroke="currentColor"
-        stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-</svg>
+		<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" id="Paper-Plane">
+		  <path fill="#fff" fill-rule="evenodd" d="M12 23c6.075 0 11 -4.925 11 -11S18.075 1 12 1 1 5.925 1 12s4.925 11 11 11ZM4.982 11.175c0 -0.102 0.067 -0.198 0.162 -0.234l12.324 -4.697a0.254 0.254 0 0 1 0.254 0.046c0.068 0.06 0.1 0.157 0.078 0.246l-2.458 10.338a0.254 0.254 0 0 1 -0.156 0.177 0.253 0.253 0 0 1 -0.234 -0.032l-2.619 -1.895 -0.1 0.066a157.1 157.1 0 0 1 -1.196 0.788 46.23 46.23 0 0 1 -0.943 0.6 9.536 9.536 0 0 1 -0.352 0.207 2.277 2.277 0 0 1 -0.14 0.072 0.93 0.93 0 0 1 -0.078 0.033 0.716 0.716 0 0 1 -0.722 -0.165 0.775 0.775 0 0 1 -0.202 -0.394l-0.001 -0.005 -0.803 -3.949 -2.652 -0.968a0.255 0.255 0 0 1 -0.162 -0.234Zm3.792 0.993 0.727 3.577 0.81 -2.463 4.142 -3.715a0.154 0.154 0 0 0 0.023 -0.196 0.154 0.154 0 0 0 -0.19 -0.05l-5.512 2.847Z" clip-rule="evenodd" stroke-width="1"></path>
+		</svg>
         <span class="btn-label">Verstuur</span>
       </button>
-      <!-- ✅ PERMANENTE EXPAND-KNOP IN TOPBAR -->
+<!-- Language dropdown -->
+<div id="lang-dd" class="lang-dd">
+  <button id="lang-dd-btn" class="lang-btn btn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Language">
+    <span class="flag" aria-hidden="true">🇳🇱</span>
+    <span class="code">NL</span>
+  </button>
+  <div id="lang-dd-menu" class="lang-menu" role="menu" hidden>
+    <button class="lang-item" role="menuitemradio" aria-checked="false" data-lang="en">
+      <span class="flag" aria-hidden="true">🇬🇧</span>
+      <span class="label">English</span>
+    </button>
+    <button class="lang-item" role="menuitemradio" aria-checked="false" data-lang="nl">
+      <span class="flag" aria-hidden="true">🇳🇱</span>
+      <span class="label">Nederlands</span>
+    </button>
+  </div>
+</div>
+ <!-- ✅ PERMANENTE EXPAND-KNOP IN TOPBAR -->
       <button class="btn btn-ico" data-action="expand-note" type="button" aria-label="Bericht vergroten" title="Vergroot de note"> ⤢ </button>
-<!-- === Language picker (testvriendelijk) === -->
-<label for="langSelect" class="vh">Taal</label>
-<select id="langSelect" aria-label="Kies taal" title="Kies taal">
-  <option value="nl">Nederlands</option>
-  <option value="en">English</option>
-</select>
+<!-- Language dropdown -->
     </nav>
   </header>
   
@@ -68,7 +87,7 @@
 
   <!-- =================== APP =================== -->
   <main class="page" role="main">
-    <div class="intro-hint" id="intro-hint">ip <span class="hint-swipe">: swipe door de Gevoelens & Boodschap →</span></div>
+    <div class="intro-hint" id="intro-hint">Tip <span class="hint-swipe">: swipe door de Gevoelens & Boodschap →</span></div>
 
     <!-- Sentiment chips -->
     <section class="chips-wrap" aria-label="Kies gevoel">
@@ -264,10 +283,10 @@
 
   <!-- =================== SCRIPTS =================== -->
   <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js" defer></script>
-  <script defer src="script.js?v=dev5"></script>
-  <script defer src="mail.js?v=dev5"></script>
-  <script defer src="whatsapp.js?v=dev5"></script>
-  <script defer src="download.js?v=dev5"></script>
+  <script defer src="script.js"></script>
+  <script defer src="mail.js"></script>
+  <script defer src="whatsapp.js"></script>
+  <script defer src="download.js"></script>
 
   <!-- helpers -->
   <style>.vh{position:absolute!important;height:1px;width:1px;overflow:hidden;clip:rect(1px,1px,1px,1px);white-space:nowrap;}</style>

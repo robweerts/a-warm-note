@@ -10,6 +10,10 @@
   --ui:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
   --hand:"Caveat","Patrick Hand",ui-rounded,system-ui,sans-serif;
   --ease:cubic-bezier(.2,.8,.2,1);
+  --btn-h: 35px;
+  --btn-pad-x: 12px;
+  --btn-radius: 12px;
+  --icon: 18px;           /* << vaste iconmaat */
 }
 
 *{box-sizing:border-box}
@@ -59,6 +63,72 @@ body::before{
 .btn-ico svg{flex:0 0 auto; display:block; overflow:visible}
 .btn-ico .btn-label{display:inline-block}
 @media (max-width:360px){ .btn-ico .btn-label{display:none} }
+
+/* vaste, compacte knophoogte */
+#btn-new{
+  height: 35px;           /* of wat je topbar-knophoogte is */
+  padding: 0 12px;        /* horizontale padding */
+  line-height: 1;         /* voorkomt extra vertical space */
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;             /* ruimte tussen icoon en label */
+  box-sizing: border-box;
+}
+
+/* Mobile compacter maken */
+@media (max-width: 480px){
+  :root{
+    --btn-h: 35px;
+    --icon: 16px;
+  }
+}
+
+/* Trek ALLE knoppen gelijk (ook language) */
+button.btn,
+#lang-dd .lang-btn {
+  height: var(--btn-h);
+  padding: 0 var(--btn-pad-x);
+  border-radius: var(--btn-radius);
+  display: inline-flex;
+  align-items: center;     /* voorkomt “rekken” */
+  gap: .4rem;
+  line-height: 1;          /* geen extra hoogte door tekst */
+  box-sizing: border-box;
+}
+
+/* de container moet boven je topbar/overlays uitkomen */
+#lang-dd { position: relative; z-index: 999; }
+
+/* menu zelf mag niet afgeknipt worden door parent */
+#lang-dd .lang-menu{
+  position: absolute;
+  top: 110%; right: 0;
+  min-width: 12rem;
+  background: rgba(0,0,0,.85);
+  color: #fff;
+  border-radius: .9rem;
+  padding: .6rem;
+  box-shadow: 0 8px 20px rgba(0,0,0,.25);
+}
+
+/* als je topbar/header overflow:hidden heeft → zichtbaar houden */
+.topbar, header, nav { overflow: visible; } /* pas selector aan naar jouw topbar */
+
+/* Constraining icons (SVG) – the magic */
+button.btn svg,
+#lang-dd .lang-btn svg {
+  width: var(--icon) !important;
+  height: var(--icon) !important;
+  display: block;          /* geen baseline-whitespace */
+  flex: 0 0 var(--icon);
+  pointer-events: none;
+}
+
+/* Als je icon via <span class="icon"> … </span> hebt */
+button.btn .icon { 
+  width: var(--icon); height: var(--icon); display: inline-flex; 
+}
+button.btn .icon svg { width: 100% !important; height: 100% !important; }
 
 /* =================== Intro =================== */
 .intro{
@@ -638,40 +708,47 @@ button[data-action="expand-note"].is-hot::after{
 #btn-share, #btn-share * { overflow: visible; }
 #btn-share svg { width: 20px; height: 20px; display: block; }
 
-/* Language select in de topbar */
-.actions #langSelect {
-  appearance: none;
-  background: rgba(0,0,0,.45);
-  color: #fff;
-  font-weight: 600;
-  font-size: .92rem;
-  padding: 6px 10px;
-  border-radius: 10px;
-  border: 0;
-  cursor: pointer;
-  box-shadow: 0 6px 18px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.06);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  transition: background .2s var(--ease), transform .06s var(--ease);
+/* trigger */
+.lang-dd { position: relative; display:inline-block; }
+.lang-btn{
+  display:inline-flex; align-items:center; gap:.35rem;
+  background:rgba(0,0,0,.25); color:#fff; border:0; border-radius:.8rem;
+  padding:.45rem .7rem; line-height:1; cursor:pointer;
 }
+.lang-btn .flag{ font-size:1.05rem; }
 
-.actions #langSelect:hover {
-  background: rgba(0,0,0,.6);
-  transform: translateY(-1px);
+/* menu */
+.lang-menu{
+  position:absolute; top:110%; right:0; min-width:12rem;
+  background:rgba(0,0,0,.85); color:#fff; border-radius:.9rem;
+  padding:.6rem; box-shadow:0 8px 20px rgba(0,0,0,.25); backdrop-filter: blur(6px);
 }
-
-.actions #langSelect:active {
-  transform: translateY(1px);
+.lang-item{
+  width:100%; display:flex; align-items:center; gap:.6rem;
+  background:transparent; border:0; color:inherit; text-align:left;
+  padding:.55rem .6rem; border-radius:.6rem; cursor:pointer;
 }
+.lang-item .flag{ font-size:1.1rem; }
+.lang-item[aria-checked="true"]{ font-weight:700; }
+.lang-item:hover{ background:rgba(255,255,255,.08); }
 
-.actions #langSelect:focus-visible {
-  outline: 2px solid rgba(255,255,255,.9);
-  outline-offset: 2px;
-}
+/* show/hide */
+.lang-dd.open #lang-dd-menu{ display:block; }
+.lang-dd #lang-dd-menu[hidden]{ display:none; }
 
-@media (max-width: 420px) {
-  .actions #langSelect {
-    font-size: .85rem;
-    padding: 5px 8px;
-  }
+/* dropdown container mag buiten .topbar uitsteken */
+.topbar { overflow: visible; }
+
+/* menu zichtbaar als JS 'm opent */
+#lang-dd-menu[hidden] { display: none !important; }
+#lang-dd.open #lang-dd-menu { display: block; }
+
+/* boven UI lagen */
+#lang-dd { position: relative; z-index: 50; }
+#lang-dd-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  min-width: 140px;
+  touch-action: manipulation;  /* helpt iOS */
 }
