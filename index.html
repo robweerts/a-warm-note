@@ -11,17 +11,15 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Patrick+Hand&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css" />
-  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="manifest" href="site.webmanifest">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="apple-touch-icon" href="assets/icons/logo_128.png">
-  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="icon" href="favicon.ico" sizes="any">
   <link rel="icon" type="image/png" sizes="32x32"  href="assets/icons/logo_transparent_32px.png">
   <link rel="icon" type="image/png" sizes="64x64"  href="assets/icons/logo_transparent_64px.png">
   <link rel="icon" type="image/png" sizes="128x128" href="assets/icons/logo_transparent_128px.png">
-  <!-- iOS home screen --> 
   <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png"> <!-- 180×180 -->
-  <!-- Android / PWA (optioneel, wel handig) -->
   <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/android-chrome-192x192.png">
   <link rel="icon" type="image/png" sizes="512x512" href="assets/icons/android-chrome-512x512.png">
   <!-- (optioneel) themekleur voor mobiele UI chrome -->
@@ -68,9 +66,7 @@
     </button>
   </div>
 </div>
- <!-- ✅ PERMANENTE EXPAND-KNOP IN TOPBAR -->
       <button class="btn btn-ico" data-action="expand-note" type="button" aria-label="Bericht vergroten" title="Vergroot de note"> ⤢ </button>
-<!-- Language dropdown -->
     </nav>
   </header>
   
@@ -78,9 +74,11 @@
 <div id="intro-boot" class="intro-boot" aria-live="polite" aria-label="App wordt geladen" role="status">
   <div class="intro-boot__center">
     <!-- Logo/icoon of initialen — vervang gerust -->
-    <div class="intro-boot__logo" aria-hidden="true">💛</div>
+	<div class="intro-boot__logo" aria-hidden="true">
+  		<img src="assets/icons/logo_transparent_64px.png" srcset="assets/icons/logo_transparent_64px.png 1x, assets/icons/logo_transparent_128px.png 2x" alt="" class="intro-logo-img" decoding="async" fetchpriority="high"/>
+	</div>
     <div class="intro-boot__brand" aria-hidden="true">a warm note</div>
-    <div class="intro-boot__tagline" aria-hidden="true">Iets kleins, veel betekenis</div>
+    <div class="intro-boot__tagline" aria-hidden="true">to someone You care about</div>
     <div class="intro-boot__spinner" aria-hidden="true"></div>
   </div>
 </div>

@@ -14,6 +14,17 @@
   ],
   "messages": [
     {
+      "id": "nl_065",
+      "icon": "🤓",
+      "text": "Het leven is te belangrijk om het serieus te nemen.",
+      "sentiments": [
+        "kalmte",
+        "troost"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
       "id": "nl_064",
       "icon": "🫶🏼",
       "text": "Laat je verleden achter je. Struikel niet langer over iets wat achter je ligt. Ga vooruit.",
@@ -27,7 +38,7 @@
     {
       "id": "nl_063",
       "icon": "💪🏼",
-      "text": "Kijk naar jezelf en bewonder je veerkracht. Je hebt al zo veel overwonnen. Je kunt ook dit aan. Blijf in jezelf geloven",
+      "text": "Kijk naar jezelf en bewonder je veerkracht. Je hebt al zo veel overwonnen. Blijf in jezelf geloven.",
       "sentiments": [
         "troost",
         "bemoedigend",
