@@ -1,45 +1,104 @@
-// sw.js — ultra light PWA cache
-const VER = 'awn-v1';
-const CORE = [
-  '/', '/index.html', '/styles.css', '/script.js',
-  '/messages.nl.json', '/mail.js', '/whatsapp.js', '/download.js'
+/* sw.js — robuuste pre-cache + cache-first fetch
+   - Geen cache.addAll (één 404 mag installatie niet breken)
+   - Querystrings tolerant (ignoreSearch bij match)
+   - Alles in root: gebruik absolute paden
+*/
+
+const SW_VERSION  = 'v2025-09-25-4';         // ← bump dit bij elke release
+const CACHE_NAME  = 'awn-' + SW_VERSION; 
+
+// Alleen assets die écht bestaan in productie en same-origin zijn:
+const PRECACHE_URLS = [
+  '/',                 // voor navigatie fallback
+  '/index.html',
+  '/styles.css',
+  '/script.js',
+  '/download.js',
+  '/mail.js',
+  '/whatsapp.js',
+  '/data/messages.en.json',
+  '/data/messages.nl.json',
+  // Voeg hier evt. icons/fonts/images toe, bv. '/favicon.ico', '/icon-192.png', etc.
 ];
 
-self.addEventListener('install', (e)=>{
-  e.waitUntil(caches.open(VER).then(c=>c.addAll(CORE)));
-  self.skipWaiting();
+// -------- Install: prefetch elk item veilig (zonder addAll) --------
+self.addEventListener('install', (event) => {
+  event.waitUntil((async () => {
+    const cache = await caches.open(CACHE_NAME);
+
+    for (const url of PRECACHE_URLS) {
+      try {
+        // Vers van het netwerk; SW mag geen mixed-content/http cachen op https
+        const resp = await fetch(url, { cache: 'no-store' });
+        // Sla alleen bruikbare responses op
+        if (resp && (resp.ok || resp.type === 'opaque')) {
+          await cache.put(url, resp.clone());
+        } else {
+          console.warn('[sw] skip pre-cache', url, resp && resp.status);
+        }
+      } catch (err) {
+        console.warn('[sw] pre-cache error', url, err);
+      }
+    }
+
+    await self.skipWaiting();
+  })());
 });
 
-self.addEventListener('activate', (e)=>{
-  e.waitUntil((async ()=>{
-    const keys = await caches.keys();
-    await Promise.all(keys.filter(k=>k!==VER).map(k=>caches.delete(k)));
+// -------- Activate: oude caches weg + direct controle --------
+self.addEventListener('activate', (event) => {
+  event.waitUntil((async () => {
+    const names = await caches.keys();
+    await Promise.all(
+      names.map(n => (n === CACHE_NAME ? Promise.resolve() : caches.delete(n)))
+    );
     await self.clients.claim();
   })());
 });
 
-// Cache-first voor alles uit CORE; network-first voor messages.nl.json (met fallback cache)
-self.addEventListener('fetch', (e)=>{
-  const url = new URL(e.request.url);
-  if (e.request.method !== 'GET') return;
+// -------- Fetch: cache-first met nette fallbacks --------
+self.addEventListener('fetch', (event) => {
+  const req = event.request;
+  if (req.method !== 'GET') return;
 
-  if (CORE.some(p => url.pathname.endsWith(p) || url.pathname === p)) {
-    e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));
-    return;
-  }
-
-  if (url.pathname.endsWith('/messages.nl.json')) {
-    e.respondWith((async ()=>{
+  // Navigatieverzoeken (documenten): network-first met index.html fallback
+  if (req.mode === 'navigate') {
+    event.respondWith((async () => {
       try {
-        const net = await fetch(e.request, { cache: 'no-store' });
-        const cache = await caches.open(VER);
-        cache.put(e.request, net.clone());
+        const net = await fetch(req);
         return net;
       } catch {
-        const cached = await caches.match(e.request);
-        return cached || new Response(JSON.stringify({ lang:'nl', messages:[] }), { headers:{'Content-Type':'application/json'}});
+        const cache = await caches.open(CACHE_NAME);
+        const index = await cache.match('/index.html', { ignoreSearch: true });
+        return index || new Response('', { status: 504, statusText: 'Offline' });
       }
     })());
     return;
   }
+
+  // Overige GETs: cache-first, dan network (+ runtime bij same-origin cachen)
+  event.respondWith((async () => {
+    const cache = await caches.open(CACHE_NAME);
+
+    // Belangrijk: ignoreSearch zodat '/data/messages.nl.json?ts=...' matcht
+    const cached = await cache.match(req, { ignoreSearch: true });
+    if (cached) return cached;
+
+    try {
+      const net = await fetch(req);
+      // Runtime-cachen alleen same-origin en ok
+      if (net.ok && new URL(req.url).origin === self.location.origin) {
+        cache.put(req, net.clone()).catch(() => {});
+      }
+      return net;
+    } catch {
+      // Fallback voor asset-requests: niets of evt. een lege 504
+      return new Response('', { status: 504, statusText: 'Offline' });
+    }
+  })());
+});
+
+// Optioneel: direct updaten zonder herladen (postMessage('SKIP_WAITING'))
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
 });

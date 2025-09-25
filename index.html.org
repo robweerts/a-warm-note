@@ -32,8 +32,7 @@
     <h1 class="brand">a warm note to someone You care about<span class="brand-payoff"></span></h1>
     <nav class="actions" aria-label="Acties">
       <button id="btn-new" class="btn btn-ico" type="button" aria-label="Nieuwe boodschap">
-		<!-- “sticky note” icoon (voor Nieuwe boodschap) -->
-        <span class="btn-label">Nieuwe boodschap</span>
+        <span class="btn-label">Kies bericht</span>
       </button>
         <!-- =================== AI Message =================== 
 
@@ -114,11 +113,10 @@
         <input id="from-inline" class="compose-from" type="text" placeholder="Van jou (optioneel)" aria-label="Van wie is dit?">
       </div>
     </section>
-	<div id="coach-tip" class="coach hidden" role="status" aria-live="polite">
-  		<span class="coach-text"></span>
-  		  <div id="coach-avatar"></div> 
 
-</div>
+    <div id="coach-tip" class="coach" role="status" aria-live="polite">
+      <span class="coach-text">Welkom</span>
+    </div>
   </main>
 
   <!-- =================== SHARE SHEET =================== -->
@@ -280,65 +278,14 @@
   <div id="confetti-layer" class="vh" aria-live="polite">Viering: berichtje verstuurd.</div>
 
   <!-- =================== SCRIPTS =================== -->
-  <script defer src="/script.js"></script>
-  <script defer src="/sticky-avatar.js"></script>
-  <script defer src="/mail.js"></script>
-  <script defer src="/whatsapp.js"></script>
-  <script defer src="/download.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
+  <script defer src="script.js"></script>
+  <script defer src="mail.js"></script>
+  <script defer src="whatsapp.js"></script>
+  <script defer src="download.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>"
 
   <!-- helpers -->
   <style>.vh{position:absolute!important;height:1px;width:1px;overflow:hidden;clip:rect(1px,1px,1px,1px);white-space:nowrap;}</style>
-<script>
-(function () {
-  const isLocal = ['localhost', '127.0.0.1', '::1'].includes(location.hostname);
-  if (!('serviceWorker' in navigator) || isLocal || location.protocol !== 'https:') return;
 
-  let newSw; // installing/ waiting worker ref
-
-  navigator.serviceWorker.register('/sw.js').then(reg => {
-    // 1) Update-detectie
-    reg.addEventListener('updatefound', () => {
-      newSw = reg.installing;
-      if (!newSw) return;
-      newSw.addEventListener('statechange', () => {
-        // SW is geïnstalleerd, er is al een controller => nieuwe versie beschikbaar
-        if (newSw.state === 'installed' && navigator.serviceWorker.controller) {
-          // Toon jouw UI (banner/toast/knop) – voorbeeld:
-          const el = document.querySelector('[data-sw-update]');
-          if (el) el.hidden = false;
-        }
-      });
-    });
-
-    // 2) Controller change => pagina ververst automatisch na SKIP_WAITING
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      // Herlaad 1x om nieuwe assets te krijgen
-      if (!sessionStorage.getItem('sw-reloaded')) {
-        sessionStorage.setItem('sw-reloaded', '1');
-        location.reload();
-      }
-    });
-
-    // 3) Optioneel: bericht van SW (bijv. "SW_READY")
-    navigator.serviceWorker.addEventListener('message', (e) => {
-      if (e.data && e.data.type === 'SW_READY') {
-        const el = document.querySelector('[data-sw-update]');
-        if (el) el.hidden = false;
-      }
-    });
-  }).catch(() => { /* stil falen */ });
-
-  // Publieke helper om update meteen te activeren
-  window.activateNewVersion = function () {
-    if (!navigator.serviceWorker.controller) return;
-    // Stuur SKIP_WAITING naar de nieuwe worker (die in 'waiting' staat)
-    navigator.serviceWorker.getRegistration().then(reg => {
-      const w = reg && reg.waiting;
-      if (w) w.postMessage({ type: 'SKIP_WAITING' });
-    });
-  };
-})();
-</script>
 </body>
 </html>

@@ -9,7 +9,7 @@
   --shadow:0 18px 40px rgba(0,0,0,.35);
   --ui:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
   --hand:"Caveat","Patrick Hand",ui-rounded,system-ui,sans-serif;
-  --ease:cubic-bezier(.2,.8,.2,1);
+ /* --ease:cubic-bezier(.2,.8,.2,1);*/
   --btn-h: 35px;
   --btn-pad-x: 12px;
   --btn-radius: 12px;
@@ -751,4 +751,51 @@ button[data-action="expand-note"].is-hot::after{
   right: 0;
   min-width: 140px;
   touch-action: manipulation;  /* helpt iOS */
+}
+
+/* Coach container */
+#coach-tip {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  overflow: visible;                    /* avatar mag uitsteken */
+  padding-inline-end: max(0px, env(safe-area-inset-right));
+}
+
+/* Host van de avatar: “zo ver mogelijk rechts”, maar nooit buiten het scherm */
+#coach-avatar {
+  position: absolute;
+  inset-block-end: 38px;                /* onderlijn – pas aan naar smaak */
+  inset-inline-end: clamp(-24px, -6vw, 0px);
+  /*  ↑ desktop ~ -24px buiten, op small screens schuift hij richting 0px (binnen) */
+  inline-size: clamp(40px, 10vw, 64px); /* schaalt mee met viewport */
+  block-size:  clamp(40px, 10vw, 64px);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Alleen de sticky, geen cirkel erachter */
+.awn-avatar {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  inline-size: 100%;
+  block-size: 100%;
+}
+.awn-avatar svg {
+  inline-size: 100%;
+  block-size: 100%;
+}
+
+/* Extra fine-tuning per breakpoint (optioneel) */
+@media (max-width: 480px) {
+  #coach-avatar {
+    inset-inline-end: clamp(-10px, -3vw, 0px);
+  }
+}
+@media (max-width: 360px) {
+  #coach-avatar {
+    inset-inline-end: 0;               /* helemaal binnen blijven op heel klein scherm */
+  }
 }

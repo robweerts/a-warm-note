@@ -3,7 +3,7 @@
   "version": 1,
   "strings": {
     "actions": {
-      "new": "Nieuwe boodschap",
+      "new": "Kies Bericht",
       "install": "Installeer",
       "share": "Verstuur",
       "email": "E-mail",
@@ -63,9 +63,9 @@
       "open": "Open Messenger"
     },
     "about": {
-      "title": "Over deze site",
+      "title": "Over deze App",
       "p1_strong": "a warm note — to someone you care about",
-      "p2": "Kleine kattebelletjes met grote betekenis. Een app waar je liefdevolle, grappige of bemoedigende notities kunt sturen. Even, al is het maar kort, laten weten dat je aan iemand denkt.",
+      "p2": "Kleine berichtje met grote betekenis. Een app waar je liefdevolle, grappige of bemoedigende notities kunt sturen. Even, al is het maar kort, laten weten dat je aan iemand denkt.",
       "tag": "Iets kleins, veel betekenis",
       "fabLabel": "Over deze site"
     },

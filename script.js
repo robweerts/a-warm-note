@@ -24,7 +24,7 @@
  ========================================================================== */
 
 /* [A] CONFIG & CONSTANTEN --------------------------------------------------- */
-const NL_ONLY_MODE       = true;
+
 const CONFETTI_ENABLED   = true;
 const IS_FILE            = (location.protocol === "file:");
 const RECENT_LIMIT       = 5;
@@ -53,7 +53,7 @@ function resolveLang() {
 /* relatief pad werkt in root én submap-deployments */
 function messagesPathFor(lang) {
   const ts = Date.now(); // simpele cache-bust
-  return `data/messages.${lang}.json?ts=${ts}`;
+  return `/data/messages.${lang}.json?ts=${ts}`;
 }
 
 /* [A+] THEME DETECT & KLEUREN ---------------------------------------------- */
@@ -116,6 +116,8 @@ function recacheEls(){
     fromSymbol: $("from-symbol"),
     sheetClose: $("sheet-backdrop")?.querySelector(".sheet-close"),
     coachClose: $("coach-tip")?.querySelector(".coach-close"),
+	coachMsg: document.querySelector("#coach-tip .coach-text"),    
+	coachAvatar: $("coach-avatar"),  
     pairToVal: $("pair-to-val"),
     pairFromVal: $("pair-from-val"),
     shareCopy: $("share-copy"),
@@ -140,67 +142,112 @@ const STATE = {
 
 /* [D] INIT (lifecycle) ------------------------------------------------------ */
 
-function autoCapitalizeInput(input) {
-  if (!input) return;
-  input.addEventListener('input', (e) => {
-    const val = e.target.value;
-    if (val.length > 0) {
-      e.target.value = val.charAt(0).toUpperCase() + val.slice(1);
-    }
-  });
-}
-
 function init() {
+  // 1) Taal & basis
   STATE.lang = resolveLang();
   document.documentElement.setAttribute('lang', STATE.lang);
   recacheEls();
   wireGlobalUI();
   if (typeof wireLanguagePicker === 'function') wireLanguagePicker();
-	wireLangDropdown?.();
-	renderLangDropdownUI?.();
-    ensureStringsLoaded()
+  wireLangDropdown?.();
+  renderLangDropdownUI?.();
+  if (window.StickyAvatar && els.coachAvatar) {
+  StickyAvatar.mount(els.coachAvatar);
+  StickyAvatar.setFromCoach('init'); // startstand
+  }
+
+  // 2) Strings → Messages
+  ensureStringsLoaded()
     .then(() => {
       if (typeof refreshUIStrings === 'function') refreshUIStrings();
-      // daarna pas messages inladen
       return loadMessages();
     })
     .then(() => {
-      buildSentimentChips();
+      // 3) Inputs netjes maken
       autoCapitalizeInput(els.toInput);
       autoCapitalizeInput(els.fromInput);
 
+      // 4) URL-params
       const qp = new URLSearchParams(location.search);
       const toVal     = qp.get('to');
       const fromVal   = qp.get('from');
       const sharedMid = qp.get('mid');
       const sharedId  = qp.get('id');
+      
+      // Bewaar ontvangen namen, maar vul géén inputs in bij mid
+	  STATE.shared = STATE.shared || { to: '', from: '' };
+	  STATE.shared.to   = toVal;
+	  STATE.shared.from = fromVal;
+	  
+	  const isReceivedByMid = !!sharedMid;
+	  STATE.useSharedNames = isReceivedByMid;  // <-- NIEUW
 
-      if (toVal && els.toInput)      els.toInput.value = toVal;
-      if (fromVal && els.fromInput)  els.fromInput.value = fromVal;
 
-      // Welkomstboodschap of direct renderen
-      if (!showWelcomeIfRelevant(els)) {
-        let msgIdx = null;
-        if (sharedMid) {
-          msgIdx = STATE.allMessages.findIndex(m => m.id === sharedMid);
-        } else if (sharedId) {
-          msgIdx = Number(sharedId);
-        }
-        if (msgIdx !== null && msgIdx >= 0 && msgIdx < STATE.allMessages.length) {
-          renderMessage({ requestedIdx: msgIdx, wiggle: false });
-        } else {
-          renderMessage({ newRandom: true, wiggle: false });
-        }
+	  if (isReceivedByMid) {
+  	  if (els.toInput) {
+    	  els.toInput.value = '';
+    	  els.toInput.placeholder = (typeof i18n === 'function'
+      	  ? i18n('to_placeholder')
+      	  : 'Voor wie?');
+  	  }
+  	  if (els.fromInput) {
+    	  els.fromInput.value = '';
+  	  }
+	  } else {
+  	  if (toVal && els.toInput)     els.toInput.value   = toVal;
+  	  if (fromVal && els.fromInput) els.fromInput.value = fromVal;
+	  }
+
+      // 5) Welkom eerst laten beslissen
+      const didShowWelcome = showWelcomeNote(els);
+
+      // 6) Daarna pas chips bouwen (die intern vertraagd een render triggert)
+      buildSentimentChips();
+
+      // 7) Als we welcome toonden: 120ms later nogmaals forceren (chips render overruled)
+      if (didShowWelcome) {
+        setTimeout(() => {
+          showWelcomeNote(els);   // zet welcome-tekst + styling opnieuw
+        }, 120);                  // > 90ms (interne renderMessage-delay)
+       // updateCoach('init');
+        return;                   // géén directe message-render in scenario 1
       }
-      // Coach laten we nu even voor wat het is; call blijft staan
-      updateCoach(currentCoachState());
+
+      // 8) Geen welcome → direct renderen via mid/id of anders random
+      let msgIdx = null;
+      if (sharedMid) {
+        msgIdx = STATE.allMessages.findIndex(m => m.id === sharedMid);
+      } else if (sharedId) {
+        const n = Number(sharedId);
+        if (!Number.isNaN(n)) msgIdx = n;
+      }
+
+      if (msgIdx != null && msgIdx >= 0 && msgIdx < STATE.allMessages.length) {
+        renderMessage({ requestedIdx: msgIdx, wiggle: false });
+      } else {
+        renderMessage({ newRandom: true, wiggle: false });
+      }
+
+	  // 9) Coach-status bijwerken
+	  if (isReceivedByMid) {
+  	  // In ontvangen-flow: hou de expliciete CTA (niet overschrijven!)
+  	  if (!STATE._coachReceivedOnce) {
+    	updateCoach('received');
+    	STATE._coachReceivedOnce = true;
+  	  }
+	  } else {
+  	  // In alle andere gevallen mag de algemene coach-update
+  	  updateCoach(currentCoachState());
+	  }		
     })
     .catch((e) => {
       console.error("FOUT in init():", e);
     });
-      if (typeof installComposeAutoLocalizer === 'function') {
-  installComposeAutoLocalizer();
-}
+
+  // 10) Compose auto-localizer (zoals je had)
+  if (typeof installComposeAutoLocalizer === 'function') {
+    installComposeAutoLocalizer();
+  }
 }
 
 // Start pas wanneer DOM klaar is
@@ -270,7 +317,7 @@ async function loadMessages(){
       };
   const _messagesPathFor = (typeof messagesPathFor === 'function')
     ? messagesPathFor
-    : (lang) => `data/messages.${lang}.json?ts=${Date.now()}`;
+    : (lang) => `/data/messages.${lang}.json?ts=${Date.now()}`;
 
   try{
     /* 1) Kies gewenste taal en probeer die file te laden */
@@ -569,8 +616,12 @@ function setPaperLook(){
 }
 
 function renderMessage({ newRandom=false, requestedIdx=null, wiggle=false } = {}){
+  // --- GUARD: oversla initiele auto-render zolang welcome-lock actief is ---
+  const now = (window.performance?.now?.() || Date.now());
+  if (window._awnWelcomeGuardUntil && now < window._awnWelcomeGuardUntil) {
+    return;
+  }
   let idx = STATE.currentIdx;
-
   // 1) Direct aangevraagde index krijgt voorrang
   if (requestedIdx != null) {
     idx = requestedIdx;
@@ -603,11 +654,15 @@ function renderMessage({ newRandom=false, requestedIdx=null, wiggle=false } = {}
     if (idx < 0) idx = localIdx; // defensieve fallback (zou zelden gebeuren)
   }
 
-  // 3) Guard: geen geldige index → lege staat tonen
   if (idx == null || idx < 0 || idx >= STATE.allMessages.length) {
-    if (els.msg)  els.msg.textContent   = "Stuur een warme boodschap naar iemand.";
+    if (els.msg)  {
+      const fallbackText = "Stuur een warme boodschap naar iemand.";
+      els.msg.setAttribute('data-raw', fallbackText);     // bron vastleggen
+      els.msg.textContent = personalize(fallbackText);    // consistent via personalize
+    }
     if (els.icon) els.icon.textContent  = "💌";
     if (els.note) setPaperLook();
+    renderToFrom(); // lijnen toch syncen
     return;
   }
 
@@ -617,12 +672,16 @@ function renderMessage({ newRandom=false, requestedIdx=null, wiggle=false } = {}
 
   const { icon, text, sentiments } = STATE.allMessages[idx];
 
-  // 5) Animatie + invullen
+  // 5) Animatie + invullen (altijd from raw-template personaliseren)
   if (els.msg && els.icon){
     els.msg.style.opacity = 0; 
     els.icon.style.opacity = 0;
+    const raw = (typeof text === 'string') ? text : '';
+    els.msg.setAttribute('data-raw', raw);
     setTimeout(()=>{
-      els.msg.textContent  = personalize(text);
+      // Her-personaliseren vanaf bron (fix voor Ria → Truus usecase)
+      const base = els.msg.getAttribute('data-raw') || raw || '';
+      els.msg.textContent  = personalize(base);
       els.icon.textContent = icon || "";
       els.msg.style.opacity = 1; 
       els.icon.style.opacity = 1;
@@ -644,12 +703,31 @@ function renderMessage({ newRandom=false, requestedIdx=null, wiggle=false } = {}
       { duration: 350, easing: 'cubic-bezier(.2,.8,.2,1)' }
     );
   }
-}
+} 
+
 function renderToFrom(){
-  const t = toLabel(getTo());
-  const f = fromLabel(getFrom());
+  const toName   = getTo();
+  const fromName = getFrom();
+
+  const t = toLabel(toName);
+  const f = fromLabel(fromName);
+
   if (els.toLine){   els.toLine.textContent   = t; els.toLine.style.display   = t ? "block":"none"; }
   if (els.fromLine){ els.fromLine.textContent = f; els.fromLine.style.display = f ? "block":"none"; }
+
+
+  // 1) Lees de BRON; alleen doorgaan als die er is
+  const raw = els.msg?.getAttribute('data-raw');
+  if (raw == null) return;
+
+  // 2) Plan een micro-update NA alle sync DOM-mutaties
+  STATE._rePersonalizeTimer = setTimeout(() => {
+    // Guard: voer alleen uit als de bron niet tussentijds is gewisseld
+    if (els.msg && els.msg.getAttribute('data-raw') === raw) {
+      els.msg.textContent = personalize(raw);
+    }
+    STATE._rePersonalizeTimer = null;
+  }, 0);
 }
 
 /* Swipe op de note voor volgende boodschap (mobile friendly) */
@@ -682,30 +760,50 @@ function renderToFrom(){
 })();
 
 /**
- * Toon een welkomstboodschap voor nieuwe bezoekers,
- * tenzij ze via een directe boodschap (mid/id in URL) komen.*/
-
-function showWelcomeIfRelevant(els) {
+ * Toon altijd een welkomstboodschap wanneer je NIET via een gedeelde note komt.
+ * "Gedeeld" definiëren we voorlopig uitsluitend als: URL heeft ?mid=...
+ * - Bij ?mid=... → géén welcome (return false)
+ * - Anders       → wel welcome (return true), elke keer (geen sessionStorage/force)
+ * Meertalig (NL/EN) op basis van <html lang> of STATE.lang.
+ */
+function showWelcomeNote(els) {
   const qp = new URLSearchParams(location.search);
-  const isDirectMessage = qp.has('mid') || qp.has('id');
-  const welcomeAlready = sessionStorage.getItem('awn_welcome_shown') === "1";
-  const forceWelcome = qp.has('welcome');
+  const isReceivedByMid = qp.has('mid');   // alleen 'mid' bepaalt received
+  if (isReceivedByMid) return false;
 
-  if (isDirectMessage && !forceWelcome) return false;
+  // Taal bepalen
+  const docLang = (document.documentElement.getAttribute('lang') || '').toLowerCase();
+  const stateLang = (typeof STATE !== 'undefined' && STATE.lang) ? STATE.lang.toLowerCase() : '';
+  const lang = (docLang || stateLang || 'nl').startsWith('en') ? 'en' : 'nl';
 
-  if (!welcomeAlready || forceWelcome) {
-    if (els.msg)  els.msg.textContent  = "Welkom! Kies een gevoel hierboven, vul ‘Voor wie?’ in en klik op ‘Verstuur’.";
-    if (els.icon) els.icon.textContent = "💛";
-    if (els.note) els.note.classList.add("note--welcome");
-    if (typeof setPaperLook === 'function') setPaperLook();
-    if (typeof updateCoach === 'function') updateCoach('init');
-    sessionStorage.setItem('awn_welcome_shown','1');
-    return true;
-  }
-  return false;
+  // Copy per taal
+  const copy = (lang === 'en')
+    ? "Welcome! Pick a feeling above, enter ‘Who for?’ and tap ‘Send’."
+    : "Welkom! Selecteer een gevoel hierboven. Kies je berichtje, vul ‘Voor wie?’ en je eigen naam in en klik op ‘Verstuur’.";
+
+  if (els?.msg)  els.msg.textContent  = copy;
+  if (els?.icon) els.icon.textContent = "💛";
+
+  if (els?.note) els.note.classList.add("note--welcome");
+  if (typeof setPaperLook === 'function') setPaperLook();
+  if (typeof renderToFrom === 'function') renderToFrom(); // lijnen syncen met lege inputs
+  if (typeof updateCoach === 'function') updateCoach('init');
+  // korte guard zodat initiele auto-render de welcome niet overschrijft
+  window._awnWelcomeGuardUntil = (window.performance?.now?.() || Date.now()) + 500;
+
+  return true;
 }
 
 /* [I] COMPOSE (inputs Voor/Van) -------------------------------------------- */
+function autoCapitalizeInput(input) {
+  if (!input) return;
+  input.addEventListener('input', (e) => {
+    const val = e.target.value;
+    if (val.length > 0) {
+      e.target.value = val.charAt(0).toUpperCase() + val.slice(1);
+    }
+  });
+}
 
 function toLabel(name){
   if (!name) return "";
@@ -757,37 +855,40 @@ function updateCoach(state){
 
   // Thematisch openingszinnetje (EN/NL)
   const themedInit = (theme===THEME.VALENTINE)
-    ? (isEn ? "Happy Valentine 💛 Pick a feeling and send your note."
-            : "Fijne Valentijn 💛 Kies een gevoel en verstuur je note.")
+    ? (isEn ? "Happy Valentine 💛 Pick Valentine, select a message and send your note."
+            : "Fijne Valentijn 💛 Kies voor Valentijn, blader door de berichtjes en verstuur je note.")
     : (theme===THEME.NEWYEAR)
-      ? (isEn ? "Fresh start ✨ Pick a feeling and send your note."
-              : "Nieuw begin ✨ Kies een gevoel en verstuur je note.")
+      ? (isEn ? "Fresh start ✨ Pick Newyear, select a message and send your note."
+              : "Nieuw begin ✨ Kies Nieuwjaar, blader door de berichtjes en verstuur je note.")
       : (theme===THEME.EASTER)
-        ? (isEn ? "Gentle start 🐣 Pick a feeling and send your note."
-                : "Zacht begin 🐣 Kies een gevoel en verstuur je note.")
+        ? (isEn ? "Gentle start 🐣 Pick Easter, select a message and send your note."
+                : "Zacht begin 🐣 Kies Pasen, blader door de berichtjes en verstuur je note.")
         : null;
 
-  // Basis-copy (EN/NL), inline zodat we geen extra helper hoeven te introduceren
-  const copy = isEn ? {
-    init:    themedInit || "Pick a feeling and send your note.",
-    toFilled:`Nice! Click <button type="button" class="coach-inline">Send</button> to share your message.`,
-    shared:  "Your message has been sent 💛 Make another one?"
-  } : {
-    init:    themedInit || "Kies een gevoel en verstuur je note.",
-    toFilled:`Mooi! Klik <button type="button" class="coach-inline">Verstuur</button> om je boodschap te delen.`,
-    shared:  "Je boodschap is verstuurd 💛 Nog eentje maken?"
-  };
+// Basis-copy (EN/NL), inline zodat we geen extra helper hoeven te introduceren
+const copy = isEn ? {
+  init:     themedInit || "Pick a feeling, select a message and send your note.",
+  toFilled: `Nice! Click <button type="button" class="coach-inline">Send</button> to share your message.`,
+  shared:   "Your message has been sent 💛 Make another one?",
+  received: "You’ve received a warm note 💛 Keep it? Tap ‘Download’. Send your own? Tap ‘New’.",
+  error: "Add who it’s for first 💛"
+} : {
+  init:     themedInit || "Selecteer een gevoel, blader door de berichtjes en verstuur je note.",
+  toFilled: `Mooi! Klik <button type="button" class="coach-inline">Verstuur</button> om je boodschap te delen.`,
+  shared:   "Je boodschap is verstuurd 💛 Nog eentje maken?",
+  received: "Je hebt een 'a warme note' ontvangen 💛 <br> Zelf iemand verrassen? Klik ‘Kies bericht’.",
+  error: "'Vul eerst in voor wie dit is 💛'"
+};
 
+  // Render op basis van state (incl. 'received'); fallback = init
+  const html = copy[state] || copy.init;
+  els.coach.classList?.remove('hidden');   // zeker zichtbaar
+  //els.coach.innerHTML = html;              // HTML nodig i.v.m. inline button
   // Render op basis van state
-  let html;
-  switch (state) {
-    case 'toFilled': html = copy.toFilled; break;
-    case 'shared'  : html = copy.shared;   break;
-    case 'init':
-    default        : html = copy.init;
-  }
-  els.coach.innerHTML = html;
-}
+  // nadat je de copy hebt gezet
+  els.coach?.classList.remove('hidden');
+if (els.coachMsg) els.coachMsg.innerHTML = html;  
+if (window.StickyAvatar) StickyAvatar.setFromCoach(state);}
 
 /* [K] SHARE-SHEET (WA/E-mail/Download/Kopieer/Native) ---------------------- */
 let __lastFocusEl = null;
@@ -1127,8 +1228,36 @@ function showToastI18n(key, fallback){
   if (fallback) return showToast(fallback);
 }
 
-function getTo(){   return (els.toInput?.value || "").trim(); }
-function getFrom(){ return (els.fromInput?.value || "").trim(); }
+/*function getTo(){
+  const v = (els.toInput?.value || '').trim();
+  if (v) return v;
+  // Fallback: ontvangen To uit URL (alleen bij mid)
+  const hasMid = (new URLSearchParams(location.search)).has('mid');
+  if (hasMid) return (STATE?.shared?.to || '').trim();
+  return '';
+}
+
+function getFrom(){
+  const v = (els.fromInput?.value || '').trim();
+  if (v) return v;
+  // Fallback: ontvangen From uit URL (alleen bij mid)
+  const hasMid = (new URLSearchParams(location.search)).has('mid');
+  if (hasMid) return (STATE?.shared?.from || '').trim();
+  return '';
+}*/
+function getTo(){
+  const v = (els.toInput?.value || '').trim();
+  if (v) return v;
+  if (STATE?.useSharedNames) return (STATE?.shared?.to || '').trim();
+  return '';
+}
+function getFrom(){
+  const v = (els.fromInput?.value || '').trim();
+  if (v) return v;
+  if (STATE?.useSharedNames) return (STATE?.shared?.from || '').trim();
+  return '';
+}
+
 
 function personalize(text){
   const to = getTo();
@@ -1797,7 +1926,7 @@ function wireLangDropdown(){
 function guardShareOrNudge(){
   const to = getTo();
   if (!to) {
-	  showToastI18n('toast.toRequired', 'Vul eerst in voor wie dit is 💛');
+	updateCoach('error');
     try {
       els.toInput.classList.add("field-nudge");
       els.toInput.focus();
@@ -1826,7 +1955,17 @@ window.actuallyOpenMessenger = actuallyOpenMessenger;
 function wireGlobalUI(){
   // Topbar
   els.btnNew && els.btnNew.addEventListener("click", () => {
-  renderMessage({ newRandom: true, wiggle: true }); showToastI18n('toast.newLoaded', 'Nieuwe boodschap geladen ✨');});
+    // ⬇︎ Stop fallback op ontvangen namen + sync lijnen/body vóór nieuwe render
+    STATE.useSharedNames = false;
+    STATE.shared.to = '';
+    STATE.shared.from = '';
+    renderToFrom();
+    const raw = els.msg?.getAttribute('data-raw');
+    if (raw != null) els.msg.textContent = personalize(raw);
+
+    renderMessage({ newRandom: true, wiggle: true });
+    showToastI18n('toast.newLoaded', 'Nieuwe boodschap geladen ✨');
+  });
   els.btnShare && els.btnShare.addEventListener("click", guardShareOrNudge);
   els.btnAbout && els.btnAbout.addEventListener("click", openAbout);
 
@@ -1878,7 +2017,7 @@ function wireGlobalUI(){
   // Settings
   const MARGINS = { vw: 0.96, vh: 0.86 };
   const LIMITS  = { min: 1.2, max: 3.0 };
-  const TIMES   = { hold: 4200, out: 280 };
+  const TIMES   = { hold: 5200, out: 1280 };
   const AUTO_OPEN_ON_MID = true;               // auto-open aan
 
   const NOTE_SEL = [
@@ -2091,7 +2230,7 @@ function wireGlobalUI(){
   if (!(isCoarse || isSmall)) { el.classList.add('is-hide'); return; }
 
   // Minimum toontijd zodat het niet flitst
-  const MIN_SHOW = 1200; // ms — pas aan naar smaak (bijv. 800–1200)
+  const MIN_SHOW = 800; // ms — pas aan naar smaak (bijv. 800–1200)
   const t0 = performance.now();
   let canSkip = false, hidden = false;
 

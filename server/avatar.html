@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AWN • Coach Avatar Prototype</title>
+<style>
+  :root{
+    --bg:#0f1115;
+    --surface:#171a21;
+    --surface-2:#1f2430;
+    --text:#e8ecf1;
+    --muted:#9aa4b2;
+    --brand:#ffd166;
+    --shadow:0 10px 30px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box} html,body{height:100%}
+  body{margin:0;background:linear-gradient(180deg,#0e1014,#0b0d12);color:var(--text);
+       font:16px/1.4 system-ui,Segoe UI,Roboto,Helvetica,Arial;display:grid;place-items:center}
+  .frame{width:min(1000px,96vw);height:min(680px,92vh);background:var(--surface);
+         border-radius:24px;box-shadow:var(--shadow);position:relative;overflow:hidden;
+         display:grid;grid-template-columns:320px 1fr}
+  .panel{background:var(--surface-2);padding:18px;border-right:1px solid #202634;overflow:auto}
+  .panel h2{margin:4px 0 10px;font-size:14px;color:var(--muted);text-transform:uppercase;letter-spacing:.12em}
+  .row{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:14px}
+  .btn{appearance:none;border:0;padding:10px 12px;border-radius:12px;cursor:pointer;color:#111;
+       background:#eef2f7;font-weight:600;display:inline-flex;align-items:center;gap:8px;justify-content:center}
+  .btn[data-active="1"]{outline:3px solid var(--brand)}
+  .btn.secondary{background:#263041;color:#e6effa}
+  .btn.ghost{background:transparent;outline:1px dashed #42506a;color:#cbd5e1}
+  .btn svg{width:18px;height:18px}
+
+  .stage{position:relative}
+  .note{width:72%;margin:38px auto 0;background:#fff9f1;color:#0f1115;border-radius:18px;padding:22px 26px;
+        min-height:210px;box-shadow:0 30px 60px rgba(0,0,0,.25);transform:rotate(-.7deg)}
+  .note h3{margin:0 0 10px;font-size:20px}
+  .note p{margin:0;font-size:18px}
+
+  /* Coach */
+  .coach{position:absolute;right:24px;bottom:24px;display:flex;align-items:flex-end;gap:12px}
+  .coach.is-hidden{display:none}
+  .coach-avatar{width:76px;height:76px;border-radius:50%;display:grid;place-items:center;background:#141820;
+                border:1px solid #242c3a;box-shadow:var(--shadow);position:relative}
+  .coach-avatar svg{width:58px;height:58px}
+  .coach-bubble{max-width:360px;background:#11161f;border:1px solid #223045;color:#e8f0ff;
+                padding:12px 14px;border-radius:14px;box-shadow:var(--shadow);position:relative}
+  .coach-bubble:after{content:"";position:absolute;right:-10px;bottom:18px;width:0;height:0;
+                      border-left:12px solid #223045;border-top:10px solid transparent;border-bottom:10px solid transparent}
+  .coach-bubble:before{content:"";position:absolute;right:-12px;bottom:18px;width:0;height:0;
+                       border-left:12px solid #11161f;border-top:10px solid transparent;border-bottom:10px solid transparent}
+  .coach-actions{margin-top:8px;display:flex;gap:8px;flex-wrap:wrap}
+  .pill{padding:6px 10px;border-radius:999px;background:#223045;color:#d7e3ff;border:1px solid #2f3f58;font-weight:600;cursor:pointer}
+  .pill:hover{background:#2a3b55}
+
+  /* Animations */
+  @keyframes pulse {0%{transform:scale(1)} 50%{transform:scale(1.06)} 100%{transform:scale(1)}}
+  @keyframes wave  {0%{transform:rotate(0)} 30%{transform:rotate(-8deg)} 60%{transform:rotate(6deg)} 100%{transform:rotate(0)}}
+  @keyframes float {0%{transform:translateY(0)} 50%{transform:translateY(-6px)} 100%{transform:translateY(0)}}
+  .anim-pulse{animation:pulse 1400ms ease-in-out infinite}
+  .anim-wave {animation:wave 1200ms ease-in-out 1}
+  .anim-float{animation:float 2600ms ease-in-out infinite}
+
+  /* Avatar themes */
+  .theme-heart .coach-avatar{background:#1a1320;border-color:#3e2351}
+  .theme-envelope .coach-avatar{background:#121b21;border-color:#1e2a33}
+  .theme-plane .coach-avatar{background:#101820;border-color:#1b2a34}
+  .theme-smile .coach-avatar{background:#181610;border-color:#3a2e16}
+  .theme-sticky .coach-avatar{background:#16160f;border-color:#3a3a1a}
+
+  .kbd{background:#0f1824;border:1px solid #263349;padding:2px 6px;border-radius:6px;color:#cfe0ff;font-weight:700}
+  footer{position:absolute;left:18px;bottom:12px;color:#9aa4b2;font-size:12px}
+  a{color:#9ed0ff}
+</style>
+</head>
+<body>
+  <div class="frame theme-heart" id="app">
+    <aside class="panel">
+      <h2>Avatar</h2>
+      <div class="row" id="avatarRow">
+        <button class="btn" data-avatar="heart" data-active="1">❤️ Heart</button>
+        <button class="btn" data-avatar="envelope">✉️ Envelope</button>
+        <button class="btn" data-avatar="plane">🛩️ Plane</button>
+        <button class="btn" data-avatar="smile">🙂 Smile</button>
+        <button class="btn" data-avatar="sticky">🗒️ Sticky Note</button>
+      </div>
+
+      <h2>Coach state</h2>
+      <div class="row" id="stateRow">
+        <button class="btn secondary" data-state="init" data-active="1">init</button>
+        <button class="btn secondary" data-state="toFilled">toFilled</button>
+        <button class="btn secondary" data-state="received">received</button>
+        <button class="btn secondary" data-state="shared">shared</button>
+      </div>
+
+      <h2>Taal / Language</h2>
+      <div class="row" id="langRow">
+        <button class="btn ghost" data-lang="nl" data-active="1">Nederlands</button>
+        <button class="btn ghost" data-lang="en">English</button>
+      </div>
+
+      <h2>Animatie</h2>
+      <div class="row" id="animRow">
+        <button class="btn" data-anim="pulse" data-active="1">Pulse</button>
+        <button class="btn" data-anim="float">Float</button>
+        <button class="btn" data-anim="wave">Wave (once)</button>
+      </div>
+      <h2>Face</h2>
+	  <div class="row" id="faceRow">
+  		<button class="btn" data-face="neutral" data-active="1">Neutral</button>
+  		<button class="btn" data-face="smile">Smile</button>
+  		<button class="btn" data-face="wink">Wink</button>
+  		<button class="btn" data-face="surprised">Surprised</button>
+	  </div>
+
+      <h2>Demo-actie</h2>
+      <div class="row">
+        <button class="btn" id="btnFakeDownload">Download</button>
+        <button class="btn" id="btnFakeNew">Nieuw</button>
+        <button class="btn" id="btnToggleCoach">Coach aan/uit</button>
+      </div>
+    </aside>
+
+    <main class="stage">
+      <div class="note" id="note">
+        <h3>Voor Ria</h3>
+        <p id="msg">Welkom! Kies een gevoel, vul ‘Voor wie?’ in en klik ‘Verstuur’.</p>
+      </div>
+
+      <div class="coach" id="coach">
+        <div class="coach-bubble" id="coachBubble">
+          <div id="coachMsg">Welkom! Kies een gevoel en verstuur je note.</div>
+          <div class="coach-actions" id="coachActions"></div>
+        </div>
+        <div class="coach-avatar anim-pulse" id="coachAvatar" aria-hidden="true"></div>
+      </div>
+
+      <footer>Prototype — losstaand van productie. Tip: <span class="kbd">1</span>-<span class="kbd">4</span> voor states, <span class="kbd">A</span> voor animatie, <span class="kbd">L</span> voor taal.</footer>
+    </main>
+  </div>
+
+<script>
+(function(){
+  const $ = s=>document.querySelector(s);
+  const $$ = s=>Array.from(document.querySelectorAll(s));
+  const app = $('#app');
+  const avatarEl = $('#coachAvatar');
+  const msgEl = $('#coachMsg');
+  const coach = $('#coach');
+
+  const svgs = {
+    heart:`<svg viewBox="0 0 64 64" fill="none"><path d="M32 56s-18-10.7-24-20.7C4.2 28.8 6.7 20 14.8 18c4.8-1.2 8.9 1 11.2 4.2C28.3 19 32.4 16.8 37.2 18c8.1 2 10.6 10.8 6.8 17.3C50 45.3 32 56 32 56z" fill="#ff6b6b"/><circle cx="27" cy="25" r="3" fill="#ffd7d7"/></svg>`,
+    plane:`<svg viewBox="0 0 64 64" fill="none"><path d="M6 33l52-21-24 40-6-12-12-6z" fill="#a0e9ff" stroke="#59c7eb"/></svg>`,
+    smile:`<svg viewBox="0 0 64 64" fill="none"><circle cx="32" cy="32" r="24" fill="#ffd166"/><circle cx="24" cy="28" r="3" fill="#5a4100"/><circle cx="40" cy="28" r="3" fill="#5a4100"/><path d="M22 40c3 3 17 3 20 0" stroke="#5a4100" stroke-width="3" stroke-linecap="round"/></svg>`,
+    sticky:`<svg viewBox="0 0 64 64" fill="none"><path d="M8 10h40l8 8v36a4 4 0 0 1-4 4H12a4 4 0 0 1-4-4V10z" fill="#ffe58a" stroke="#e0c25c"/><path d="M56 18h-8a4 4 0 0 1-4-4V6" stroke="#e0c25c"/><path d="M46 42l10-10v10H46z" fill="#fff2b2" stroke="#e0c25c"/><circle cx="26" cy="29" r="3" fill="#6b4e00"/><circle cx="38" cy="29" r="3" fill="#6b4e00"/><path d="M24 39c4 3 12 3 16 0" stroke="#6b4e00" stroke-width="3" stroke-linecap="round"/></svg>`
+  };
+  
+  function envelopeSVG(face='neutral'){
+  const eyesNeutral = `<circle cx="24" cy="30" r="2" fill="#1b2a33"/><circle cx="40" cy="30" r="2" fill="#1b2a33"/>`;
+  const eyesWink    = `<circle cx="24" cy="30" r="2" fill="#1b2a33"/><path d="M38 30h4" stroke="#1b2a33" stroke-width="2" stroke-linecap="round"/>`;
+  const eyesSurpr   = `<circle cx="24" cy="30" r="2" fill="#1b2a33"/><circle cx="40" cy="30" r="2" fill="#1b2a33"/>`;
+
+  const mouthNeutral = `<path d="M26 38c4 2 8 2 12 0" stroke="#1b2a33" stroke-width="2" stroke-linecap="round"/>`;
+  const mouthSmile   = `<path d="M24 36c6 6 10 6 16 0" stroke="#1b2a33" stroke-width="2.2" stroke-linecap="round"/>`;
+  const mouthSurpr   = `<circle cx="32" cy="36" r="3" fill="none" stroke="#1b2a33" stroke-width="2"/>`;
+
+  const eyes = face==='wink' ? eyesWink : eyesNeutral;   // surprised gebruikt zelfde ogen
+  const mouth= face==='smile' ? mouthSmile : face==='surprised' ? mouthSurpr : mouthNeutral;
+
+  return `
+  <svg viewBox="0 0 64 64" fill="none">
+    <rect x="8" y="14" width="48" height="36" rx="6" fill="#f2f6ff" stroke="#98b1ff"/>
+    <path d="M10 18l22 16L54 18" stroke="#98b1ff" stroke-width="3" fill="none"/>
+    <g>
+      ${eyes}
+      ${mouth}
+    </g>
+  </svg>`;
+}
+
+function stickySVG(face='neutral'){
+  const eyesNeutral = `<circle cx="26" cy="28" r="3" fill="#6b4e00"/><circle cx="38" cy="28" r="3" fill="#6b4e00"/>`;
+  const eyesWink    = `<circle cx="26" cy="28" r="3" fill="#6b4e00"/><path d="M36 28h4" stroke="#6b4e00" stroke-width="3" stroke-linecap="round"/>`;
+  const mouthNeutral= `<path d="M24 38c4 3 12 3 16 0" stroke="#6b4e00" stroke-width="3" stroke-linecap="round"/>`;
+  const mouthSmile  = `<path d="M22 36c6 6 14 6 20 0" stroke="#6b4e00" stroke-width="3" stroke-linecap="round"/>`;
+  const mouthSurpr  = `<circle cx="32" cy="36" r="3.2" fill="none" stroke="#6b4e00" stroke-width="3"/>`;
+
+  const eyes = (face==='wink') ? eyesWink : eyesNeutral; // neutral/surprised delen ogen
+  const mouth= (face==='smile') ? mouthSmile : (face==='surprised' ? mouthSurpr : mouthNeutral);
+
+  return `
+  <svg viewBox="0 0 64 64" fill="none">
+    <path d="M8 10h40l8 8v36a4 4 0 0 1-4 4H12a4 4 0 0 1-4-4V10z" fill="#ffe58a" stroke="#e0c25c"/>
+    <path d="M56 18h-8a4 4 0 0 1-4-4V6" stroke="#e0c25c"/>
+    <path d="M46 42l10-10v10H46z" fill="#fff2b2" stroke="#e0c25c"/>
+    ${eyes}
+    ${mouth}
+  </svg>`;
+}
+
+  const copy = {
+    nl:{
+      init:"Kies een gevoel en verstuur je note.",
+      toFilled:"Mooi! Klik <button class='pill' data-act='send'>Verstuur</button> om te delen.",
+      received:"Je hebt een warme note ontvangen 💛 <button class='pill' data-act='download'>Download</button> of <button class='pill' data-act='new'>Nieuw</button>",
+      shared:"Je boodschap is verstuurd 💛 Nog eentje maken? <button class='pill' data-act='new'>Nieuw</button>"
+    },
+    en:{
+      init:"Pick a feeling and send your note.",
+      toFilled:"Nice! Tap <button class='pill' data-act='send'>Send</button> to share.",
+      received:"You’ve received a warm note 💛 <button class='pill' data-act='download'>Download</button> or <button class='pill' data-act='new'>New</button>",
+      shared:"Your message has been sent 💛 Make another one? <button class='pill' data-act='new'>New</button>"
+    }
+  };
+
+const state = { lang:'nl', coach:'init', avatar:'heart', anim:'pulse', face:'neutral' };
+
+function renderAvatar(){
+  const face = state.face || 'neutral';
+
+  // avatar inhoud (envelope & sticky = dynamische SVG met face)
+  if (state.avatar === 'envelope') {
+    avatarEl.innerHTML = envelopeSVG(face);
+  } else if (state.avatar === 'sticky') {
+    avatarEl.innerHTML = stickySVG(face);
+  } else {
+    avatarEl.innerHTML = svgs[state.avatar];
+  }
+
+  // thema & animatie (ongewijzigd)
+  app.classList.remove('theme-heart','theme-envelope','theme-plane','theme-smile','theme-sticky');
+  app.classList.add('theme-' + state.avatar);
+
+  avatarEl.classList.remove('anim-pulse','anim-float','anim-wave');
+  if (state.anim === 'pulse') avatarEl.classList.add('anim-pulse');
+  if (state.anim === 'float') avatarEl.classList.add('anim-float');
+  if (state.anim === 'wave') {
+    avatarEl.classList.add('anim-wave');
+    setTimeout(() => avatarEl.classList.remove('anim-wave'), 1300);
+  }
+}
+
+  function renderCoach(){
+    const c = copy[state.lang][state.coach] || copy[state.lang].init;
+    msgEl.innerHTML = c;
+  }
+
+  // Controls
+  $$('#avatarRow .btn').forEach(b=>b.addEventListener('click',()=>{
+    $$('#avatarRow .btn').forEach(x=>x.dataset.active='0'); b.dataset.active='1';
+    state.avatar = b.dataset.avatar; renderAvatar();
+  }));
+  $$('#stateRow .btn').forEach(b=>b.addEventListener('click',()=>{
+    $$('#stateRow .btn').forEach(x=>x.dataset.active='0'); b.dataset.active='1';
+    state.coach = b.dataset.state; renderCoach();
+    avatarEl.classList.add('anim-wave'); setTimeout(()=>avatarEl.classList.remove('anim-wave'),1200);
+  }));
+  $$('#langRow .btn').forEach(b=>b.addEventListener('click',()=>{
+    $$('#langRow .btn').forEach(x=>x.dataset.active='0'); b.dataset.active='1';
+    state.lang = b.dataset.lang; renderCoach();
+  }));
+  $$('#animRow .btn').forEach(b=>b.addEventListener('click',()=>{
+    $$('#animRow .btn').forEach(x=>x.dataset.active='0'); b.dataset.active='1';
+    state.anim = b.dataset.anim; renderAvatar();
+  }));
+  $$('#faceRow .btn').forEach(b=>b.addEventListener('click',()=>{
+  $$('#faceRow .btn').forEach(x=>x.dataset.active='0'); b.dataset.active='1';
+  state.face = b.dataset.face;
+  if(state.avatar==='envelope') renderAvatar(); // alleen hertekenen als envelop actief is
+  }));
+
+  // Demo buttons
+  $('#btnFakeDownload').addEventListener('click',()=>{state.coach='shared'; renderCoach();});
+  $('#btnFakeNew').addEventListener('click',()=>{state.coach='init'; renderCoach();});
+  $('#btnToggleCoach').addEventListener('click',()=>{ coach.classList.toggle('is-hidden'); });
+
+  // Keyboard shortcuts
+  window.addEventListener('keydown',e=>{
+    if(e.key==='1'){state.coach='init'; renderCoach();}
+    if(e.key==='2'){state.coach='toFilled'; renderCoach();}
+    if(e.key==='3'){state.coach='received'; renderCoach();}
+    if(e.key==='4'){state.coach='shared'; renderCoach();}
+    if(e.key.toLowerCase()==='a'){ state.anim = (state.anim==='pulse')?'float':(state.anim==='float')?'wave':'pulse'; renderAvatar(); }
+    if(e.key.toLowerCase()==='l'){ state.lang = (state.lang==='nl')?'en':'nl'; renderCoach(); }
+  });
+
+  // First render
+  renderAvatar();
+  renderCoach();
+})();
+</script>
+</body>
+</html>
