@@ -687,7 +687,7 @@ function renderMessage({ newRandom=false, requestedIdx=null, wiggle=false } = {}
       els.icon.style.opacity = 1;
     }, 90);
   }
-
+	ensureNoteFits();
   // 6) rest van de UI
   if (els.note) setPaperLook();
   renderToFrom();
@@ -873,11 +873,11 @@ const copy = isEn ? {
   received: "You’ve received a warm note 💛 Keep it? Tap ‘Download’. Send your own? Tap ‘New’.",
   error: "Add who it’s for first 💛"
 } : {
-  init:     themedInit || "Selecteer een gevoel, blader door de berichtjes en verstuur je note.",
+  init:     themedInit || "Selecteer een gevoel, blader door de berichtjes en verstuur je note. ",
   toFilled: `Mooi! Klik <button type="button" class="coach-inline">Verstuur</button> om je boodschap te delen.`,
-  shared:   "Je boodschap is verstuurd 💛 Nog eentje maken?",
-  received: "Je hebt een 'a warme note' ontvangen 💛 <br> Zelf iemand verrassen? Klik ‘Kies bericht’.",
-  error: "'Vul eerst in voor wie dit is 💛'"
+  shared:   "Je boodschap is verstuurd 💛 Nog eentje maken? ",
+  received: "Je hebt een 'a warme note' ontvangen 💛 <br> Zelf iemand verrassen? Klik ‘Kies bericht’. ",
+  error: "'Vul eerst in voor wie dit is 💛' "
 };
 
   // Render op basis van state (incl. 'received'); fallback = init
@@ -1180,9 +1180,9 @@ function afterShareSuccess(){
 /* [L] CONFETTI & TOASTS ----------------------------------------------------- */
 function celebrate(){
   const qp = new URLSearchParams(location.search);
-  const debugForce = qp.get('debug_confetti') === '1';
+/*  const debugForce = qp.get('debug_confetti') === '1';*/
   if (!CONFETTI_ENABLED) return;
-  if (!debugForce && prefersReducedMotion()) return;
+/*  if (!debugForce && prefersReducedMotion()) return; */
 
   const colors = themeColors(getActiveTheme());
   const layer = document.body;
@@ -1364,15 +1364,6 @@ function refreshUIStrings() {
     els.fromInput.setAttribute('placeholder', t('compose.fromPlaceholder'));
     els.fromInput.setAttribute('aria-label',  t('compose.from'));
   } 
-  
-  // Intro-hint by id
-const introHint = document.getElementById('intro-hint');
-if (introHint) introHint.textContent = t('intro.hint') || introHint.textContent;
-
-// (optioneel) generiek via data-i18n-key="intro.hint"
-document.querySelectorAll('[data-i18n-key="intro.hint"]').forEach(el => {
-  el.textContent = t('intro.hint');
-});
 
   // === SHARE SHEET tegels ===
   const setTile = (id, labelKey, ariaPrefixKey) => {
@@ -2062,7 +2053,17 @@ function wireGlobalUI(){
     document.body.appendChild(overlay);
     return { overlay, stage };
   }
-
+function ensureNoteFits(){
+  if (!els?.note) return;
+  const reserve = 180; // ruimte die je onder de note wilt vrijhouden (inputs+coach)
+  const max = Math.max(240, window.innerHeight - reserve);
+  // scrollHeight = werkelijke content-hoogte (incl. overloop)
+  if (els.note.scrollHeight > max) {
+    els.note.classList.add('note--compact');
+  } else {
+    els.note.classList.remove('note--compact');
+  }
+}
   async function showSplash(){
     await waitFonts();
     const live = findLiveNote();
