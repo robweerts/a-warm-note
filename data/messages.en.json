@@ -14,6 +14,30 @@
   ],
   "messages": [
     {
+      "id": "en_073",
+      "icon": "☀️",
+      "text": "Some days you just have tot create your own sunshine. Keep on shinning. ",
+      "sentiments": [
+        "encouraging",
+        "comfort",
+        "friendship"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_072",
+      "icon": "💕",
+      "text": "You were created to be loved",
+      "sentiments": [
+        "love",
+        "encouraging",
+        "comfort"
+      ],
+      "special_day": null,
+      "weight": 2
+    },
+    {
       "id": "en_071",
       "icon": "❤️",
       "text": "Life can be tough.... But you are tougher!",

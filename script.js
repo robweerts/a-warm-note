@@ -128,6 +128,27 @@ function recacheEls(){
   };
 }
 
+// === GLOBAL HELPERS (voor alles wat hierna komt) ===
+window.ensureNoteFits = function ensureNoteFits(){
+  if (!window.els || !els.note) return;
+  const reserve = 180; // px voor inputs/coach
+  const max = Math.max(240, window.innerHeight - reserve);
+  if (els.note.scrollHeight > max) els.note.classList.add('note--compact');
+  else els.note.classList.remove('note--compact');
+};
+
+window.getChipLabel = function getChipLabel(chip){
+  const norm = v => (typeof v === 'string' ? v.trim() : '');
+  return (
+    norm(chip?.dataset?.label) ||
+    norm(chip?.getAttribute?.('aria-label')) ||
+    norm(chip?.getAttribute?.('title')) ||
+    norm(chip?.querySelector?.('.chip-label')?.innerText) ||
+    norm(chip?.innerText) ||
+    ''
+  );
+};
+
 /* [C] APP-STATE ------------------------------------------------------------- */
 const STATE = {
   lang: "nl",
@@ -154,6 +175,7 @@ function init() {
   if (window.StickyAvatar && els.coachAvatar) {
   StickyAvatar.mount(els.coachAvatar);
   StickyAvatar.setFromCoach('init'); // startstand
+  positionAvatarNearAbout();
   }
 
   // 2) Strings → Messages
@@ -208,8 +230,7 @@ function init() {
       if (didShowWelcome) {
         setTimeout(() => {
           showWelcomeNote(els);   // zet welcome-tekst + styling opnieuw
-        }, 120);                  // > 90ms (interne renderMessage-delay)
-       // updateCoach('init');
+        }, 90);                  // > 90ms (interne renderMessage-delay)
         return;                   // géén directe message-render in scenario 1
       }
 
@@ -401,21 +422,24 @@ function buildSentimentChips(){
   if (!row) return;
   row.innerHTML = "";
 
+  const isEn = (STATE?.lang === 'en');
+
   const activeTheme = getActiveTheme();
   if (activeTheme === THEME.VALENTINE) {
-    row.appendChild(makeThemeChip('valentine', 'Valentijn ❤️'));
+    row.appendChild(makeThemeChip('valentine', isEn ? 'Valentine ❤️' : 'Valentijn ❤️'));
   } else if (activeTheme === THEME.NEWYEAR) {
-    row.appendChild(makeThemeChip('newyear', 'Nieuwjaar ✨'));
+    row.appendChild(makeThemeChip('newyear', isEn ? 'New Year ✨'  : 'Nieuwjaar ✨'));
   } else if (activeTheme === THEME.EASTER) {
-    row.appendChild(makeThemeChip('easter', 'Pasen 🐣'));
+    row.appendChild(makeThemeChip('easter', isEn ? 'Easter 🐣'    : 'Pasen 🐣'));
   }
 
-  // “Alles” chip
-  row.appendChild(makeChip(null, "Alles"));
+  // “Alles / All” chip
+  row.appendChild(makeChip(null, isEn ? "All" : "Alles"));
 
   // Data-gedreven chips (max 10)
   (STATE.sentiments || []).slice(0,10).forEach(tag => {
-    row.appendChild(makeChip(tag, capitalize(tag)));
+    const label = capitalize(tag);
+    row.appendChild(makeChip(tag, label));
   });
 
   // Standaard: alles actief
@@ -433,6 +457,9 @@ function makeThemeChip(specialKey, label){
   b.setAttribute("role","tab");
   b.dataset.type = "special";
   b.dataset.value = specialKey;
+  b.dataset.label = label || '';
+  b.setAttribute('aria-label', label || '');
+  b.title = label || '';
   b.textContent = label;
   b.onclick = () => {
     setActiveFilter({ sentiment: null, special: specialKey });
@@ -455,7 +482,6 @@ function setActiveFilter({ sentiment=null, special=null }){
   }
 
   rebuildDeck(true);
-  renderMessage({ newRandom:true, wiggle:true });
 }
 
 function makeChip(value, label){
@@ -464,6 +490,9 @@ function makeChip(value, label){
   b.type = "button";
   b.setAttribute("role","tab");
   b.dataset.value = value || "";
+  b.dataset.label = label || '';
+  b.setAttribute('aria-label', label || '');
+  b.title = label || '';
   b.textContent = label;
   b.onclick = () => {
     STATE.activeSentiment = value;
@@ -654,17 +683,17 @@ function renderMessage({ newRandom=false, requestedIdx=null, wiggle=false } = {}
     if (idx < 0) idx = localIdx; // defensieve fallback (zou zelden gebeuren)
   }
 
-  if (idx == null || idx < 0 || idx >= STATE.allMessages.length) {
-    if (els.msg)  {
-      const fallbackText = "Stuur een warme boodschap naar iemand.";
-      els.msg.setAttribute('data-raw', fallbackText);     // bron vastleggen
-      els.msg.textContent = personalize(fallbackText);    // consistent via personalize
-    }
-    if (els.icon) els.icon.textContent  = "💌";
-    if (els.note) setPaperLook();
-    renderToFrom(); // lijnen toch syncen
-    return;
-  }
+//  if (idx == null || idx < 0 || idx >= STATE.allMessages.length) {
+//    if (els.msg)  {
+//      const fallbackText = "Stuur een warme boodschap naar iemand.";
+//      els.msg.setAttribute('data-raw', fallbackText);     // bron vastleggen
+//      els.msg.textContent = personalize(fallbackText);    // consistent via personalize
+//    }
+//    if (els.icon) els.icon.textContent  = "💌";
+//    if (els.note) setPaperLook();
+//    renderToFrom(); // lijnen toch syncen
+//    return;
+//  }
 
   // 4) State + recent bijwerken
   STATE.currentIdx = idx;
@@ -687,7 +716,8 @@ function renderMessage({ newRandom=false, requestedIdx=null, wiggle=false } = {}
       els.icon.style.opacity = 1;
     }, 90);
   }
-	ensureNoteFits();
+  
+if (window.ensureNoteFits) window.ensureNoteFits();
   // 6) rest van de UI
   if (els.note) setPaperLook();
   renderToFrom();
@@ -753,7 +783,7 @@ function renderToFrom(){
   el.addEventListener("touchend", ()=>{
     if (!active) return;
     active = false;
-    if (Math.abs(dx) > 30 && Math.abs(dx) > Math.abs(dy)) {
+    if (Math.abs(dx) > 20 && Math.abs(dx) > Math.abs(dy)) {
       renderMessage({ newRandom:true, wiggle:false });
     }
   }, {passive:true});
@@ -846,14 +876,24 @@ try{
 function currentCoachState(){ return getTo() ? "toFilled" : "init"; }
 
 /* [J] PATCH: updateCoach meertalig (zelfde functienaam) */
-function updateCoach(state){
+function updateCoach(state, vars = {}, opts = {}){
   if (!els.coach) return;
+
+  // --- Nieuw: prio + hold window ---
+  const prioMap = { error: 3, category: 2, toFilled: 2, shared: 1.5, received: 1.5, init: 0 };
+  const now = Date.now();
+  const incomingPrio = prioMap[state] ?? 0;
+
+  // Als we in een hold-periode zitten en de nieuwe state is zwakker dan de huidige → negeren
+  if (STATE.coachHoldUntil && now < STATE.coachHoldUntil) {
+    const curPrio = STATE.coachPrio ?? 0;
+    if (!opts.force && incomingPrio < curPrio) return;
+  }
 
   const theme = getActiveTheme();
   const lang  = (STATE?.lang) || resolveLang();
   const isEn  = (lang === 'en');
 
-  // Thematisch openingszinnetje (EN/NL)
   const themedInit = (theme===THEME.VALENTINE)
     ? (isEn ? "Happy Valentine 💛 Pick Valentine, select a message and send your note."
             : "Fijne Valentijn 💛 Kies voor Valentijn, blader door de berichtjes en verstuur je note.")
@@ -865,30 +905,44 @@ function updateCoach(state){
                 : "Zacht begin 🐣 Kies Pasen, blader door de berichtjes en verstuur je note.")
         : null;
 
-// Basis-copy (EN/NL), inline zodat we geen extra helper hoeven te introduceren
-const copy = isEn ? {
-  init:     themedInit || "Pick a feeling, select a message and send your note.",
-  toFilled: `Nice! Click <button type="button" class="coach-inline">Send</button> to share your message.`,
-  shared:   "Your message has been sent 💛 Make another one?",
-  received: "You’ve received a warm note 💛 Keep it? Tap ‘Download’. Send your own? Tap ‘New’.",
-  error: "Add who it’s for first 💛"
-} : {
-  init:     themedInit || "Selecteer een gevoel, blader door de berichtjes en verstuur je note. ",
-  toFilled: `Mooi! Klik <button type="button" class="coach-inline">Verstuur</button> om je boodschap te delen.`,
-  shared:   "Je boodschap is verstuurd 💛 Nog eentje maken? ",
-  received: "Je hebt een 'a warme note' ontvangen 💛 <br> Zelf iemand verrassen? Klik ‘Kies bericht’. ",
-  error: "'Vul eerst in voor wie dit is 💛' "
-};
+  const copy = isEn ? {
+    init:     themedInit || "Pick a feeling, select a message and send your note.",
+    toFilled: `Nice! Click <button type="button" class="coach-inline">Send</button> to share your message.`,
+    shared:   "Your 'warm note' has been sent 💛 <br> Make another one?",
+    received: "You’ve received a warm note 💛 <br> Send your own? Tap ‘New message’.",
+    error:    "Add who it’s for first 💛",
+    category: "Now pick 'a warm note' from the feeling {{category}}."
+  } : {
+    init:     themedInit || "Selecteer een gevoel, blader door de berichtjes en verstuur je note.",
+    toFilled: `Mooi! Klik <button type="button" class="coach-inline">Verstuur</button> om je boodschap te delen.`,
+    shared:   "Je boodschap is verstuurd 💛 <br> Nog eentje maken?",
+    received: "Je hebt een 'a warm note' ontvangen 💛 <br> Zelf iemand verrassen? Klik ‘Kies bericht’.",
+    error:    "Vul eerst in voor wie dit is 💛",
+    category: "Kies nu 'a warm note' uit {{categorie}}."
+  };
 
-  // Render op basis van state (incl. 'received'); fallback = init
-  const html = copy[state] || copy.init;
-  els.coach.classList?.remove('hidden');   // zeker zichtbaar
-  //els.coach.innerHTML = html;              // HTML nodig i.v.m. inline button
-  // Render op basis van state
-  // nadat je de copy hebt gezet
+  const tpl = (str) => {
+    if (!str) return "";
+    return str
+      .replace(/\{\{\s*categorie\s*\}\}/gi, vars.categorie || vars.category || "")
+      .replace(/\{\{\s*category\s*\}\}/gi,  vars.category  || vars.categorie || "");
+  };
+
+  const html = tpl(copy[state] || copy.init);
+
   els.coach?.classList.remove('hidden');
-if (els.coachMsg) els.coachMsg.innerHTML = html;  
-if (window.StickyAvatar) StickyAvatar.setFromCoach(state);}
+  if (els.coachMsg) els.coachMsg.innerHTML = html;
+  if (window.StickyAvatar) StickyAvatar.setFromCoach(state);
+
+  // --- Nieuw: hold zetten voor ‘sterkere’ states, zodat init niet meteen overschrijft ---
+  const defaultHold = (state === 'init') ? 0 : 900; // ms
+  const holdMs = Number.isFinite(opts.hold) ? opts.hold : defaultHold;
+  STATE.coachPrio = incomingPrio;
+  STATE.coachHoldUntil = holdMs > 0 ? (now + holdMs) : 0;
+  if (typeof positionAvatarNearAbout === 'function') {
+  requestAnimationFrame(positionAvatarNearAbout);
+  }	
+}
 
 /* [K] SHARE-SHEET (WA/E-mail/Download/Kopieer/Native) ---------------------- */
 let __lastFocusEl = null;
@@ -1228,23 +1282,25 @@ function showToastI18n(key, fallback){
   if (fallback) return showToast(fallback);
 }
 
-/*function getTo(){
-  const v = (els.toInput?.value || '').trim();
-  if (v) return v;
-  // Fallback: ontvangen To uit URL (alleen bij mid)
-  const hasMid = (new URLSearchParams(location.search)).has('mid');
-  if (hasMid) return (STATE?.shared?.to || '').trim();
-  return '';
+function positionAvatarNearAbout() {
+  const av = document.getElementById('coach-avatar');
+  const btn = document.getElementById('btn-about');
+  if (!av || !btn) return;
+
+  // Alleen op mobiel deze “snap”
+  if (window.matchMedia('(max-width: 767px)').matches) {
+    const r = btn.getBoundingClientRect();
+    const pad = 6; // extra marge t.o.v. de knop
+    // Plaats de avatar rechtsboven “naast” de About-knop
+    av.style.top  = Math.round(r.top  + window.scrollY - 4) + 'px';
+    av.style.left = Math.round(r.right + window.scrollX + pad) + 'px';
+    // Als je liever exact over de knop heen wilt hangen, gebruik r.right/r.top zonder pad
+  } else {
+    // Desktop: laat CSS het doen (absolute in #coach-tip)
+    av.style.top = av.style.left = '';
+  }
 }
 
-function getFrom(){
-  const v = (els.fromInput?.value || '').trim();
-  if (v) return v;
-  // Fallback: ontvangen From uit URL (alleen bij mid)
-  const hasMid = (new URLSearchParams(location.search)).has('mid');
-  if (hasMid) return (STATE?.shared?.from || '').trim();
-  return '';
-}*/
 function getTo(){
   const v = (els.toInput?.value || '').trim();
   if (v) return v;
@@ -1913,7 +1969,9 @@ function wireLangDropdown(){
 
   renderLangDropdownUI();
 }
-
+  window.addEventListener('resize', positionAvatarNearAbout, { passive: true });
+  window.addEventListener('scroll', positionAvatarNearAbout, { passive: true });
+  
 function guardShareOrNudge(){
   const to = getTo();
   if (!to) {
@@ -1994,6 +2052,16 @@ function wireGlobalUI(){
   // About
   els.about?.querySelector(".sheet-close")?.addEventListener("click", closeAbout);
   els.aboutClose && els.aboutClose.addEventListener("click", closeAbout);
+ 
+  // Chip
+  document.getElementById('chip-row')?.addEventListener('click', (e) => {
+  const chip = e.target.closest('.chip');
+  if (!chip) return;
+
+  // coach-melding met volgende stap
+  const label = (window.getChipLabel ? window.getChipLabel(chip) : chip.innerText.trim());
+  updateCoach('category', { categorie: label, category: label });
+});
 
   // Coach close + inline "Verstuur"
   els.coachClose && els.coachClose.addEventListener("click", ()=> els.coach.classList.add("hidden"));
@@ -2053,17 +2121,7 @@ function wireGlobalUI(){
     document.body.appendChild(overlay);
     return { overlay, stage };
   }
-function ensureNoteFits(){
-  if (!els?.note) return;
-  const reserve = 180; // ruimte die je onder de note wilt vrijhouden (inputs+coach)
-  const max = Math.max(240, window.innerHeight - reserve);
-  // scrollHeight = werkelijke content-hoogte (incl. overloop)
-  if (els.note.scrollHeight > max) {
-    els.note.classList.add('note--compact');
-  } else {
-    els.note.classList.remove('note--compact');
-  }
-}
+
   async function showSplash(){
     await waitFonts();
     const live = findLiveNote();
@@ -2231,7 +2289,7 @@ function ensureNoteFits(){
   if (!(isCoarse || isSmall)) { el.classList.add('is-hide'); return; }
 
   // Minimum toontijd zodat het niet flitst
-  const MIN_SHOW = 800; // ms — pas aan naar smaak (bijv. 800–1200)
+  const MIN_SHOW = 600; // ms — pas aan naar smaak (bijv. 800–1200)
   const t0 = performance.now();
   let canSkip = false, hidden = false;
 
@@ -2307,3 +2365,5 @@ function ensureNoteFits(){
     }catch(_){}
   };
 })();
+
+

@@ -1,0 +1,112 @@
+/* ========== Background image try-out ========== */
+body.has-bg {
+  /* Fallback kleur als de afbeelding nog laadt */
+  background-color: #0e1014;
+  /* Achtergrondafbeelding (desktop) */
+  background-image: url("/assets/img/bg_image.jpg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  /* Fixed geeft mooie parallax op desktop; op iOS kan dit schokken (zie media query) */
+  background-attachment: fixed;
+}
+
+/* Zachte overlay voor leesbaarheid van note/coach */
+body.has-bg::before {
+  content: "";
+  position: fixed; /* overlay over de hele viewport */
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Zorg dat je hoofdcontent boven de overlay ligt */
+#app, .frame, .page-root { position: relative; z-index: 1; }
+
+/* Mobile optimalisatie: geen 'fixed' (performanter), iets sterkere overlay */
+@media (max-width: 640px) {
+  body.has-bg {
+    background-attachment: scroll;   /* iOS/jank fix */
+    background-position: center top; /* vaak mooier op mobiel */
+  }
+}
+
+/* (Optioneel) Extra contrast als note/coach vlak is */
+.note {
+  backdrop-filter: saturate(120%);
+  /* of: background: rgba(255,249,241,0.98);  — alleen als het nodig is */
+}
+
+/* ===== Leesbaarheid boven background (alleen wanneer has-bg actief is) ===== */
+
+/* 1) Intro-hint (of je header hint) */
+body.has-bg .intro-hint {
+  color: #eef3ff;                           /* heldere tekst */
+  background: color-mix(in srgb, #0b0e14 72%, transparent);
+  /* alternatief zonder color-mix (oudere browsers):
+     background: rgba(11,14,20,.72); */
+  backdrop-filter: blur(6px) saturate(120%); /* frosted glass */
+  -webkit-backdrop-filter: blur(6px) saturate(120%);
+  border: 1px solid rgba(255,255,255,.06);
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(0,0,0,.25);
+}
+
+/* 2) Chip-bar container */
+body.has-bg #chip-row {
+  background: rgba(11,14,20,.60);
+  backdrop-filter: blur(6px) saturate(120%);
+  -webkit-backdrop-filter: blur(6px) saturate(120%);
+  border: 1px solid rgba(255,255,255,.06);
+  border-radius: 14px;
+  padding: 6px;                    /* beetje lucht rondom chips */
+  box-shadow: 0 6px 20px rgba(0,0,0,.25);
+  z-index: 1;                      /* zeker boven de overlay */
+}
+
+/* 3) Chips zelf: default + active + focus */
+body.has-bg #chip-row .chip {
+  color: #f7fbff;
+  background: rgba(255,255,255,.10);
+  border: 1px solid rgba(255,255,255,.12);
+  text-shadow: 0 1px 0 rgba(0,0,0,.35);
+}
+
+body.has-bg #chip-row .chip.is-active {
+  background: rgba(255,255,255,.18);
+  border-color: rgba(255,255,255,.22);
+}
+
+body.has-bg #chip-row .chip:focus-visible {
+  outline: 2px solid #ffd166;      /* duidelijke focus-ring */
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(255,209,102,.25);
+}
+
+/* 4) Subtiele verbetering van de bovenste overlaystrook (leesbaar voor hint/chips) */
+body.has-bg::before {
+  background:
+    linear-gradient(to bottom,
+      rgba(10,12,16,.78) 0%,       /* iets donkerder aan de top */
+      rgba(10,12,16,.44) 34%,
+      rgba(10,12,16,.64) 100%);
+}
+
+/* 5) Mobiel: iets krachtiger glas, kleinere blur */
+@media (max-width: 640px) {
+  body.has-bg .intro-hint,
+  body.has-bg #chip-row {
+    background: rgba(11,14,20,.72);
+    backdrop-filter: blur(5px) saturate(120%);
+    -webkit-backdrop-filter: blur(5px) saturate(120%);
+  }
+}
+
+/* 6) Hoge-contrast voorkeur van de gebruiker respecteren */
+@media (prefers-contrast: more) {
+  body.has-bg .intro-hint,
+  body.has-bg #chip-row {
+    background: rgba(11,14,20,.85);     /* nog iets donkerder */
+    border-color: rgba(255,255,255,.22);
+  }
+}
