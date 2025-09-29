@@ -340,6 +340,20 @@ async function loadMessages(){
     ? messagesPathFor
     : (lang) => `/data/messages.${lang}.json?ts=${Date.now()}`;
 
+  /* === BIRTHDAY: inline helper (geen globals) ============================ */
+  async function _tryLoadBirthday(lang) {
+    const url = `/data/messages.birthday.${lang}.json?ts=${Date.now()}`;
+    try {
+      const res = await fetch(url, { cache: 'no-store' });
+      if (!res.ok) throw new Error('HTTP '+res.status);
+      const data = await res.json();
+      return Array.isArray(data?.messages) ? data.messages : [];
+    } catch {
+      return [];
+    }
+  }
+  /* ====================================================================== */
+
   try{
     /* 1) Kies gewenste taal en probeer die file te laden */
     const wantLang = (STATE && STATE.lang) ? STATE.lang : _resolveLang();
@@ -370,7 +384,7 @@ async function loadMessages(){
       }
     }
 
-    /* === ONGEWIJZIGD: jouw normalisatie + sentiments afleiding === */
+    /* === ONGEWIJZIGD: jouw normalisatie van hoofdset ==================== */
     const list = Array.isArray(data?.messages) ? data.messages : [];
     STATE.allMessages = list.map(m => ({
       id: m.id || null,
@@ -381,6 +395,30 @@ async function loadMessages(){
       weight: Number.isFinite(m.weight) ? m.weight : 1
     }));
 
+    /* === BIRTHDAY: meeliften en mergen vóór sentiments-afleiding ======== */
+    try {
+      // eerst gewenste taal proberen…
+      let bdayRaw = await _tryLoadBirthday(STATE.lang);
+      // …zo niet, val terug op NL (zelfde strategie als hoofdset)
+      if (!bdayRaw.length && STATE.lang !== 'nl') {
+        const nlSet = await _tryLoadBirthday('nl');
+        if (nlSet.length) bdayRaw = nlSet;
+      }
+      if (bdayRaw.length) {
+        const normalized = bdayRaw.map(m => ({
+          id: m.id || null,
+          icon: m.icon || "",
+          text: String(m.text || ""),
+          sentiments: Array.isArray(m.sentiments) && m.sentiments.length ? m.sentiments : ['birthday'],
+          special_day: m.special_day || 'birthday',
+          weight: Number.isFinite(m.weight) ? m.weight : 1
+        }));
+        STATE.allMessages = STATE.allMessages.concat(normalized);
+      }
+    } catch {}
+    /* ==================================================================== */
+
+    // Sentiments afleiden (op de samengevoegde set)
     const s = Array.isArray(data?.sentiments)
       ? data.sentiments
       : deriveSentiments(STATE.allMessages);
@@ -423,6 +461,14 @@ function buildSentimentChips(){
   row.innerHTML = "";
 
   const isEn = (STATE?.lang === 'en');
+  const hasBirthday = Array.isArray(STATE?.allMessages) &&
+  STATE.allMessages.some(m => Array.isArray(m.sentiments) && m.sentiments.includes('birthday'));
+
+if (hasBirthday) {
+  row.appendChild(
+    makeChip('birthday', isEn ? 'Birthday 🎂' : 'Verjaardag 🎂')
+  );
+}
 
   const activeTheme = getActiveTheme();
   if (activeTheme === THEME.VALENTINE) {

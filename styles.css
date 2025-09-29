@@ -255,7 +255,7 @@ button.btn .icon svg { width: 100% !important; height: 100% !important; }
 @keyframes coach-in{from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:translateY(0)}}
 .coach .coach-close{appearance:none; border:0; cursor:pointer; background:rgba(255,255,255,.12); color:#fff; width:26px; height:26px; border-radius:50%}
 .coach .coach-inline{
-  appearance:none; border:0; background:transparent; color:#FFE66D; font-weight:700; text-decoration:underline; cursor:pointer; padding:0 2px;
+  appearance:none; border:0; background:transparent; color:#FFE66D; font-weight:600; text-decoration:underline; cursor:pointer; padding:0 2px;
 }
 .coach .coach-inline:hover{ text-decoration:none }
 .coach .coach-inline:focus-visible{ outline:2px solid rgba(255,255,255,.9); outline-offset:2px; border-radius:4px }
