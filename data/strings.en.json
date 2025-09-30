@@ -1,0 +1,76 @@
+{
+  "lang": "en",
+  "version": 1,
+  "strings": {
+    "actions": {
+      "new": "New message",
+      "install": "Install",
+      "share": "Send",
+      "email": "Email",
+      "whatsapp": "WhatsApp",
+      "copy": "Copy link",
+      "download": "Download",
+      "messenger": "Messenger",
+      "qr": "QR code",
+      "close": "Close"
+    },
+    "share": {
+      "sheetTitle": "Send your message",
+      "shareLabel": "Share via",
+      "copyPrompt": "Copy link",
+      "copiedToast": "Link copied 📋",
+      "messengerPrompt": "Copy this link and paste it in Messenger:",
+      "messengerCopied": "Link to your personal note has been copied. 📋"
+    },
+    "toast": {
+    "copied": "Link copied 📋",
+    "whatsappOpened": "WhatsApp opened 📲",
+    "emailOpened": "Email opened ✉️",
+    "downloadStart": "Saving image ⬇️",
+    "downloadUnavailable": "Download unavailable",
+    "shared": "Shared 💛",
+    "shareCancelled": "Share cancelled",
+    "messengerCopied": "Link to your personal note has been copied. 📋",
+    "toRequired": "Fill in who this is for first 💛",
+    "newLoaded": "New message loaded ✨"
+    },
+    "compose": {
+      "to": "To",
+      "from": "From",
+      "toPlaceholder": "For whom?",
+      "fromPlaceholder": "From you (optional)"
+    },
+    "ui": {
+     "aiNew": "AI message"
+  	},
+  	"ai": {
+     "generated": "AI message generated ✨",
+     "failed": "Could not generate message"
+  	},
+    "qr": {
+      "title": "QR code",
+      "hint": "Scan this code with your phone to open the note.",
+      "download": "Download QR"
+    },
+    "messenger": {
+      "title": "Messenger",
+      "notice": "Link to your personal note has been copied. 📋",
+      "steps": [
+        "Choose a contact in Messenger.",
+        "Paste the link into the message field.",
+        "Send your warm note. 💛"
+      ],
+      "open": "Open Messenger"
+    },
+    "about": {
+      "title": "About this App",
+      "p1_strong": "a warm note — to someone you care about",
+      "p2": "Small notes with big meaning. Send loving, funny or encouraging messages. A quick way to let someone know you’re thinking of them.",
+      "tag": "Something small, lots of meaning",
+      "fabLabel": "About this site"
+    },
+    "intro": {
+      "hint": "Tip: swipe through Feelings & Message →"
+    }
+  }
+}

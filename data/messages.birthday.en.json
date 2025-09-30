@@ -1,0 +1,24 @@
+{
+  "lang": "en",
+  "sentiments": ["birthday"],
+  "messages": [
+    { "id": "en_b001", "icon": "🎉", "text": "Happy Birthday, {{name}}! You’re the garland that brightens today 🎊", "sentiments": ["birthday", "joy"], "special_day": "birthday", "weight": 2 },
+    { "id": "en_b002", "icon": "🥳", "text": "Hip hip, {{name}}! Party horn on, party hat tilted — let’s go! 🎺🎈", "sentiments": ["birthday", "humor", "joy"], "special_day": "birthday", "weight": 1 },
+    { "id": "en_b003", "icon": "🎂", "text": "Dear {{name}}, happy birthday — may your day feel warm and kind 💛🕯️", "sentiments": ["birthday", "friendship"], "special_day": "birthday", "weight": 2 },
+    { "id": "en_b004", "icon": "🍾", "text": "Pop the cork, {{name}} — today we toast to you! 🥂", "sentiments": ["birthday", "joy", "success"], "special_day": "birthday", "weight": 1 },
+    { "id": "en_b005", "icon": "🎁", "text": "Best gift? You. Happy Birthday, {{name}} 🎁💫", "sentiments": ["birthday", "friendship"], "special_day": "birthday", "weight": 2 },
+    { "id": "en_b006", "icon": "🎈", "text": "More wishes, more laughter, more you. Happy birthday, {{name}}! 🎈", "sentiments": ["birthday", "joy"], "special_day": "birthday", "weight": 1 },
+    { "id": "en_b007", "icon": "🎊", "text": "Confetti in the air, warmth in your heart — cheers, {{name}}! 🥂🎊", "sentiments": ["birthday", "gratitude"], "special_day": "birthday", "weight": 1 },
+    { "id": "en_b008", "icon": "🧁", "text": "A sweeter day for a sweet you, {{name}} — sprinkles included 🧁✨", "sentiments": ["birthday", "joy"], "special_day": "birthday", "weight": 1 },
+    { "id": "en_b009", "icon": "💛", "text": "Today we celebrate you, {{name}} — perfectly as you are 💛", "sentiments": ["birthday", "friendship", "gratitude"], "special_day": "birthday", "weight": 2 },
+    { "id": "en_b010", "icon": "🍰", "text": "A slice of cake and a heap of joy for you, {{name}} 🎂", "sentiments": ["birthday", "joy"], "special_day": "birthday", "weight": 1 },
+    { "id": "en_b011", "icon": "🎺", "text": "Tooot for {{name}}! Another lap around the sun to celebrate ☀️🎺", "sentiments": ["birthday", "humor", "joy"], "special_day": "birthday", "weight": 1 },
+    { "id": "en_b012", "icon": "🎉", "text": "Banners up, worries down — enjoy your day, {{name}}! 🎉", "sentiments": ["birthday", "calm", "joy"], "special_day": "birthday", "weight": 1 },
+    { "id": "en_b013", "icon": "🥂", "text": "To you, {{name}} — to warmth, love and little wonders 🥂✨", "sentiments": ["birthday", "gratitude", "love"], "special_day": "birthday", "weight": 1 },
+    { "id": "en_b014", "icon": "🎈", "text": "Blow softly and wish big, {{name}} — today, everything’s allowed 🎈", "sentiments": ["birthday"], "special_day": "birthday", "weight": 1 },
+    { "id": "en_b015", "icon": "🎊", "text": "Party hat slightly crooked, smile perfectly right — happy birthday, {{name}}! 🥳", "sentiments": ["birthday", "humor"], "special_day": "birthday", "weight": 1 },
+    { "id": "en_b016", "icon": "🍾", "text": "Clink! To new chances and gentle days, {{name}} 🍾🥂", "sentiments": ["birthday", "encouraging"], "special_day": "birthday", "weight": 1 },
+    { "id": "en_b017", "icon": "🎂", "text": "Candles lit, wish set — you shine, {{name}} 🕯️🎂", "sentiments": ["birthday", "proud"], "special_day": "birthday", "weight": 1 },
+    { "id": "en_b018", "icon": "💫", "text": "New orbit, fresh sparkle. Happy birthday, {{name}} 💫", "sentiments": ["birthday", "joy"], "special_day": "birthday", "weight": 1 }
+  ]
+}

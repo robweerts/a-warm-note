@@ -1,0 +1,76 @@
+{
+  "lang": "nl",
+  "version": 1,
+  "strings": {
+    "actions": {
+      "new": "Kies Bericht",
+      "install": "Installeer",
+      "share": "Verstuur",
+      "email": "E-mail",
+      "whatsapp": "WhatsApp",
+      "copy": "Kopieer link",
+      "download": "Download",
+      "messenger": "Messenger",
+      "qr": "QR-code",
+      "close": "Sluiten"
+    },
+    "share": {
+      "sheetTitle": "Verstuur je boodschap",
+      "shareLabel": "Deel via",
+      "copyPrompt": "Kopieer link",
+      "copiedToast": "Link gekopieerd 📋",
+      "messengerPrompt": "Kopieer deze link en plak straks in Messenger:",
+      "messengerCopied": "Link van jouw persoonlijke bericht is gekopieerd. 📋"
+    },
+    "toast": {
+    "copied": "Link gekopieerd 📋",
+    "whatsappOpened": "WhatsApp geopend 📲",
+    "emailOpened": "E-mail geopend ✉️",
+    "downloadStart": "Afbeelding wordt opgeslagen ⬇️",
+    "downloadUnavailable": "Download niet beschikbaar",
+    "shared": "Gedeeld 💛",
+    "shareCancelled": "Delen geannuleerd",
+    "messengerCopied": "Link van jouw persoonlijke bericht is gekopieerd. 📋",
+    "toRequired": "Vul eerst in voor wie dit is 💛",
+    "newLoaded": "Nieuwe boodschap geladen ✨"
+    },
+    "compose": {
+      "to": "Voor",
+      "from": "Van",
+      "toPlaceholder": "Voor wie?",
+      "fromPlaceholder": "Van jou (optioneel)"
+    },
+    "ui": {
+     "aiNew": "AI-boodschap"
+    },
+   	"ai": {
+     "generated": "AI-boodschap gemaakt ✨",
+     "failed": "Kon geen boodschap genereren"
+  },
+    "qr": {
+      "title": "QR-code",
+      "hint": "Scan deze code met je telefoon om de note te openen.",
+      "download": "Download QR"
+    },
+    "messenger": {
+      "title": "Messenger",
+      "notice": "Link van jouw persoonlijke bericht is gekopieerd. 📋",
+      "steps": [
+        "Kies een contact in Messenger.",
+        "Plak de link in het berichtveld.",
+        "Verstuur je warme note. 💛"
+      ],
+      "open": "Open Messenger"
+    },
+    "about": {
+      "title": "Over deze App",
+      "p1_strong": "a warm note — to someone you care about",
+      "p2": "Kleine berichtje met grote betekenis. Een app waar je liefdevolle, grappige of bemoedigende notities kunt sturen. Even, al is het maar kort, laten weten dat je aan iemand denkt.",
+      "tag": "Iets kleins, veel betekenis",
+      "fabLabel": "Over deze site"
+    },
+    "intro": {
+      "hint": "Tip: swipe door de Gevoelens & Boodschap →"
+    }
+  }
+}

@@ -1,13 +1,21 @@
+/* Copyright (c) 2025 Rob Weerts */
+
+/* =================== Vars & Base =================== */
 :root{
   --ink:#00008B;
   --paper:#FFE66D;
-  --bar:rgba(0,0,0,.55);
+  --bar:rgba(0,0,0,.48);
   --bar2:rgba(0,0,0,.38);
   --shadow:0 18px 40px rgba(0,0,0,.35);
   --ui:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
   --hand:"Caveat","Patrick Hand",ui-rounded,system-ui,sans-serif;
-  --ease:cubic-bezier(.2,.8,.2,1);
+ /* --ease:cubic-bezier(.2,.8,.2,1);*/
+  --btn-h: 35px;
+  --btn-pad-x: 12px;
+  --btn-radius: 12px;
+  --icon: 18px;           /* << vaste iconmaat */
 }
+
 *{box-sizing:border-box}
 html,body{height:100%}
 body{
@@ -17,21 +25,30 @@ body{
     radial-gradient(circle at bottom right, rgba(255,179,71,.65) 0%, rgba(255,179,71,0) 70%);
   display:grid; place-items:center;
 }
+body::before{
+  content:""; position:fixed; inset:0; z-index:-1; opacity:.05;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4'/></filter><rect width='160' height='160' filter='url(%23n)'/></svg>");
+  animation: subtleMove 30s linear infinite;
+}
+@keyframes subtleMove{from{transform:translate(0,0)} to{transform:translate(-80px,-80px)}}
+
 .page{width:min(980px,92vw); padding:96px 0 32px}
 
-/* Topbar */
+/* =================== Topbar =================== */
 .topbar{
-  position:fixed; top:12px; left:50%; transform:translateX(-50%); z-index:1000;
+  position:fixed; top:10px; left:50%; transform:translateX(-50%); z-index:1000;
   display:flex; flex-direction:column; align-items:center; gap:8px;
   width:96vw; padding:8px 10px; border-radius:14px;
   background:var(--bar); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
-  box-shadow:0 10px 26px rgba(0,0,0,.28);
+  box-shadow:0 14px 36px rgba(0,0,0,.42);
 }
 .brand{
   margin:0; font-family:var(--hand); color:#fff; text-shadow:0 1px 4px rgba(0,0,0,.7);
   font-size:clamp(18px,5vw,22px);
 }
+.brand-payoff{font-weight:500; opacity:.85; margin-left:.25rem; white-space:nowrap; font-size:.95rem}
 .actions{display:flex; gap:6px; flex-wrap:wrap; justify-content:center}
+
 .btn{
   appearance:none; border:0; padding:7px 10px; border-radius:10px; cursor:pointer;
   background:rgba(0,0,0,.45); color:#fff; font-weight:600; font-size:.92rem;
@@ -40,81 +57,144 @@ body{
   backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
 }
 .btn.primary{background:rgba(255,255,255,.9); color:#222}
-.btn:hover{transform:translateY(-1px)}
-.btn:active{transform:translateY(1px)}
+.btn:hover{transform:translateY(-1px)} .btn:active{transform:translateY(1px)}
 .btn:focus-visible{outline:2px solid rgba(255,255,255,.9); outline-offset:2px}
+.btn-ico{display:inline-flex; align-items:center; gap:8px; line-height:1; white-space:nowrap}
+.btn-ico svg{flex:0 0 auto; display:block; overflow:visible}
+.btn-ico .btn-label{display:inline-block}
+@media (max-width:360px){ .btn-ico .btn-label{display:none} }
 
-/* Intro */
+/* vaste, compacte knophoogte */
+#btn-new{
+  height: 35px;           /* of wat je topbar-knophoogte is */
+  padding: 0 12px;        /* horizontale padding */
+  line-height: 1;         /* voorkomt extra vertical space */
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;             /* ruimte tussen icoon en label */
+  box-sizing: border-box;
+}
+
+/* Mobile compacter maken */
+@media (max-width: 480px){
+  :root{
+    --btn-h: 35px;
+    --icon: 16px;
+  }
+}
+
+/* Trek ALLE knoppen gelijk (ook language) */
+button.btn,
+#lang-dd .lang-btn {
+  height: var(--btn-h);
+  padding: 0 var(--btn-pad-x);
+  border-radius: var(--btn-radius);
+  display: inline-flex;
+  align-items: center;     /* voorkomt “rekken” */
+  gap: .4rem;
+  line-height: 1;          /* geen extra hoogte door tekst */
+  box-sizing: border-box;
+}
+
+/* de container moet boven je topbar/overlays uitkomen */
+#lang-dd { position: relative; z-index: 999; }
+
+/* menu zelf mag niet afgeknipt worden door parent */
+#lang-dd .lang-menu{
+  position: absolute;
+  top: 110%; right: 0;
+  min-width: 12rem;
+  background: rgba(0,0,0,.85);
+  color: #fff;
+  border-radius: .9rem;
+  padding: .6rem;
+  box-shadow: 0 8px 20px rgba(0,0,0,.25);
+}
+
+/* als je topbar/header overflow:hidden heeft → zichtbaar houden */
+.topbar, header, nav { overflow: visible; } /* pas selector aan naar jouw topbar */
+
+/* Constraining icons (SVG) – the magic */
+button.btn svg,
+#lang-dd .lang-btn svg {
+  width: var(--icon) !important;
+  height: var(--icon) !important;
+  display: block;          /* geen baseline-whitespace */
+  flex: 0 0 var(--icon);
+  pointer-events: none;
+}
+
+/* Als je icon via <span class="icon"> … </span> hebt */
+button.btn .icon { 
+  width: var(--icon); height: var(--icon); display: inline-flex; 
+}
+button.btn .icon svg { width: 100% !important; height: 100% !important; }
+
+/* =================== Intro =================== */
 .intro{
   margin:4px auto 6px; text-align:center; font-family:var(--hand);
   font-size:clamp(16px,2.2vw,20px); color:#2b261f; text-shadow:0 1px rgba(255,255,255,.35);
 }
+.intro-hint{margin:8px auto 0; font-weight:600; text-align:center; opacity:.95}
+.hint-swipe{font-weight:500; opacity:.9}
 
-/* Chips (sentiments) */
-.chips-wrap{ margin:6px auto 0; width:min(980px,92vw); }
-.chip-row{
-  display:flex; gap:8px; overflow:auto; -webkit-overflow-scrolling:touch; padding:2px 2px 6px;
-}
-.chip{
-  border:0; padding:6px 10px; border-radius:999px; font-weight:600; font-size:.9rem;
-  background:rgba(0,0,0,.08); color:#222; cursor:pointer;
-  transition: transform .06s cubic-bezier(.2,.8,.2,1), background .2s cubic-bezier(.2,.8,.2,1);
-  white-space:nowrap;
-}
-.chip:hover{ transform:translateY(-1px); }
-.chip:active{ transform:translateY(1px); }
-.chip.active{ background:#222; color:#fff; }
-
-/* Mobile-first verbeteringen voor chips */
+/* =================== Chips =================== */
 .chips-wrap{ margin:6px auto 0; width:min(980px,92vw); position:relative; }
 .chip-row{
-  display:flex; gap:8px; overflow:auto; -webkit-overflow-scrolling:touch;
-  padding:2px 2px 6px; scroll-snap-type:x mandatory;
-  mask-image: linear-gradient(90deg, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%);
-  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%);
+  display:flex; gap:6px; overflow:auto; -webkit-overflow-scrolling:touch;
+  padding:2px 8px 6px; scroll-snap-type:x mandatory;
+  -webkit-mask-image:none; mask-image:none; /* geen fade over eerste chip */
 }
-.chip{ scroll-snap-align:start; }
-
-/* Affordance: chevrons + actieve chip duidelijker */
-.chips-wrap{ position:relative; }
-
-.chip {
-  transition: transform .06s cubic-bezier(.2,.8,.2,1), background .2s cubic-bezier(.2,.8,.2,1), box-shadow .2s ease;
+.chip{
+  border:0; padding:5px 9px; border-radius:10px; font-weight:600; font-size:.85rem;
+  background:rgba(0,0,0,.08); color:#222; cursor:pointer; white-space:nowrap;
+  scroll-snap-align:start;
+  transition:transform .06s var(--ease), background .2s var(--ease), box-shadow .2s ease;
 }
-.chip.active{
-  background:#222; color:#fff;
-  box-shadow:0 0 0 2px rgba(0,0,0,.12), 0 6px 14px rgba(0,0,0,.18);
-}
+.chip:hover{transform:translateY(-1px)} .chip:active{transform:translateY(1px)}
+.chip.active{ background:#222; color:#fff; box-shadow:0 0 0 1px rgba(0,0,0,.12), 0 6px 12px rgba(0,0,0,.16) }
+.chip--theme{ background:rgba(255,0,85,.1); color:#b0003a; border:1px solid rgba(255,0,85,.25); font-weight:700 }
+.chip--theme.active{ background:#b0003a; color:#fff; border-color:#b0003a }
+@media (max-width:360px){ .chip{padding:4px 8px; font-size:.8rem} }
 
-/* Chevrons aan de randen (alleen zichtbaar bij overflow, JS toggelt display) */
+/* Chevrons (zichtbaar bij overflow; JS toggelt display) */
 .chip-chevron{
-  position:absolute; top:0; bottom:0; width:34px; display:none; place-items:center;
-  background: linear-gradient(90deg, rgba(255,255,255,0) 0, rgba(0,0,0,.08) 100%);
-  color:#222; font-weight:700; font-size:18px; border:0; cursor:pointer; z-index:2;
-  backdrop-filter: blur(2px);
+  position:absolute; top:0; bottom:0; width:28px; display:none; place-items:center;
+  background:none; color:#222; font-weight:700; font-size:18px; border:0; cursor:pointer; z-index:2;
+  backdrop-filter:blur(2px);
 }
-.chip-chevron--left{ left:0; transform:scaleX(-1); border-top-left-radius:10px; border-bottom-left-radius:10px; }
-.chip-chevron--right{ right:0; border-top-right-radius:10px; border-bottom-right-radius:10px; }
+.chip-chevron--left{ left:0; }  /* geen spiegeling nodig; teken ‘‹’ */
+.chip-chevron--right{ right:0; }
 
-/* (optioneel) iets meer ruimte zodat de eerste/laatste chip niet onder de chevron valt */
-.chip-row{ padding-left:8px; padding-right:8px; }
-.chip--label{
-  pointer-events:none; opacity:.9; background:rgba(255,0,85,.1); color:#b0003a;
-  border:1px solid rgba(255,0,85,.25);
-}
-/* Klikbare thema-chip */
-.chip--theme{
-  background:rgba(255,0,85,.1);
-  color:#b0003a;
-  border:1px solid rgba(255,0,85,.25);
-}
-.chip--theme.active{
-  background:#b0003a;
-  color:#fff;
-  border-color:#b0003a;
-}
+/* Extra ruimte wanneer chevrons aanwezig zijn */
+.chips-wrap:has(#chips-left) .chip-row{ padding-left:38px; }
+.chips-wrap:has(#chips-right) .chip-row{ padding-right:38px; }
 
-/* Note */
+/* Sentiment swipe-hint maskers aan de randen */
+.sentiment-strip{position:relative}
+.sentiment-strip::before,.sentiment-strip::after{
+  content:""; position:absolute; top:0; bottom:0; width:32px; pointer-events:none;
+}
+.sentiment-strip::before{left:0;  background:linear-gradient(to right, rgba(255,248,231,.95), rgba(255,248,231,0))}
+.sentiment-strip::after {right:0; background:linear-gradient(to left,  rgba(255,248,231,.95), rgba(255,248,231,0))}
+.sentiment-strip.hint-active{animation:nudgeX .6s ease-in-out}
+@keyframes nudgeX{
+  0%,100%{transform:translateX(0)}
+  20%{transform:translateX(-8px)} 40%{transform:translateX(8px)}
+  60%{transform:translateX(-4px)} 80%{transform:translateX(4px)}
+}
+/* --- Chips: verberg horizontale scrollbars clean --- */
+.chips-wrap { overflow: hidden; }                 /* container geen bars */
+#chip-row {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;              /* soepel op iOS */
+  scrollbar-width: none;                          /* Firefox */
+  -ms-overflow-style: none;                       /* IE/Edge legacy */
+}
+#chip-row::-webkit-scrollbar { display: none; }   /* Chrome/Safari */
+.chip-chevron { transition: opacity .18s ease; }
+/* =================== Note =================== */
 .note-wrap{display:grid; place-items:center; padding:20px 0}
 .note{
   width:min(360px,88vw); min-height:320px; padding:clamp(18px,3vw,28px);
@@ -126,209 +206,210 @@ body{
     linear-gradient(180deg, rgba(0,0,0,0.03), rgba(255,255,255,0.03));
   animation: note-drop .6s var(--ease) both;
 }
-
-/* Welkomstnote subtiel accent */
-.note--welcome{
-  outline: 2px solid rgba(0,0,0,.06);
-  outline-offset: 2px;
-}
-
-/* === FROM inline met symbool (rechts-onder) ============================== */
-.from-wrap{
-  position: absolute;
-  right: 16px;
-  bottom: 12px;                 /* zelfde baseline als oude #fromline */
-  display: flex;
-  align-items: center;
-  gap: 6px;                      /* ruimte tussen symbool en tekst */
-}
-
-/* Zet child-posities op 'static' binnen de wrap (ipv absolute) */
-.from-wrap #fromline{
-  position: static;
-  margin: 0;                     /* geen extra spacing */
-}
-
-.from-wrap #from-symbol{
-  position: static;
-  width: 22px;                   /* iets kleiner, leest beter */
-  height: 22px;
-  opacity: .9;
-}
-
-/* Hou de bestaande inkt-stijl voor het SVG */
-.from-wrap #from-symbol svg{
-  width: 100%; height: 100%;
-  stroke: #FF5757;
-  fill: none;
-  stroke-width: 2.2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-/* Subtiel wiebeltje (respecteert reduced motion) */
-@keyframes handsketch { 0%{transform:rotate(-1deg)} 50%{transform:rotate(1deg)} 100%{transform:rotate(-1deg)} }
-.from-wrap #from-symbol { animation: handsketch 5s ease-in-out infinite; }
-@media (prefers-reduced-motion: reduce){
-  .from-wrap #from-symbol { animation: none; }
-}
-
-/* Handgetekend symbool bij '— van …' */
-#from-symbol{
-  position: absolute;
-  right: 16px;
-  bottom: 46px;           /* net boven de van-regel */
-  width: 28px; height: 28px;
-  opacity: .9;
-  pointer-events: none;
-}
-
-/* Subtiel wiebeltje (respecteert reduced motion) */
-@keyframes handsketch { 0%{transform:rotate(-1deg)} 50%{transform:rotate(1deg)} 100%{transform:rotate(-1deg)} }
-#from-symbol { animation: handsketch 5s ease-in-out infinite; }
-@media (prefers-reduced-motion: reduce){
-  #from-symbol { animation: none; }
-}
-
+.note--welcome{ outline:2px solid rgba(0,0,0,.06); outline-offset:2px; }
 @keyframes note-drop{
   from{transform:translateY(-12px) rotate(-2deg); opacity:0}
   60%{transform:translateY(2px) rotate(1.2deg); opacity:1}
   to{transform:translateY(0) rotate(-1.2deg)}
 }
 .message{font-family:var(--hand); font-size:clamp(26px,3.2vw,38px); line-height:1.2; white-space:pre-wrap}
-#iconline{margin-top:12px; text-align:center; font-size:clamp(22px,3vw,28px)}
-#toline,#fromline{position:absolute; font-family:var(--hand); font-size:20px; opacity:.9}
+#iconline{margin-top:12px; text-align:center; font-size:clamp(36px,6vw,46px)}
+#toline,#fromline{position:absolute; font-family:var(--hand); font-size:22px; opacity:.9}
 #toline{left:16px; top:25px}
 #fromline{right:16px; bottom:12px}
+/* was: bottom:46px; */
+#from-symbol{ bottom:52px; }
+
+@media (max-width:500px){
+  #toline{ position:static!important; display:block; margin-bottom:18px; left:auto; top:auto; font-size:22px }
+}
+
 .tape{width:86px; height:28px; position:absolute; top:-12px;
   background:linear-gradient(180deg, rgba(255,255,255,.55), rgba(255,255,255,.25));
   box-shadow:0 3px 8px rgba(0,0,0,.18); border-radius:3px}
 .tape--tl{left:22px; transform:rotate(-12deg)}
 .tape--tr{right:22px; transform:rotate(8deg)}
 
-/* Compose */
-.compose{background:var(--bar); color:#fff; border-radius:14px; box-shadow:0 10px 26px rgba(0,0,0,.28);
+/* Handgetekend symbool (JS vult #from-symbol met SVG) */
+#from-symbol{
+  position:absolute; right:16px; bottom:46px;
+  width:28px; height:28px; opacity:.9; pointer-events:none;
+  animation:handsketch 5s ease-in-out infinite;
+}
+#from-symbol svg{width:100%; height:100%; stroke:#FF5757; fill:none; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round}
+@keyframes handsketch{0%{transform:rotate(-1deg)} 50%{transform:rotate(1deg)} 100%{transform:rotate(-1deg)}}
+
+/* =================== Compose & Coach =================== */
+.compose{
+  background:var(--bar); color:#fff; border-radius:14px; box-shadow:0 10px 26px rgba(0,0,0,.28);
   backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
-  width:min(640px,92vw); margin:8px auto 0; padding:6px 8px}
+  width:min(640px,92vw); margin:8px auto 0; padding:6px 8px;
+}
 .compose-row{display:grid; grid-template-columns:1fr 1fr; gap:8px}
 @media (max-width:900px){.compose-row{grid-template-columns:1fr}}
 .compose input{
   height:38px; padding:0 12px; border-radius:10px; border:1px solid rgba(255,255,255,.2);
   background:rgba(0,0,0,.25); color:#fff; font-weight:500; font-size:.95rem
 }
+/* Hint de browser dat dit een donkere UI is */
+.compose { color-scheme: normal; }
+.compose input::placeholder{ color:rgba(255,255,255,.72) }
 .compose input:focus{outline:2px solid rgba(255,255,255,.9); outline-offset:2px}
 
-/* Coach */
-.coach{margin:10px auto 0; padding:8px 12px; width:fit-content; max-width:min(720px,92vw);
+.coach{
+  margin:10px auto 0; padding:8px 8px; width:fit-content; max-width:min(720px,92vw);
   background:var(--bar); color:#fff; border-radius:12px; display:flex; gap:10px; align-items:center;
   backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); box-shadow:0 6px 18px rgba(0,0,0,.25);
-  animation: coach-in .3s var(--ease) both}
+  animation:coach-in .3s var(--ease) both;
+}
 @keyframes coach-in{from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:translateY(0)}}
-.coach .coach-close{appearance:none; border:0; cursor:pointer; background:rgba(255,255,255,.12); color:#fff; width:26px; height:26px; border-radius:50%}
+.coach .coach-inline{
+  appearance:none; border:0; background:transparent; color:#FFE66D; font-weight:600; text-decoration:underline; cursor:pointer; padding:0 2px;
+}
+.coach .coach-inline:hover{ text-decoration:none }
+.coach .coach-inline:focus-visible{ outline:2px solid rgba(255,255,255,.9); outline-offset:2px; border-radius:4px }
 .hidden{display:none!important}
 
-/* Share-sheet */
-.sheet-backdrop{position:fixed; inset:0; background:rgba(0,0,0,.35); display:grid; place-items:end center; z-index:1200}
+/* =================== Sheets (Share / About / QR) =================== */
+.sheet-backdrop{position:fixed; inset:0; display:grid; place-items:end center; background:rgba(0,0,0,.35); z-index:1200}
 .sheet{
-  width:100%; max-width:560px; background:rgba(20,20,20,.75); color:#fff; border-top-left-radius:16px; border-top-right-radius:16px;
-  backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); box-shadow:0 -10px 30px rgba(0,0,0,.35);
-  padding:12px 14px; transform:translateY(10px); animation:sheet-in .26s var(--ease) both
+  width:100%; max-width:560px; background:rgba(20,20,20,.75); color:#fff;
+  border-top-left-radius:16px; border-top-right-radius:16px;
+  backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+  box-shadow:0 -10px 30px rgba(0,0,0,.35); padding:12px 14px;
+  transform:translateY(10px); animation:sheet-in .26s var(--ease) both;
+  will-change:transform; touch-action:pan-y; transition:transform .24s var(--ease);
 }
 @keyframes sheet-in{from{transform:translateY(16px); opacity:0} to{transform:translateY(0); opacity:1}}
-.sheet-header{display:flex; align-items:center; justify-content:space-between}
-.sheet-header h2{margin:0; font-size:18px}
-.sheet-close{appearance:none; border:0; cursor:pointer; background:rgba(255,255,255,.12); color:#fff; width:30px; height:30px; border-radius:50%}
+.sheet.closing{ transform:translateY(120%) }
+
+.sheet-header{
+  position:relative; display:flex; flex-direction:column; align-items:center;
+  padding-top:14px; min-height:44px;
+}
+.sheet-header h2{ margin:0 32px; text-align:center; width:100% }
+.sheet-close{
+  position:absolute; top:8px; right:12px; z-index:3;
+  appearance:none; border:0; cursor:pointer; background:rgba(255,255,255,.12); color:#fff; width:30px; height:30px; border-radius:50%;
+}
+/* Drag-indicator */
+.sheet-header .drag-indicator{
+  position:absolute; top:6px; left:50%; transform:translateX(-50%);
+  width:44px; height:5px; border-radius:3px; pointer-events:none;
+  background:rgba(255,255,255,.43); transition:background .2s;
+}
+.sheet--dragging .sheet-header .drag-indicator{ background:#FFE66D }
+
+/* Sheet varianten */
+.sheet--about{
+  background:
+    radial-gradient(1200px 300px at 50% -120px, rgba(255,230,109,.35), rgba(0,0,0,0) 60%),
+    radial-gradient(900px 220px at 10% 105%, rgba(197,250,213,.25), rgba(0,0,0,0) 60%),
+    radial-gradient(900px 220px at 90% 105%, rgba(205,231,255,.25), rgba(0,0,0,0) 60%),
+    rgba(20,20,20,.75);
+  position:relative; overflow:hidden;
+}
+.sheet--about .sheet-body{
+  border-top:6px solid transparent;
+  border-image:linear-gradient(90deg, #FFE66D, #C5FAD5, #CDE7FF) 1;
+  padding-top:12px; margin-top:6px; border-top-left-radius:10px; border-top-right-radius:10px;
+}
+.sheet--about .sheet-header{ background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,0)) }
+.sheet--about .sheet-header h2{ display:flex; align-items:center; gap:8px }
+.sheet--about .sheet-header h2::before{ content:"✨"; font-size:18px }
+.sheet--about::before{
+  content:""; position:absolute; inset:0; pointer-events:none; opacity:.55;
+  background-image:
+    radial-gradient(circle at 10% 20%, rgba(255,255,255,.08) 2px, transparent 3px),
+    radial-gradient(circle at 80% 30%, rgba(255,255,255,.08) 2px, transparent 3px),
+    radial-gradient(circle at 30% 80%, rgba(255,255,255,.08) 2px, transparent 3px),
+    radial-gradient(circle at 70% 70%, rgba(255,255,255,.08) 2px, transparent 3px);
+  background-size:160px 140px, 180px 160px, 200px 180px, 220px 200px;
+  animation: awnDots 18s linear infinite;
+}
+@keyframes awnDots{ from{transform:translateY(0)} to{transform:translateY(-12px)} }
+
+.sheet--qr{ background:rgba(20,20,20,.78) }
+.qr-hint{text-align:center; margin:0 0 10px; opacity:.9}
+.qr-box{display:grid; place-items:center; padding:10px}
+.qr-box canvas{
+  background:#fff; border-radius:12px; padding:10px;
+  box-shadow:0 10px 30px rgba(0,0,0,.35);
+}
+
+/* Sheet content */
 .sheet-body{padding:8px 2px 10px; display:grid; gap:8px}
-.pair-inline{display:flex; gap:8px; align-items:baseline; font-size:14.5px}
-.sheet-actions{display:flex; gap:8px; justify-content:flex-end; padding-top:8px}
-.share-options{display:grid; gap:8px}
-.btn.opt{width:100%; text-align:center}
+.sheet-header h2{font-size:18px}
 
+/* Pair inline */
+.pair-inline{
+  width:100%; justify-content:center; text-align:center; gap:10px; flex-wrap:wrap;
+  font-family:var(--hand); font-size:clamp(16px,2.4vw,20px); display:flex; align-items:baseline;
+}
+.pair-inline .pair-label{ opacity:.85; font-weight:600 }
+.pair-inline .pair-val{   opacity:.95; font-weight:700 }
+.pair-inline .pair-sep{   opacity:.6 }
+@media (max-width:380px){ .pair-inline .pair-sep{ display:none } }
+
+/* Tiles */
 .share-grid{
-  --tile-gap: 10px;      /* horizontale/verticale ruimte tussen tegels */
-  --tile-ic: 48px;       /* basis icon-size (kan via media query opschalen) */
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));  /* 4 per rij */
-  gap: var(--tile-gap);
-  align-items: start;     /* label tekst start bovenaan samen met icon */
-  justify-items: center;  /* center inhoud binnen de cel */
-  margin-top: 8px;        /* lucht boven het grid */
+  --tile-gap:10px; --tile-ic:48px;
+  display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:var(--tile-gap);
+  align-items:start; justify-items:center; margin-top:8px;
 }
-
-/* Eén tegel met icon + label */
+@media (min-width:560px){ .share-grid{ --tile-ic:56px; gap:12px } }
 .share-tile{
-  appearance: none; border: 0; cursor: pointer;
-  display: flex; flex-direction: column; align-items: center; gap: 6px;
-  padding: 8px 6px; border-radius: 12px;
-  background: rgba(255,255,255,.06); color: #fff; text-align: center;
-  transition:
-    background .2s cubic-bezier(.2,.8,.2,1),
-    transform  .06s cubic-bezier(.2,.8,.2,1);
+  appearance:none; border:0; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:6px;
+  padding:8px 6px; border-radius:12px; background:rgba(255,255,255,.06); color:#fff; text-align:center;
+  transition:background .2s var(--ease), transform .06s var(--ease);
 }
-.share-tile:hover{ background: rgba(255,255,255,.10); transform: translateY(-1px); }
-.share-tile:active{ transform: translateY(1px); }
-.share-tile:focus-visible{ outline: 2px solid rgba(255,255,255,.9); outline-offset: 2px; }
+.share-tile:hover{ background:rgba(255,255,255,.10); transform:translateY(-1px) }
+.share-tile:active{ transform:translateY(1px) }
+.share-tile:focus-visible{ outline:2px solid rgba(255,255,255,.9); outline-offset:2px }
+.tile-icon{ width:var(--tile-ic); height:var(--tile-ic); object-fit:contain; display:block }
+.tile-label{ font-weight:600; font-size:.92rem; line-height:1.1; letter-spacing:.1px }
 
-/* Icon en label */
-.tile-icon{
-  width: var(--tile-ic);
-  height: var(--tile-ic);
-  object-fit: contain;      /* behoudt verhoudingen, geen vervorming */
-  display: block;
-}
-.tile-label{
-  font-weight: 600;
-  font-size: .92rem;
-  line-height: 1.1;
-  letter-spacing: .1px;
-}
-
-/* Iets groter op bredere viewports / grotere sheets */
-@media (min-width: 560px){
-  .share-grid{ --tile-ic: 56px; gap: 12px; }
-}
-
-/* De oude sheet-actions houden we om semantische redenen,
-   maar we verbergen ze visueel omdat de tegel 'Deel' (#share-confirm)
-   dezelfde functionaliteit aanbiedt. */
-.sheet-actions{ display: none; }
-
-/* Share list (vertical, left-aligned, scalable) */
-.share-list{
-  list-style:none; margin:8px 0 0; padding:0;
-  display:flex; flex-direction:column; gap:10px;
-}
-.share-li{ margin:0; padding:0; }
-
+/* Share list (alt layout) */
+.share-list{ list-style:none; margin:8px 0 0; padding:0; display:flex; flex-direction:column; gap:10px }
+.share-li{ margin:0; padding:0 }
 .share-item{
-  /* full-width, left-aligned */
-  width:100%;
-  display:flex; align-items:flex-start; gap:12px;
+  width:100%; display:flex; align-items:flex-start; gap:12px;
   padding:10px 12px; border:0; border-radius:12px; cursor:pointer;
   background:rgba(255,255,255,.06); color:#fff; text-align:left;
-  transition:background .2s cubic-bezier(.2,.8,.2,1), transform .06s cubic-bezier(.2,.8,.2,1);
+  transition:background .2s var(--ease), transform .06s var(--ease);
 }
-.share-item:hover{ background:rgba(255,255,255,.10); transform:translateY(-1px); }
-.share-item:active{ transform:translateY(1px); }
-.share-item:focus-visible{ outline:2px solid rgba(255,255,255,.9); outline-offset:2px; }
+.share-item:hover{ background:rgba(255,255,255,.10); transform:translateY(-1px) }
+.share-item:active{ transform:translateY(1px) }
+.share-item:focus-visible{ outline:2px solid rgba(255,255,255,.9); outline-offset:2px }
+.share-icon{ width:48px; height:48px; flex:0 0 auto; object-fit:contain }
+@media (min-width:480px){ .share-icon{ width:56px; height:56px } }
 
-.share-icon{
-  width:48px; height:48px; flex:0 0 auto; object-fit:contain;
+/* Actieknoppen in sheets */
+.sheet .sheet-actions{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-top:10px;
+  justify-content:center;
 }
-@media (min-width:480px){
-  .share-icon{ width:56px; height:56px; }
+
+/* About heeft geen acties */
+.sheet--about .sheet-actions{ display:none }
+
+/* QR-sheet acties (mag gelijk blijven of extra styling) */
+.sheet--qr .sheet-actions{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-top:10px;
+  justify-content:center;
+}
+#qr-backdrop .sheet-actions .btn{ min-width:140px }
+@media (max-width:420px){
+  #qr-backdrop .sheet-actions .btn{ flex:1 1 45% }
 }
 
-.share-label{
-  display:block; font-weight:600; font-size:0.95rem; line-height:1.15;
-  margin-top:4px;
-}
-
-/* Optioneel subtitel of toelichting onder label (als je dat later wilt) */
-.share-item .share-text{ font-size:0.9rem; opacity:.85; margin-top:2px; }
-
-/* High-DPI algo doet de rest via srcset; wil je kleiner? pas .tile-icon aan naar 56px of 48px */
-/* Toast & confetti */
+/* =================== Toast & Confetti =================== */
 .toast{
   position:fixed; left:50%; bottom:18px; transform:translateX(-50%); z-index:1300;
   padding:10px 14px; border-radius:12px; background:rgba(0,0,0,.72); color:#fff; text-align:center; font-size:14px;
@@ -337,298 +418,553 @@ body{
 @keyframes confetti{0%{transform:translateY(-20vh) rotate(0); opacity:0}10%{opacity:1}100%{transform:translateY(100vh) rotate(720deg); opacity:0}}
 .confetti{position:fixed; top:-20vh; left:0; width:8px; height:12px; z-index:1400; pointer-events:none; animation:confetti 1.2s linear forwards}
 
-/* Reduced motion */
-@media (prefers-reduced-motion:reduce){*{animation:none!important; transition:none!important}}
-
-/* Topbar payoff subtiel */
-.brand-payoff {
-  font-weight: 500;
-  opacity: .85;
-  margin-left: .25rem;
-  white-space: nowrap;
-  font-size: .95rem;
-}
-
-/* Intro tagline + swipe-hint */
-.intro-hint {
-  margin: 8px auto 0;
-  font-weight: 600;
-  text-align: center;
-  opacity: .95;
-}
-.hint-swipe {
-  font-weight: 500;
-  opacity: .9;
-}
-
-/* === Sentiment swipe hints === */
-.sentiment-strip {
-  position: relative;
-}
-.sentiment-strip::before,
-.sentiment-strip::after {
-  content: "";
-  position: absolute;
-  top: 0; bottom: 0;
-  width: 32px;
-  pointer-events: none;
-}
-.sentiment-strip::before {
-  left: 0;
-  background: linear-gradient(to right, rgba(255,248,231,0.95), rgba(255,248,231,0));
-}
-.sentiment-strip::after {
-  right: 0;
-  background: linear-gradient(to left, rgba(255,248,231,0.95), rgba(255,248,231,0));
-}
-
-.sentiment-strip.hint-active {
-  animation: nudgeX 0.6s ease-in-out;
-}
-@keyframes nudgeX {
-  0%,100% { transform: translateX(0); }
-  20% { transform: translateX(-8px); }
-  40% { transform: translateX(8px); }
-  60% { transform: translateX(-4px); }
-  80% { transform: translateX(4px); }
-}
-
-/* === Motion respect === */
-@media (prefers-reduced-motion: reduce) {
-  .note, .tape, .coach, .compose, .sheet {
-    transition: none !important;
-    animation: none !important;
-  }
-  .confetti {
-    display: none !important; /* vervangbaar door subtiele sparkle later */
-  }
-}
-
-/* === ABOUT: vrolijke look & feel ======================================= */
-.sheet--about{
-  background:
-    radial-gradient(1200px 300px at 50% -120px, rgba(255, 230, 109, .35), rgba(0,0,0,0) 60%),
-    radial-gradient(900px 220px at 10% 105%, rgba(197, 250, 213, .25), rgba(0,0,0,0) 60%),
-    radial-gradient(900px 220px at 90% 105%, rgba(205, 231, 255, .25), rgba(0,0,0,0) 60%),
-    rgba(20,20,20,.75);
-  position: relative;
-  overflow: hidden;
-}
-/* === ABOUT: subtiele happy accent-bar =================================== */
-.sheet--about .sheet-body{
-  /* dunne “ribbon” onder de header – zonder extra DOM */
-  border-top: 6px solid transparent;
-  border-image: linear-gradient(90deg, #FFE66D, #C5FAD5, #CDE7FF) 1;
-  padding-top: 12px;      /* beetje lucht na de ribbon */
-  margin-top: 6px;        /* visueel los van de header */
-  border-top-left-radius: 10px;
-  border-top-right-radius: 10px;
-}
-
-/* Iets meer glim in de header, blijft clean */
-.sheet--about .sheet-header{
-  background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,0));
-  border-top-left-radius: 16px;
-  border-top-right-radius: 16px;
-  padding-bottom: 6px;
-}
-
-.sheet--about::before{
-  content:"";
-  position:absolute; inset:0; pointer-events:none;
-  background-image:
-    radial-gradient(circle at 10% 20%, rgba(255,255,255,.08) 2px, transparent 3px),
-    radial-gradient(circle at 80% 30%, rgba(255,255,255,.08) 2px, transparent 3px),
-    radial-gradient(circle at 30% 80%, rgba(255,255,255,.08) 2px, transparent 3px),
-    radial-gradient(circle at 70% 70%, rgba(255,255,255,.08) 2px, transparent 3px);
-  background-size: 160px 140px, 180px 160px, 200px 180px, 220px 200px;
-  opacity:.55;
-  animation: awnDots 18s linear infinite;
-}
-@keyframes awnDots{
-  from{ transform: translateY(0) }
-  to  { transform: translateY(-12px) }
-}
+/* =================== Motion preferences =================== */
 @media (prefers-reduced-motion:reduce){
-  .sheet--about::before{ animation:none }
+  *{animation:none!important; transition:none!important}
+  .confetti{display:none!important}
+  .note.anim-pop{animation:none; opacity:1}
 }
 
-/* Header net iets vrolijker */
-.sheet--about .sheet-header h2{
-  display:flex; align-items:center; gap:8px;
+/* =================== Debug / Pop-in / Nudges =================== */
+@keyframes awnPopIn{0%{transform:translateY(8px) scale(.98); opacity:0} 100%{transform:translateY(0) scale(1); opacity:1}}
+.note.anim-pop{ animation:awnPopIn .28s var(--ease) }
+
+@keyframes awnSparkle{0%{opacity:0; transform:translateY(6px)} 20%{opacity:1; transform:translateY(0)} 100%{opacity:0; transform:translateY(-6px)}}
+.awn-sparkle{ position:fixed; inset:auto auto 16px 16px; pointer-events:none; font-size:18px; opacity:0; animation:awnSparkle .9s ease-out }
+
+@keyframes awnFieldNudge{0%,100%{transform:translateX(0)} 20%{transform:translateX(-6px)} 40%{transform:translateX(6px)} 60%{transform:translateX(-3px)} 80%{transform:translateX(3px)}}
+.field-nudge{ animation:awnFieldNudge .5s ease; box-shadow:0 0 0 2px rgba(255,213,0,.85) }
+
+/* =================== Small viewport polish =================== */
+@media (max-width:500px){
+  .note{ padding-top:38px; padding-bottom:18px }
+  #toline{ position:static!important; display:block; margin-bottom:18px; left:auto; top:auto; font-size:22px }
+  .note .message{ margin-top:0!important }
 }
-.sheet--about .sheet-header h2::before{
-  content:"✨";
-  font-size: 18px;
-}
 
-/* Hero-blok */
-.about-hero{
-  display:flex; align-items:center; gap:10px;
-  padding:8px 10px; border-radius:12px;
-  background: rgba(255,255,255,.08);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
-  width: fit-content;
-}
-.about-emoji{ font-size: 22px; line-height: 1; }
-.about-tag{ font-weight: 700; letter-spacing:.2px; opacity:.95; }
-
-/* Iets meer lucht */
-.sheet--about .sheet-body p{ margin-top:10px }
-
-
-/* Respecteer reduced motion (geen rotatie-animaties hier, dus niets nodig) */
 @media (prefers-reduced-motion: reduce){
-  /* nothing: tapes zijn statisch */
+  .splash-overlay { transition: none !important; }
 }
 
-/* === Background upgrade (lichte beweging/noise overlay) === */
-body::before {
+/* Expand-knop: actieve state bij ?mid=... */
+button[data-action="expand-note"].is-hot{
+  box-shadow: 0 0 0 2px rgba(0,0,0,.15), 0 8px 24px rgba(0,0,0,.16);
+  position: relative;
+}
+button[data-action="expand-note"].is-hot::after{
   content:"";
-  position:fixed; inset:0;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4'/></filter><rect width='160' height='160' filter='url(%23n)'/></svg>");
-  opacity:.05;
-  animation: subtleMove 30s linear infinite;
-  z-index:-1;
+  position:absolute; inset:-6px;
+  border-radius:12px;
+  pointer-events:none;
+  animation: splashPulse 1.4s ease-out infinite;
+  border:2px solid currentColor; opacity:.35;
 }
-@keyframes subtleMove {
-  from { transform:translate(0,0); }
-  to   { transform:translate(-80px,-80px); }
-}
-
-/* === CHIPS OVERRIDES — compacter, leesbaar, links uitlijnen ============== */
-/* 1) Rij compacter + alleen rechts een fade (links dus 100% scherp) */
-.chip-row{
-  gap: 6px;                                /* was 8px */
-  /* fade alleen aan de RECHTER kant → eerste chip blijft helder */
-  mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 12px), transparent 100%);
-  -webkit-mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 12px), transparent 100%);
+@keyframes splashPulse{
+  0%   { transform: scale(.9); opacity:.55; }
+  100% { transform: scale(1.2); opacity:0; }
 }
 
-/* 2) Knoppen kleiner en netter op mobile */
-.chip{
-  padding: 5px 9px;                         /* was 6px 10px */
-  font-size: .85rem;                        /* was .9rem */
-}
-@media (max-width: 360px){
-  .chip{ padding: 4px 8px; font-size: .8rem; }
-}
-
-/* 3) Thema-chip iets prominenter maar compact */
-.chip--theme{
-  padding: 5px 10px;
-  font-weight: 700;
-}
-
-/* 4) Chevrons smaller & zachter, overlappen geen labels */
-.chip-chevron{
-  width: 28px;                               /* was 34px */
-  background: linear-gradient(90deg, rgba(255,255,255,0) 0, rgba(0,0,0,.06) 100%);
-}
-
-/* 5) Automatisch extra ruimte rechts zodra chevron aanwezig is (geen JS nodig) */
-.chips-wrap:has(#chips-right) .chip-row{
-  padding-right: 38px;                       /* labels blijven vrij van chevron */
+/* Floating About knop rechtsonder */
+.about-fab {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 100002;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border: 0;
+  border-radius: 12px;
+  background: rgba(255,255,255,.92);
+  box-shadow: 0 8px 24px rgba(0,0,0,.16);
+  backdrop-filter: saturate(1.1) blur(6px);
+  color: inherit;
+  cursor: pointer;
 }
 
-/* === CHIPS FIXES (override) =============================================== */
-/* 1) Verwijder blur/fade-mask over de chips */
-.chip-row{
-  -webkit-mask-image: none !important;
-          mask-image: none !important;
-  gap: 6px;                 /* iets compacter */
-  padding-left: 8px;        /* ruimte links */
-  padding-right: 8px;       /* basisruimte rechts; zie chevrons hieronder */
+/* Expand-knop highlight wanneer ?mid= aanwezig is */
+button[data-action="expand-note"].is-hot{
+  box-shadow: 0 0 0 2px rgba(0,0,0,.15), 0 8px 24px rgba(0,0,0,.16);
+  position: relative;
+}
+button[data-action="expand-note"].is-hot::after{
+  content:"";
+  position:absolute; inset:-6px;
+  border-radius:12px;
+  pointer-events:none;
+  animation: splashPulse 1.4s ease-out infinite;
+  border:2px solid currentColor; opacity:.35;
+}
+@keyframes splashPulse{
+  0%   { transform: scale(.9); opacity:.55; }
+  100% { transform: scale(1.2); opacity:0; }
 }
 
-/* 2) Chevron icons goed en niet over labels heen */
-.chip-chevron{
-  width: 28px;
-  background: none;         /* geen donkere fade achter de chevrons */
+button[data-action="expand-note"].is-hot{
+  box-shadow: 0 0 0 2px rgba(0,0,0,.15), 0 8px 24px rgba(0,0,0,.16);
+  position: relative;
 }
-.chip-chevron--left{
-  left: 0;
-  transform: none !important;   /* was scaleX(-1) → gaf '>' i.p.v. '<' */
+button[data-action="expand-note"].is-hot::after{
+  content:"";
+  position:absolute; inset:-6px;
+  border-radius:12px;
+  pointer-events:none;
+  animation: splashPulse 1.4s ease-out infinite;
+  border:2px solid currentColor; opacity:.35;
 }
-.chip-chevron--right{
+@keyframes splashPulse{
+  0%   { transform: scale(.9); opacity:.55; }
+  100% { transform: scale(1.2); opacity:0; }
+}
+
+/* ===== Mobile Boot Intro ===== */
+/* Basis: desktop = uit */
+.intro-boot { display: none; }
+
+/* Alleen op mobiel tonen en positioneren */
+@media (max-width: 768px) {
+  .intro-boot {
+    display: grid;
+    position: fixed; inset: 0; z-index: 100000;
+    place-items: center;
+    background: var(--boot-bg, #fffef8);
+    color: var(--boot-fg, #2a2a2a);
+    transition: opacity .32s ease, visibility .32s ease;
+  }
+}
+@media (max-width: 768px) {
+  .intro-boot{
+    position: fixed; inset: 0; z-index: 100000;  /* boven alles, hoger dan note-splash */
+    display: grid; place-items: center;
+    background: var(--boot-bg, #fffef8);
+    color: var(--boot-fg, #2a2a2a);
+    transition: opacity .32s ease, visibility .32s ease;
+  }
+  .intro-boot__center{
+    display: grid; gap: 10px; justify-items: center;
+    transform: translateY(0);
+    animation: ibFloat 1.2s ease-in-out infinite alternate;
+  }
+  .intro-boot__logo{
+    font-size: 48px; line-height: 1;
+    filter: drop-shadow(0 6px 22px rgba(0,0,0,.1));
+  }
+  .intro-boot__brand{
+    font-family: 'Patrick Hand', system-ui, -apple-system, sans-serif;
+    font-size: 24px; letter-spacing: .2px;
+  }
+  .intro-boot__tagline{
+    opacity: .7; font-size: 14px;
+  }
+  .intro-boot__spinner{
+    width: 28px; height: 28px; border-radius: 50%;
+    border: 3px solid currentColor; border-right-color: transparent;
+    animation: ibSpin 0.9s linear infinite;
+    opacity: .65; margin-top: 8px;
+  }
+  .intro-boot.is-hide{
+    opacity: 0; visibility: hidden; pointer-events: none;
+  }
+  @keyframes ibSpin { to { transform: rotate(360deg); } }
+  @keyframes ibFloat { from { transform: translateY(0); } to { transform: translateY(-4px); } }
+}
+
+/* Respecteer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .intro-boot__spinner{ animation: none; }
+  .intro-boot__center{ animation: none; }
+}
+
+/* Donkere modus (optioneel) */
+@media (prefers-color-scheme: dark) {
+  .intro-boot{ --boot-bg: #0f0f0f; --boot-fg: #f5f5f5; }
+}
+/* Hotfix: 'Verstuur' niet vol-zwart, icon nooit geknipt */
+#btn-share { background: rgba(255,255,255,.10); line-height: 1; }
+#btn-share, #btn-share * { overflow: visible; }
+#btn-share svg { width: 20px; height: 20px; display: block; }
+
+/* trigger */
+.lang-dd { position: relative; display:inline-block; }
+.lang-btn{
+  display:inline-flex; align-items:center; gap:.35rem;
+  background:rgba(0,0,0,.25); color:#fff; border:0; border-radius:.8rem;
+  padding:.45rem .7rem; line-height:1; cursor:pointer;
+}
+.lang-btn .flag{ font-size:1.05rem; }
+
+/* menu */
+.lang-menu{
+  position:absolute; top:110%; right:0; min-width:12rem;
+  background:rgba(0,0,0,.85); color:#fff; border-radius:.9rem;
+  padding:.6rem; box-shadow:0 8px 20px rgba(0,0,0,.25); backdrop-filter: blur(6px);
+}
+.lang-item{
+  width:100%; display:flex; align-items:center; gap:.6rem;
+  background:transparent; border:0; color:inherit; text-align:left;
+  padding:.55rem .6rem; border-radius:.6rem; cursor:pointer;
+}
+.lang-item .flag{ font-size:1.1rem; }
+.lang-item[aria-checked="true"]{ font-weight:700; }
+.lang-item:hover{ background:rgba(255,255,255,.08); }
+
+/* show/hide */
+.lang-dd.open #lang-dd-menu{ display:block; }
+.lang-dd #lang-dd-menu[hidden]{ display:none; }
+
+/* dropdown container mag buiten .topbar uitsteken */
+.topbar { overflow: visible; }
+
+/* menu zichtbaar als JS 'm opent */
+#lang-dd-menu[hidden] { display: none !important; }
+#lang-dd.open #lang-dd-menu { display: block; }
+
+/* boven UI lagen */
+#lang-dd { position: relative; z-index: 50; }
+#lang-dd-menu {
+  position: absolute;
+  top: 100%;
   right: 0;
+  min-width: 140px;
+  touch-action: manipulation;  /* helpt iOS */
 }
 
-/* Laat ruimte vrij zodra chevrons in DOM staan (zonder JS-klassen) */
-.chips-wrap:has(#chips-left) .chip-row{
-  padding-left: 38px;
-}
-.chips-wrap:has(#chips-right) .chip-row{
-  padding-right: 38px;
-}
-
-/* 3) Chips minder rond en iets compacter */
-.chip{
-  border-radius: 10px;      /* was 999px (pill) → nu UI-conform */
-  padding: 5px 9px;         /* compacter */
-  font-size: .85rem;
-}
-@media (max-width: 360px){
-  .chip{ padding: 4px 8px; font-size: .8rem; }
+/* Host van de avatar: “zo ver mogelijk rechts”, maar nooit buiten het scherm */
+#coach-avatar {
+  position: absolute;
+  inset-block-end: 38px;                /* onderlijn – pas aan naar smaak */
+  inset-inline-end: clamp(-24px, -6vw, 0px);
+  /*  ↑ desktop ~ -24px buiten, op small screens schuift hij richting 0px (binnen) */
+  inline-size: clamp(40px, 10vw, 64px); /* schaalt mee met viewport */
+  block-size:  clamp(40px, 10vw, 64px);
+  pointer-events: none;
+  z-index: 2;
 }
 
-/* Duidelijke actieve staat maar subtieler schaduw */
-.chip.active{
-  background: #222;
-  color: #fff;
-  box-shadow: 0 0 0 1px rgba(0,0,0,.12), 0 6px 12px rgba(0,0,0,.16);
+/* Alleen de sticky, geen cirkel erachter */
+.awn-avatar {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  inline-size: 100%;
+  block-size: 100%;
+}
+.awn-avatar svg {
+  inline-size: 100%;
+  block-size: 100%;
 }
 
-/* === FIX chips: blur weg, chevrons correct, minder rond ============== */
-
-/* Verwijder mask/fade die over eerste chip valt */
-.chip-row{
-  -webkit-mask-image: none !important;
-          mask-image: none !important;
+/* Extra fine-tuning per breakpoint (optioneel) */
+@media (max-width: 480px) {
+  #coach-avatar {
+    inset-inline-end: clamp(-10px, -3vw, 0px);
+  }
+}
+@media (max-width: 360px) {
+  #coach-avatar {
+    inset-inline-end: 0;               /* helemaal binnen blijven op heel klein scherm */
+  }
+}
+/* Basis (mag je laten staan zoals je nu hebt) */
+#message { 
+  /* iets fluid al in basis helpt op kleine schermen */
+  font-size: clamp(28px, 2.4vh, 20px);
+  line-height: 1.55;
 }
 
-/* Chevron links moet gewoon '<' zijn, niet gespiegeld */
-.chip-chevron--left{
-  transform: none !important; /* override scaleX(-1) */
+/* Compact wanneer de note te lang wordt */
+.note--compact { padding: 16px 18px; }
+.note--compact #message { font-size: clamp(14px, 2vh, 18px); line-height: 1.3; }
+
+/* Coach container */
+#coach-tip {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  overflow: visible;                    /* avatar mag uitsteken */
+  padding-inline-end: max(0px, env(safe-area-inset-right));
 }
 
-/* Chips minder rond → sluit beter aan bij rest van layout */
-.chip{
-  border-radius: 10px !important;  /* ipv 999px */
+/* Alleen de sticky tonen (override module) */
+.awn-avatar {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  inline-size: 100%;
+  block-size: 100%;
 }
-/* === DEBUG / BASELINE ANIM — note pop-in =============================== */
-@keyframes awnPopIn {
-  0% { transform: translateY(8px) scale(.98); opacity: 0; }
-  100%{ transform: translateY(0)  scale(1);   opacity: 1; }
+.awn-avatar svg { inline-size: 100%; block-size: 100%; }
+
+/* Safe area iOS (landscape) */
+@supports(padding:max(0px)){
+  #coach-tip { padding-inline-end: max(0px, env(safe-area-inset-right)); }
 }
-.note.anim-pop {
-  animation: awnPopIn .28s cubic-bezier(.2,.8,.2,1);
+
+@media (max-width: 640px) {
+  #chip-row {
+    margin-top: calc(10px + env(safe-area-inset-top));
+  }
 }
+
+#coach-avatar {
+  position: absolute;
+  right: -8px;
+  bottom: -2px;
+  width: clamp(40px, 10vw, 64px);
+  height: clamp(40px, 10vw, 64px);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Alleen de sticky tonen */
+.awn-avatar { background: transparent !important; border: 0 !important; box-shadow: none !important; }
+.awn-avatar, .awn-avatar svg { width: 100%; height: 100%; }
+
+/* Mobiel: laat JS bepalen waar de avatar staat (naast About-knop) */
+@media (max-width: 767px) {
+  #coach-avatar {
+    position: fixed;          /* prima voor viewport-positie */
+    /* laat JS (inline styles) top/left zetten: */
+    right: auto !important;   /* niet forceren naar rechterkant */
+    bottom: auto !important;
+    z-index: 40;              /* boven coach en knoppen */
+  }
+}
+
+/* ruimte voor de sticky rechts van de coach-bubble */
+#coach-tip {
+  padding-right: clamp(64px, 9vw, 110px); /* was 0; voorkomt overlap met tekst */
+}
+
+/* === Splash overlay (één versie) ========================================= */
+.splash-overlay{
+  position: fixed; inset: 0; z-index: 100000;
+  display: grid; place-items: center;
+  background: rgba(0,0,0,0);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  opacity: 0; transform: scale(.98);
+  transition:
+    background .28s ease,
+    backdrop-filter .28s ease,
+    -webkit-backdrop-filter .28s ease,
+    opacity .28s ease,
+    transform 220ms cubic-bezier(.16,1,.3,1);
+}
+.splash-overlay.is-in{
+  opacity: 1; transform: scale(1);
+  background: rgba(0,0,0,.28);
+  backdrop-filter: saturate(1.05) blur(4px);
+  -webkit-backdrop-filter: saturate(1.05) blur(4px);
+}
+
+/* Stage container (één versie) */
+.splash-stage{
+  position: relative;
+  --splash-scale: 1;
+  transform-origin: center center;
+  transform: translateZ(0) scale(var(--splash-scale));
+  will-change: transform;
+  pointer-events: none;
+  filter: drop-shadow(0 24px 60px rgba(0,0,0,.16));
+}
+/* voorkom knippen van de note in de clone */
+.splash-stage > * { max-width: unset !important; overflow: visible !important; }
+
+/* Verberg compose in live-clone (alleen als je .is-live op overlay zet) */
+.splash-overlay.is-live #to-inline,
+.splash-overlay.is-live #from-inline,
+.splash-overlay.is-live .compose,
+.splash-overlay.is-live .compose-inline,
+.splash-overlay.is-live [data-compose]{
+  display: none !important;
+}
+
+/* Zorg dat body & icon in splash altijd zichtbaar zijn en niet animeren */
+.splash-overlay .note #message,
+.splash-overlay .note .message,
+.splash-overlay .note #iconline,
+.splash-overlay .note .iconline{
+  opacity: 1 !important;
+  visibility: visible !important;
+  transition: none !important;
+}
+.splash-overlay .note{
+  animation: none !important;
+  transition: none !important;
+}
+
+/* Motion-preferences (één keer) */
 @media (prefers-reduced-motion: reduce){
-  .note.anim-pop { animation: none; opacity: 1; }
+  .splash-overlay{
+    transition: opacity .2s ease !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+}
+/* Mobile: sticky onder de coach-tekst, links uitgelijnd */
+@media (max-width: 767px){
+  #coach-tip{
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  #coach-tip .coach-text{
+    order: 1;
+  }
+  #coach-avatar{
+    order: 2;
+    position: static !important;   /* geen absolute/left/top op mobiel */
+    transform: none !important;
+    align-self: flex-start;         /* links */
+    margin-top: 4px;
+    /* voorkom overlap */
+    z-index: 0;
+  }
 }
 
-/* (optioneel) kleine sparkle-fallback als confetti uit staat */
-.awn-sparkle {
-  position: fixed; pointer-events:none; inset:auto auto 16px 16px;
-  font-size: 18px; opacity: 0; transform: translateY(6px);
-  animation: awnSparkle .9s ease-out;
-}
-@keyframes awnSparkle {
-  0% { opacity: 0; transform: translateY(6px); }
-  20%{ opacity: 1; transform: translateY(0); }
-  100%{ opacity: 0; transform: translateY(-6px); }
-}
-/* Nudge voor verplicht 'Voor wie?' veld */
-@keyframes awnFieldNudge {
-  0%, 100% { transform: translateX(0); }
-  20%      { transform: translateX(-6px); }
-  40%      { transform: translateX(6px); }
-  60%      { transform: translateX(-3px); }
-  80%      { transform: translateX(3px); }
-}
-.field-nudge {
-  animation: awnFieldNudge .5s ease;
-  box-shadow: 0 0 0 2px rgba(255, 213, 0, .85);
+/* Coach compacter: minder hoog & iets kleinere tekst */
+#coach-tip{
+  padding: 8px 12px !important;   /* was vaak ~12–16px */
+  gap: 8px !important;            /* minder ruimte tussen icon/tekst/close */
 }
 
+/* Tekst iets kleiner en strakker gezet */
+#coach-tip .coach-text{
+  font-size: clamp(13px, 1.7vw, 15px) !important;  /* ~1pt kleiner */
+  line-height: 1.28 !important;                    /* strakker maar leesbaar */
+}
+
+/* Inline CTA in de coach: klein tikdoel maar toegankelijk */
+#coach-tip .coach-inline{
+  font-size: 0.95em !important;
+  line-height: 1.2 !important;
+  padding: 4px 8px !important;
+  border-radius: 8px;
+}
+
+/* Mobile: nog iets compacter als het krap is */
+@media (max-width: 767px){
+  #coach-tip{
+    padding: 7px 10px !important;
+  }
+  #coach-tip .coach-text{
+    font-size: clamp(13px, 3.6vw, 14px) !important;
+    line-height: 1.26 !important;
+  }
+}
+
+/* Basis: niets forceren, je huidige styles blijven leidend */
+
+/* Donker thema aan op <html class="theme-dark"> of <body class="theme-dark"> */
+.theme-dark {
+  color-scheme: dark;                    /* juiste form-controls & UA-colors */
+  --bg: #121212;
+  --fg: #e8eaed;
+  --muted: #9aa0a6;
+  --surface: #171a1f;
+  --surface-2: #1d2127;
+  --border: rgba(255,255,255,.08);
+  --shadow: 0 8px 24px rgba(0,0,0,.45);
+}
+
+/* Pagina-achtergrond & basis-tekst */
+.theme-dark body {
+  background: var(--bg);
+  color: var(--fg);
+}
+
+/* Topbar / knoppenomgeving (houd jouw layout-class hier aan) */
+.theme-dark .topbar,
+.theme-dark .actions,
+.theme-dark .chips-wrap {
+  background: linear-gradient(180deg, rgba(23,26,31,.92), rgba(23,26,31,.86));
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  box-shadow: var(--shadow);
+  border-bottom: 1px solid var(--border);
+}
+
+/* Buttons (gebruik je bestaande .btn; alleen kleur aanpassen) */
+.theme-dark .btn {
+  background: rgba(255,255,255,.10);
+  color: var(--fg);
+  box-shadow: 0 6px 18px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.06);
+}
+.theme-dark .btn:hover { background: rgba(255,255,255,.16); }
+
+/* Chips */
+.theme-dark .chip { 
+  background: rgba(255,255,255,.08);
+  color: var(--fg);
+  border-color: var(--border);
+}
+.theme-dark .chip.active { background: rgba(255,255,255,.18); }
+
+/* Coach */
+.theme-dark #coach-tip{
+  background: var(--surface);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+.theme-dark #coach-tip .coach-inline{
+  background: rgba(255,255,255,.12);
+  color: var(--fg);
+}
+
+/* Sheets / backdrops */
+.theme-dark #sheet-backdrop .sheet,
+.theme-dark #about-backdrop .sheet,
+.theme-dark #msgr-help-backdrop .sheet {
+  background: var(--surface-2);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+
+/* Toast */
+.theme-dark #toast{
+  background: rgba(255,255,255,.12);
+  color: var(--fg);
+  border-color: var(--border);
+}
+
+/* Splash overlay */
+.theme-dark .splash-overlay{
+  background: radial-gradient(1200px 600px at 50% -100px, rgba(255,255,255,.08), rgba(0,0,0,.75));
+}
+
+/* --- Inputs iets lichter in dark mode --- */
+.theme-dark input[type="text"],
+.theme-dark input[type="search"],
+.theme-dark input[type="email"],
+.theme-dark input[type="tel"],
+.theme-dark textarea,
+.theme-dark #to-inline,
+.theme-dark #from-inline {
+  background: rgba(255,255,255,.12);   /* net lichter dan de UI */
+  color: #f3f4f6;                      /* helder maar niet spierwit */
+  border: 1px solid rgba(255,255,255,.18);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
+}
+
+.theme-dark input::placeholder,
+.theme-dark textarea::placeholder {
+  color: rgba(255,255,255,.55);        /* beter contrast voor hint */
+}
+
+/* Focusring subtiel en duidelijk */
+.theme-dark input:focus,
+.theme-dark textarea:focus,
+.theme-dark #to-inline:focus,
+.theme-dark #from-inline:focus {
+  outline: none;
+  border-color: rgba(255,255,255,.34);
+  box-shadow:
+    0 0 0 3px rgba(255,255,255,.08),   /* soft outer glow */
+    inset 0 1px 0 rgba(255,255,255,.06);
+}

@@ -1,0 +1,797 @@
+{
+  "lang": "en",
+  "sentiments": [
+    "encouraging",
+    "comfort",
+    "gratitude",
+    "proud",
+    "love",
+    "humor",
+    "success",
+    "perseverance",
+    "calm",
+    "friendship"
+  ],
+  "messages": [
+    {
+      "id": "en_073",
+      "icon": "☀️",
+      "text": "Some days you just have tot create your own sunshine. Keep on shinning. ",
+      "sentiments": [
+        "encouraging",
+        "comfort",
+        "friendship"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_072",
+      "icon": "💕",
+      "text": "You were created to be loved",
+      "sentiments": [
+        "love",
+        "encouraging",
+        "comfort"
+      ],
+      "special_day": null,
+      "weight": 2
+    },
+    {
+      "id": "en_071",
+      "icon": "❤️",
+      "text": "Life can be tough.... But you are tougher!",
+      "sentiments": [
+        "love",
+        "encouraging",
+        "comfort",
+        "perseverance"
+      ],
+      "special_day": null,
+      "weight": 2
+    },
+    {
+      "id": "en_070",
+      "icon": "🤟🏽",
+      "text": "Love this version of yourself. It won't be here forever.",
+      "sentiments": [
+        "encouraging",
+        "friendship",
+        "love"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_069",
+      "icon": "🧿",
+      "text": "You didn't go through all of that for no reason.",
+      "sentiments": [
+        "perseverance",
+        "encouraging"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_068",
+      "icon": "🌥️",
+      "text": "Never doubt yourself. Even when things get difficult. ",
+      "sentiments": [
+        "friendship",
+        "comfort",
+        "encouraging"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_067",
+      "icon": "😊",
+      "text": "You are an inspiration to those around you!",
+      "sentiments": [
+        "gratitude",
+        "encouraging",
+        "perseverance",
+        "friendship",
+        "success"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_066",
+      "icon": "🙏🏼",
+      "text": "Stop counting your problems, start counting your blessings. ",
+      "sentiments": [
+        "calm",
+        "comfort"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_065",
+      "icon": "🎣",
+      "text": "When was the last time you took a moment just for you? Do it.",
+      "sentiments": [
+        "encouraging",
+        "friendship",
+        "calm"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_064",
+      "icon": "🩵",
+      "text": "A bad day does not mean a bad life.",
+      "sentiments": [],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_063",
+      "icon": "👊🏼",
+      "text": "Thank you for never giving up. You're exactly what this world needs!",
+      "sentiments": [
+        "encouraging",
+        "success",
+        "friendship"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_062",
+      "icon": "😍",
+      "text": "I hope your day is as beautiful as you are.",
+      "sentiments": [
+        "love",
+        "proud"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_001",
+      "icon": "✨",
+      "text": "You are enough, exactly as you are.",
+      "sentiments": [
+        "encouraging",
+        "calm"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_002",
+      "icon": "🌿",
+      "text": "A small step forward is still progress.",
+      "sentiments": [
+        "perseverance",
+        "encouraging"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_003",
+      "icon": "💛",
+      "text": "Something small can mean a lot today.",
+      "sentiments": [
+        "love",
+        "calm"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_004",
+      "icon": "🌊",
+      "text": "Breathe in. Breathe out. You are here.",
+      "sentiments": [
+        "calm"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_005",
+      "icon": "🌅",
+      "text": "New day, new chances — take it gently.",
+      "sentiments": [
+        "calm",
+        "encouraging"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_006",
+      "icon": "🌻",
+      "text": "You matter, more than you think.",
+      "sentiments": [
+        "encouraging",
+        "proud"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_007",
+      "icon": "🎈",
+      "text": "Light and soft: one kind gesture.",
+      "sentiments": [
+        "friendship",
+        "love"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_008",
+      "icon": "☕",
+      "text": "Take your time. It’s okay to start slow.",
+      "sentiments": [
+        "calm"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_009",
+      "icon": "🌸",
+      "text": "Being gentle with yourself is also strength.",
+      "sentiments": [
+        "encouraging",
+        "comfort"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_010",
+      "icon": "🏁",
+      "text": "A small win is a real win.",
+      "sentiments": [
+        "success",
+        "perseverance"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_011",
+      "icon": "🤝",
+      "text": "I stand beside you — not in front or behind.",
+      "sentiments": [
+        "friendship",
+        "comfort"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_012",
+      "icon": "📯",
+      "text": "Proud of what you’re (already) doing.",
+      "sentiments": [
+        "proud",
+        "encouraging"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_013",
+      "icon": "🎉",
+      "text": "You may celebrate this — no matter how small.",
+      "sentiments": [
+        "success",
+        "love"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_014",
+      "icon": "🧩",
+      "text": "Not everything has to fit right now.",
+      "sentiments": [
+        "comfort",
+        "calm"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_015",
+      "icon": "🪶",
+      "text": "A soft landing is still a landing.",
+      "sentiments": [
+        "calm",
+        "comfort"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_016",
+      "icon": "🧭",
+      "text": "Your course may turn gently.",
+      "sentiments": [
+        "perseverance",
+        "calm"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_017",
+      "icon": "❤️",
+      "text": "Because you are important to me.",
+      "sentiments": [
+        "love",
+        "friendship"
+      ],
+      "special_day": "valentine",
+      "weight": 2
+    },
+    {
+      "id": "en_018",
+      "icon": "🎆",
+      "text": "To new beginnings — I’m with you.",
+      "sentiments": [
+        "encouraging",
+        "friendship"
+      ],
+      "special_day": "newyear",
+      "weight": 2
+    },
+    {
+      "id": "en_019",
+      "icon": "🐣",
+      "text": "Gently out of the shell; it’s allowed.",
+      "sentiments": [
+        "calm",
+        "encouraging"
+      ],
+      "special_day": "easter",
+      "weight": 2
+    },
+    {
+      "id": "en_020",
+      "icon": "💌",
+      "text": "For {{name}}, with care.",
+      "sentiments": [
+        "love",
+        "friendship"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_021",
+      "icon": "❤️",
+      "text": "A little extra love for you today.",
+      "sentiments": [
+        "love",
+        "friendship"
+      ],
+      "special_day": "valentine",
+      "weight": 2
+    },
+    {
+      "id": "en_022",
+      "icon": "😂",
+      "text": "I planned to work out, but my coffee said: ‘better stay seated’.",
+      "sentiments": [
+        "humor"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_023",
+      "icon": "😉",
+      "text": "For {{name}}: you’re officially my favorite notification.",
+      "sentiments": [
+        "humor",
+        "friendship"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_024",
+      "icon": "😜",
+      "text": "I’m here for you — like Wi-Fi: sometimes slow, always there.",
+      "sentiments": [
+        "humor",
+        "friendship"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_025",
+      "icon": "🤭",
+      "text": "Today we treat calories like feelings: we ignore them.",
+      "sentiments": [
+        "humor"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_026",
+      "icon": "🤣",
+      "text": "Plan of action: 1) breathe in 2) laugh 3) repeat.",
+      "sentiments": [
+        "humor",
+        "encouraging"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_027",
+      "icon": "🥐",
+      "text": "If life crumbles, we’ll make a croissant.",
+      "sentiments": [
+        "humor",
+        "comfort"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_028",
+      "icon": "🦥",
+      "text": "Productive? I call it ‘selective motion’.",
+      "sentiments": [
+        "humor"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_029",
+      "icon": "🫶",
+      "text": "Smile check: updating your face… done ✅",
+      "sentiments": [
+        "humor",
+        "friendship"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_030",
+      "icon": "🕺",
+      "text": "We don’t need a reason — we have legs: dance!",
+      "sentiments": [
+        "humor",
+        "success"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_031",
+      "icon": "☕",
+      "text": "Status: coffee loaded, jokes enabled.",
+      "sentiments": [
+        "humor"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_032",
+      "icon": "🪞",
+      "text": "Who laughs in the mirror sees double joy.",
+      "sentiments": [
+        "humor"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_033",
+      "icon": "🚪",
+      "text": "When one door closes, open the windows.",
+      "sentiments": [
+        "humor"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_034",
+      "icon": "🧱",
+      "text": "A detour is still a road home.",
+      "sentiments": [
+        "humor"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_035",
+      "icon": "🍪",
+      "text": "Happiness crumbles — collect every crumb.",
+      "sentiments": [
+        "humor"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_036",
+      "icon": "📚",
+      "text": "Every mistake is a new chapter.",
+      "sentiments": [
+        "humor"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_037",
+      "icon": "🌧️",
+      "text": "After rain comes… wet grass. And then sun.",
+      "sentiments": [
+        "humor"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_038",
+      "icon": "🛋️",
+      "text": "Lounging is also a verb.",
+      "sentiments": [
+        "humor"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_039",
+      "icon": "🥔",
+      "text": "Even a couch potato can take root.",
+      "sentiments": [
+        "humor"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_040",
+      "icon": "🐌",
+      "text": "Slow also gets somewhere.",
+      "sentiments": [
+        "humor"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_041",
+      "icon": "🧩",
+      "text": "Life isn’t a puzzle, yet the pieces still fit.",
+      "sentiments": [
+        "humor"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_042",
+      "icon": "💘",
+      "text": "You’re my favorite thought.",
+      "sentiments": [
+        "love"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_043",
+      "icon": "🌹",
+      "text": "Every day with you is a flower in my vase.",
+      "sentiments": [
+        "love"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_044",
+      "icon": "🌙",
+      "text": "Under the same moon, I’m thinking of you.",
+      "sentiments": [
+        "love"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_045",
+      "icon": "🔥",
+      "text": "You are the spark in my day.",
+      "sentiments": [
+        "love"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_046",
+      "icon": "💍",
+      "text": "With you, every day feels like a promise.",
+      "sentiments": [
+        "love"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_047",
+      "icon": "💎",
+      "text": "You are rare and precious.",
+      "sentiments": [
+        "love"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_048",
+      "icon": "☀️",
+      "text": "You are my morning sun.",
+      "sentiments": [
+        "love"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_049",
+      "icon": "🌈",
+      "text": "With you, my colors shine brighter.",
+      "sentiments": [
+        "love"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_050",
+      "icon": "🎶",
+      "text": "My heart knows your melody.",
+      "sentiments": [
+        "love"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_051",
+      "icon": "🏡",
+      "text": "Where you are, I’m home.",
+      "sentiments": [
+        "love"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_052",
+      "icon": "🛤️",
+      "text": "Every step forward is an act of courage.",
+      "sentiments": [
+        "perseverance",
+        "encouraging"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_053",
+      "icon": "🌱",
+      "text": "Even the smallest seed grows toward the light.",
+      "sentiments": [
+        "encouraging",
+        "comfort"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_054",
+      "icon": "⚓",
+      "text": "You find rest by anchoring, not by running.",
+      "sentiments": [
+        "calm"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_055",
+      "icon": "🌄",
+      "text": "Every morning is a new canvas.",
+      "sentiments": [
+        "success",
+        "encouraging"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_056",
+      "icon": "🕊️",
+      "text": "Comfort lives in small gestures.",
+      "sentiments": [
+        "comfort"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_057",
+      "icon": "🙌",
+      "text": "Celebrate your small victories out loud.",
+      "sentiments": [
+        "success",
+        "proud"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_058",
+      "icon": "🌌",
+      "text": "Even the night carries quiet promises.",
+      "sentiments": [
+        "calm",
+        "comfort"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_059",
+      "icon": "💪",
+      "text": "Perseverance is stronger than winning.",
+      "sentiments": [
+        "perseverance"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_060",
+      "icon": "🙏",
+      "text": "Gratitude makes every moment richer.",
+      "sentiments": [
+        "gratitude"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_061",
+      "icon": "🏔️",
+      "text": "Pride is the echo from your own summit.",
+      "sentiments": [
+        "proud"
+      ],
+      "special_day": null,
+      "weight": 1
+    }
+  ]
+}
