@@ -545,10 +545,11 @@ function makeThemeChip(specialKey, label){
   b.setAttribute('aria-label', label || '');
   b.title = label || '';
   b.textContent = label;
-  b.onclick = () => {
-    setActiveFilter({ sentiment: null, special: specialKey });
-    scrollChipIntoCenter(b);
-  };
+b.onclick = () => {
+  setActiveFilter({ sentiment: null, special: specialKey });
+  scrollChipIntoCenter(b);
+  onSentimentChosen(STATE.lang, null); // nav voor huidige filter
+};
   return b;
 }
 
@@ -578,13 +579,12 @@ function makeChip(value, label){
   b.setAttribute('aria-label', label || '');
   b.title = label || '';
   b.textContent = label;
-  b.onclick = () => {
-    STATE.activeSentiment = value;
-    activateChip(value);
-    rebuildDeck(true);
-    renderMessage({ newRandom:true, wiggle:true });
-    scrollChipIntoCenter(b);
-  };
+b.onclick = () => {
+  STATE.activeSentiment = value;
+  activateChip(value);
+  onSentimentChosen(STATE.lang, value); // bouw deck + nav + toon eerste via NAV
+  scrollChipIntoCenter(b);
+};
   return b;
 }
 
@@ -735,6 +735,29 @@ function setPaperLook(){
 }
 
 function renderMessage({ newRandom=false, requestedIdx=null, wiggle=false } = {}){
+  let idx = (typeof opts.requestedIdx === 'number') ? opts.requestedIdx : STATE.currentIdx;
+
+  // Als er een msg is meegegeven, probeer index via id te bepalen
+  if ((idx == null || idx < 0 || idx >= STATE.allMessages.length) && opts.msg && opts.msg.id != null) {
+    const found = STATE.allMessages.findIndex(m => m && m.id === opts.msg.id);
+    if (found >= 0) idx = found;
+  }
+
+  // Clamp index naar geldige range
+  if (idx == null || !Number.isInteger(idx)) idx = 0;
+  if (idx < 0) idx = 0;
+  if (idx >= STATE.allMessages.length) idx = STATE.allMessages.length - 1;
+
+  // Pak de message; abort als er nog steeds niets is
+  const msg = STATE.allMessages[idx];
+  if (!msg) {
+    console.warn('renderMessage: geen message voor idx=', idx, ' lijstlengte=', STATE.allMessages.length);
+    return; // zacht falen
+  }
+
+  // Bewaar de gekozen index
+  STATE.currentIdx = idx;
+  
   // --- GUARD: oversla initiele auto-render zolang welcome-lock actief is ---
   const now = (window.performance?.now?.() || Date.now());
   if (window._awnWelcomeGuardUntil && now < window._awnWelcomeGuardUntil) {
@@ -773,18 +796,6 @@ function renderMessage({ newRandom=false, requestedIdx=null, wiggle=false } = {}
     if (idx < 0) idx = localIdx; // defensieve fallback (zou zelden gebeuren)
   }
 
-//  if (idx == null || idx < 0 || idx >= STATE.allMessages.length) {
-//    if (els.msg)  {
-//      const fallbackText = "Stuur een warme boodschap naar iemand.";
-//      els.msg.setAttribute('data-raw', fallbackText);     // bron vastleggen
-//      els.msg.textContent = personalize(fallbackText);    // consistent via personalize
-//    }
-//    if (els.icon) els.icon.textContent  = "💌";
-//    if (els.note) setPaperLook();
-//    renderToFrom(); // lijnen toch syncen
-//    return;
-//  }
-
   // 4) State + recent bijwerken
   STATE.currentIdx = idx;
   bumpRecent(idx);
@@ -806,8 +817,7 @@ function renderMessage({ newRandom=false, requestedIdx=null, wiggle=false } = {}
       els.icon.style.opacity = 1;
     }, 90);
   }
-  
-if (window.ensureNoteFits) window.ensureNoteFits();
+  if (window.ensureNoteFits) window.ensureNoteFits();
   // 6) rest van de UI
   if (els.note) setPaperLook();
   renderToFrom();
@@ -824,6 +834,38 @@ if (window.ensureNoteFits) window.ensureNoteFits();
     );
   }
 } 
+
+// Context wissel (bij kiezen van sentiment):
+function onSentimentChosen(lang, sentiment){
+  const deck = AWNDeck.buildDeckFor({ messagesByLang: AWN_MESSAGES, lang, sentiment, limit: 30 });
+  NAV = AWNDeck.createNavigator({ lang, sentiment, deck });
+  const first = NAV.next(); if (first) renderMessage(first);
+}
+
+// 1x na DOM ready: knoppen + swipe binden
+const detachNavUI = AWNDeck.UI.attachNav({
+  getNav: ()=> NAV,
+  render: (msg) => {
+    if (!msg) return;
+    // Vind index op basis van id (niet op objectreferentie)
+    const idx = STATE.allMessages.findIndex(m => m.id === msg.id);
+    if (idx >= 0) {
+      STATE.currentIdx = idx;
+      renderMessage({ requestedIdx: idx, wiggle: false });
+    }
+  },
+  // optioneel: andere selectors:
+  // prevSelector: '#btnPrev',
+  // nextSelector: '#btnNext',
+  // swipeSelector: '#note'
+});
+
+// Als user handmatig een message kiest uit een lijst:
+function onUserPickedMessage(msg){
+  if (!NAV) return;
+  const cur = NAV.push(msg, { mark:true, advance:true });
+  if (cur) renderMessage(cur);
+}
 
 function renderToFrom(){
   const toName   = getTo();
@@ -870,13 +912,25 @@ function renderToFrom(){
     if (Math.abs(dy) > Math.abs(dx) + 10) active = false;
   }, {passive:true});
 
-  el.addEventListener("touchend", ()=>{
-    if (!active) return;
-    active = false;
-    if (Math.abs(dx) > 20 && Math.abs(dx) > Math.abs(dy)) {
-      renderMessage({ newRandom:true, wiggle:false });
+el.addEventListener("touchend", ()=>{
+  if (!active) return;
+  active = false;
+  if (Math.abs(dx) > 20 && Math.abs(dx) > Math.abs(dy)) {
+    // Zorg dat er een navigator is
+    if (!NAV) onSentimentChosen(STATE.lang, STATE.activeSentiment || null);
+    if (!NAV) return;
+    // Links = volgende, rechts = vorige
+    const msg = (dx < 0) ? NAV.next() : NAV.prev();
+    if (msg) {
+      const idx = STATE.allMessages.findIndex(m => m.id === msg.id);
+      if (idx >= 0) {
+        STATE.currentIdx = idx;
+        renderMessage({ requestedIdx: idx, wiggle: false });
+      }
     }
-  }, {passive:true});
+  }
+}, {passive:true});
+
 })();
 
 /**
@@ -2548,6 +2602,82 @@ function quickSplashMaybeForReceived(sharedMid){
   if (document.readyState === 'complete') onLoad();
   else window.addEventListener('load', onLoad, { once: true });
 })();
+
+// Stel: window.AWN_MESSAGES = { nl:[...], en:[...] } bestaat al
+
+// Bouw een deck voor de huidige context:
+function getDeck(lang, sentiment, limit=30){
+  return window.AWNDeck.buildDeckFor({ messagesByLang: window.AWN_MESSAGES, lang, sentiment, limit });
+}
+// Bouw deck uit STATE + filters (sentiment/special_day)
+function buildDeckFromState() {
+  const all = Array.isArray(STATE.allMessages) ? STATE.allMessages : [];
+  let list = all;
+
+  // filter op special_day (valentijn/nieuwjaar/pasen) als actief
+  if (STATE.filterSpecialDay) {
+    list = list.filter(m => m.special_day === STATE.filterSpecialDay);
+  }
+
+  // filter op sentiment (jouw data heeft 'sentiments' als array)
+  if (STATE.activeSentiment) {
+    const s = STATE.activeSentiment;
+    list = list.filter(m => Array.isArray(m.sentiments) && m.sentiments.includes(s));
+  }
+
+  // (optioneel) simpele weight-sorting om “leukere” iets vaker vooraan te zien
+  // maar de echte random/gewogen logica doet AWNDeck al intern wanneer je daarheen migreert
+  return list.slice();
+}
+
+// Maak één navigator per (lang+sentiment) wanneer de user een sentiment kiest:
+let nav = null;
+let NAV = null;
+
+function onSentimentChosen(lang, sentiment){
+  STATE.lang = lang || STATE.lang;
+  STATE.activeSentiment = sentiment ?? STATE.activeSentiment;
+
+  const deck = buildDeckFromState(); // gefilterde lijst
+  NAV = window.AWNDeck.createNavigator({ lang: STATE.lang, sentiment: STATE.activeSentiment || 'all', deck });
+
+  const first = NAV.next(); // pakt eerste (en markeert)
+  if (first) {
+    // Zorg dat STATE.currentIdx correct wijst (nodig voor share/deeplink)
+    const idx = STATE.allMessages.indexOf(first);
+    if (idx >= 0) STATE.currentIdx = idx;
+    // Render met jouw bestaande renderer
+    renderMessage({ requestedIdx: idx, wiggle: false });
+  }
+}
+
+// Als user uit de lijst een specifieke message kiest:
+function onUserPickedMessage(msg){
+  if (!nav) return;
+  const cur = nav.push(msg, {mark:true, advance:true});
+  renderMessage(cur);
+}
+
+// Knoppen “Vorige” / “Volgende”:
+function handlePrev(){
+  if (!nav) return;
+  const m = nav.prev();
+  if (m) renderMessage(m);
+}
+function handleNext(){
+  if (!nav) return;
+  const m = nav.next(); // pakt volgende bekeken of uit deck
+  if (m) renderMessage(m);
+}
+
+// Voorbeeld: bind UI
+document.querySelector('[data-btn-prev]')?.addEventListener('click', handlePrev);
+document.querySelector('[data-btn-next]')?.addEventListener('click', handleNext);
+
+// Vergeet niet in jouw bestaande flow, ná verzenden/deeplink tonen:
+function onMessageShown(msg){
+  window.AWNDeck.markShown([msg.id]);
+}
 
 /* ========================================================================
    DEBUG HARNESS — NIET PRODUCTIE, HELPT ZIEN WAT ER WEL/NIET TRIGGERT
