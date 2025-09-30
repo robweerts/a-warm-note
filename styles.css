@@ -183,7 +183,17 @@ button.btn .icon svg { width: 100% !important; height: 100% !important; }
   20%{transform:translateX(-8px)} 40%{transform:translateX(8px)}
   60%{transform:translateX(-4px)} 80%{transform:translateX(4px)}
 }
-
+/* --- Chips: verberg horizontale scrollbars clean --- */
+.chips-wrap { overflow: hidden; }                 /* container geen bars */
+#chip-row {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;              /* soepel op iOS */
+  scrollbar-width: none;                          /* Firefox */
+  -ms-overflow-style: none;                       /* IE/Edge legacy */
+}
+#chip-row::-webkit-scrollbar { display: none; }   /* Chrome/Safari */
+.chip-chevron { transition: opacity .18s ease; }
 /* =================== Note =================== */
 .note-wrap{display:grid; place-items:center; padding:20px 0}
 .note{
@@ -247,13 +257,12 @@ button.btn .icon svg { width: 100% !important; height: 100% !important; }
 .compose input:focus{outline:2px solid rgba(255,255,255,.9); outline-offset:2px}
 
 .coach{
-  margin:10px auto 0; padding:8px 12px; width:fit-content; max-width:min(720px,92vw);
+  margin:10px auto 0; padding:8px 8px; width:fit-content; max-width:min(720px,92vw);
   background:var(--bar); color:#fff; border-radius:12px; display:flex; gap:10px; align-items:center;
   backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); box-shadow:0 6px 18px rgba(0,0,0,.25);
   animation:coach-in .3s var(--ease) both;
 }
 @keyframes coach-in{from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:translateY(0)}}
-.coach .coach-close{appearance:none; border:0; cursor:pointer; background:rgba(255,255,255,.12); color:#fff; width:26px; height:26px; border-radius:50%}
 .coach .coach-inline{
   appearance:none; border:0; background:transparent; color:#FFE66D; font-weight:600; text-decoration:underline; cursor:pointer; padding:0 2px;
 }
@@ -433,119 +442,6 @@ button.btn .icon svg { width: 100% !important; height: 100% !important; }
   .note .message{ margin-top:0!important }
 }
 
-/* === Live Note Splash – basis & tuning ===================== */
-/* === Splash via renderMessage (geen clone, pure scale) ==================== */
-.splash-overlay {
-  position: fixed; inset: 0; z-index: 100000;
-  display: grid; place-items: center;
-  background: rgba(0,0,0,.02); /* zet op 'transparent' als je niks wilt zien */
-  pointer-events: auto;
-  opacity: 0; transform: scale(.98);
-  transition: opacity 220ms ease, transform 220ms cubic-bezier(.16,1,.3,1);
-}
-.splash-overlay.is-in { opacity: 1; transform: scale(1); }
-
-/* === Fade achter de splash ============================================== */
-.splash-overlay{
-  position: fixed;
-  inset: 0;
-  z-index: 100000;                 /* boven app UI */
-  display: grid;
-  place-items: center;
-  /* begin transparant, geen blur */
-  background: rgba(0,0,0,0);
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  opacity: 0;
-  transition:
-    background .28s ease,
-    backdrop-filter .28s ease,
-    -webkit-backdrop-filter .28s ease,
-    opacity .28s ease;
-}
-
-/* wanneer splash actief is (JS voegt .is-in toe) */
-.splash-overlay.is-in{
-  /* zachte dim — pas de alpha naar smaak aan (0.20–0.40) */
-  background: rgba(0,0,0,.28);
-  /* optioneel subtiele blur achter de note */
-  backdrop-filter: saturate(1.05) blur(4px);
-  -webkit-backdrop-filter: saturate(1.05) blur(4px);
-  opacity: 1;
-}
-
-/* Het canvas dat jouw note-clone bevat, blijft zoals je had */
-.splash-stage{
-  transform: translate3d(0,0,0) scale(var(--splash-scale, 1));
-  will-change: transform;
-}
-
-/* Respect voor reduced motion */
-@media (prefers-reduced-motion: reduce){
-  .splash-overlay{
-    transition: opacity .2s ease;       /* geen zware animaties */
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-  }
-}
-.splash-stage {
-  position: relative;
-  transform-origin: center center;
-  --splash-scale: 1;
-  transform: translateZ(0) scale(var(--splash-scale));
-  will-change: transform;
-  pointer-events: none; /* overlay vangt clicks/ESC */
-  filter: drop-shadow(0 24px 60px rgba(0,0,0,.16));
-}
-
-/* zorg dat de gerenderde note niet geknipt wordt in de stage */
-.splash-stage > * {
-  max-width: unset !important;
-  overflow: visible !important;
-}
-
-@media (prefers-reduced-motion: reduce){
-  .splash-overlay { transition: none !important; }
-}
-
-/* === Splash via renderMessage (overlay + pure scale) ====================== */
-.splash-overlay {
-  position: fixed; inset: 0; z-index: 100000;
-  display: grid; place-items: center;
-  background: rgba(0,0,0,.02); /* evt. 'transparent' */
-  pointer-events: auto;
-  opacity: 0; transform: scale(.98);
-  transition: opacity 220ms ease, transform 220ms cubic-bezier(.16,1,.3,1);
-}
-.splash-overlay.is-in { opacity: 1; transform: scale(1); }
-
-.splash-stage {
-  position: relative;
-  --splash-scale: 1;
-  transform-origin: center center;
-  transform: translateZ(0) scale(var(--splash-scale));
-  will-change: transform;
-  pointer-events: none; /* overlay sluit op click/ESC */
-  filter: drop-shadow(0 24px 60px rgba(0,0,0,.16));
-}
-
-/* zorg dat de gerenderde note niet geknipt wordt */
-.splash-stage > * {
-  max-width: unset !important;
-  overflow: visible !important;
-}
-
-/* off-screen render target */
-.splash-temp-mount {
-  position: fixed !important;
-  left: -99999px !important;
-  top: 0 !important;
-  visibility: hidden !important;
-  pointer-events: none !important;
-  width: 0 !important;
-  height: 0 !important;
-}
-
 @media (prefers-reduced-motion: reduce){
   .splash-overlay { transition: none !important; }
 }
@@ -604,25 +500,6 @@ button[data-action="expand-note"].is-hot::after{
 @keyframes splashPulse{
   0%   { transform: scale(.9); opacity:.55; }
   100% { transform: scale(1.2); opacity:0; }
-}
-
-.about-fab{
-  position: fixed;
-  right: 16px;
-  bottom: 16px;
-  z-index: 100002;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 10px 14px;
-  border: 0;
-  border-radius: 12px;
-  background: rgba(255,255,255,.92);
-  box-shadow: 0 8px 24px rgba(0,0,0,.16);
-  backdrop-filter: saturate(1.1) blur(6px);
-  color: inherit;
-  cursor: pointer;
 }
 
 button[data-action="expand-note"].is-hot{
@@ -861,4 +738,233 @@ button[data-action="expand-note"].is-hot::after{
 #coach-tip {
   padding-right: clamp(64px, 9vw, 110px); /* was 0; voorkomt overlap met tekst */
 }
-/* Mobiel: laat JS bepalen waar de avatar staat (naast About-knop) */
+
+/* === Splash overlay (één versie) ========================================= */
+.splash-overlay{
+  position: fixed; inset: 0; z-index: 100000;
+  display: grid; place-items: center;
+  background: rgba(0,0,0,0);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  opacity: 0; transform: scale(.98);
+  transition:
+    background .28s ease,
+    backdrop-filter .28s ease,
+    -webkit-backdrop-filter .28s ease,
+    opacity .28s ease,
+    transform 220ms cubic-bezier(.16,1,.3,1);
+}
+.splash-overlay.is-in{
+  opacity: 1; transform: scale(1);
+  background: rgba(0,0,0,.28);
+  backdrop-filter: saturate(1.05) blur(4px);
+  -webkit-backdrop-filter: saturate(1.05) blur(4px);
+}
+
+/* Stage container (één versie) */
+.splash-stage{
+  position: relative;
+  --splash-scale: 1;
+  transform-origin: center center;
+  transform: translateZ(0) scale(var(--splash-scale));
+  will-change: transform;
+  pointer-events: none;
+  filter: drop-shadow(0 24px 60px rgba(0,0,0,.16));
+}
+/* voorkom knippen van de note in de clone */
+.splash-stage > * { max-width: unset !important; overflow: visible !important; }
+
+/* Verberg compose in live-clone (alleen als je .is-live op overlay zet) */
+.splash-overlay.is-live #to-inline,
+.splash-overlay.is-live #from-inline,
+.splash-overlay.is-live .compose,
+.splash-overlay.is-live .compose-inline,
+.splash-overlay.is-live [data-compose]{
+  display: none !important;
+}
+
+/* Zorg dat body & icon in splash altijd zichtbaar zijn en niet animeren */
+.splash-overlay .note #message,
+.splash-overlay .note .message,
+.splash-overlay .note #iconline,
+.splash-overlay .note .iconline{
+  opacity: 1 !important;
+  visibility: visible !important;
+  transition: none !important;
+}
+.splash-overlay .note{
+  animation: none !important;
+  transition: none !important;
+}
+
+/* Motion-preferences (één keer) */
+@media (prefers-reduced-motion: reduce){
+  .splash-overlay{
+    transition: opacity .2s ease !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+}
+/* Mobile: sticky onder de coach-tekst, links uitgelijnd */
+@media (max-width: 767px){
+  #coach-tip{
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  #coach-tip .coach-text{
+    order: 1;
+  }
+  #coach-avatar{
+    order: 2;
+    position: static !important;   /* geen absolute/left/top op mobiel */
+    transform: none !important;
+    align-self: flex-start;         /* links */
+    margin-top: 4px;
+    /* voorkom overlap */
+    z-index: 0;
+  }
+}
+
+/* Coach compacter: minder hoog & iets kleinere tekst */
+#coach-tip{
+  padding: 8px 12px !important;   /* was vaak ~12–16px */
+  gap: 8px !important;            /* minder ruimte tussen icon/tekst/close */
+}
+
+/* Tekst iets kleiner en strakker gezet */
+#coach-tip .coach-text{
+  font-size: clamp(13px, 1.7vw, 15px) !important;  /* ~1pt kleiner */
+  line-height: 1.28 !important;                    /* strakker maar leesbaar */
+}
+
+/* Inline CTA in de coach: klein tikdoel maar toegankelijk */
+#coach-tip .coach-inline{
+  font-size: 0.95em !important;
+  line-height: 1.2 !important;
+  padding: 4px 8px !important;
+  border-radius: 8px;
+}
+
+/* Mobile: nog iets compacter als het krap is */
+@media (max-width: 767px){
+  #coach-tip{
+    padding: 7px 10px !important;
+  }
+  #coach-tip .coach-text{
+    font-size: clamp(13px, 3.6vw, 14px) !important;
+    line-height: 1.26 !important;
+  }
+}
+
+/* Basis: niets forceren, je huidige styles blijven leidend */
+
+/* Donker thema aan op <html class="theme-dark"> of <body class="theme-dark"> */
+.theme-dark {
+  color-scheme: dark;                    /* juiste form-controls & UA-colors */
+  --bg: #121212;
+  --fg: #e8eaed;
+  --muted: #9aa0a6;
+  --surface: #171a1f;
+  --surface-2: #1d2127;
+  --border: rgba(255,255,255,.08);
+  --shadow: 0 8px 24px rgba(0,0,0,.45);
+}
+
+/* Pagina-achtergrond & basis-tekst */
+.theme-dark body {
+  background: var(--bg);
+  color: var(--fg);
+}
+
+/* Topbar / knoppenomgeving (houd jouw layout-class hier aan) */
+.theme-dark .topbar,
+.theme-dark .actions,
+.theme-dark .chips-wrap {
+  background: linear-gradient(180deg, rgba(23,26,31,.92), rgba(23,26,31,.86));
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  box-shadow: var(--shadow);
+  border-bottom: 1px solid var(--border);
+}
+
+/* Buttons (gebruik je bestaande .btn; alleen kleur aanpassen) */
+.theme-dark .btn {
+  background: rgba(255,255,255,.10);
+  color: var(--fg);
+  box-shadow: 0 6px 18px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.06);
+}
+.theme-dark .btn:hover { background: rgba(255,255,255,.16); }
+
+/* Chips */
+.theme-dark .chip { 
+  background: rgba(255,255,255,.08);
+  color: var(--fg);
+  border-color: var(--border);
+}
+.theme-dark .chip.active { background: rgba(255,255,255,.18); }
+
+/* Coach */
+.theme-dark #coach-tip{
+  background: var(--surface);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+.theme-dark #coach-tip .coach-inline{
+  background: rgba(255,255,255,.12);
+  color: var(--fg);
+}
+
+/* Sheets / backdrops */
+.theme-dark #sheet-backdrop .sheet,
+.theme-dark #about-backdrop .sheet,
+.theme-dark #msgr-help-backdrop .sheet {
+  background: var(--surface-2);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+
+/* Toast */
+.theme-dark #toast{
+  background: rgba(255,255,255,.12);
+  color: var(--fg);
+  border-color: var(--border);
+}
+
+/* Splash overlay */
+.theme-dark .splash-overlay{
+  background: radial-gradient(1200px 600px at 50% -100px, rgba(255,255,255,.08), rgba(0,0,0,.75));
+}
+
+/* --- Inputs iets lichter in dark mode --- */
+.theme-dark input[type="text"],
+.theme-dark input[type="search"],
+.theme-dark input[type="email"],
+.theme-dark input[type="tel"],
+.theme-dark textarea,
+.theme-dark #to-inline,
+.theme-dark #from-inline {
+  background: rgba(255,255,255,.12);   /* net lichter dan de UI */
+  color: #f3f4f6;                      /* helder maar niet spierwit */
+  border: 1px solid rgba(255,255,255,.18);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
+}
+
+.theme-dark input::placeholder,
+.theme-dark textarea::placeholder {
+  color: rgba(255,255,255,.55);        /* beter contrast voor hint */
+}
+
+/* Focusring subtiel en duidelijk */
+.theme-dark input:focus,
+.theme-dark textarea:focus,
+.theme-dark #to-inline:focus,
+.theme-dark #from-inline:focus {
+  outline: none;
+  border-color: rgba(255,255,255,.34);
+  box-shadow:
+    0 0 0 3px rgba(255,255,255,.08),   /* soft outer glow */
+    inset 0 1px 0 rgba(255,255,255,.06);
+}

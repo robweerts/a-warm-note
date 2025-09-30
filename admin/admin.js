@@ -1,42 +1,44 @@
 /* ==========
-   Data Model (per lang)
+   Admin (datasets + talen) — drop-in vervanger
+   Werkt met admin.html / admin.css zoals bijgevoegd.
+   ========== */
+
+/* ==========
+   Data Model
    ========== */
 const DB = {
-  // langKey -> { lang, sentiments: string[], messages: Message[] }
-  langs: new Map(),
-  active: null
+  // datasetKey -> langKey -> { lang, sentiments: string[], messages: Message[] }
+  data: new Map(),          // Map<string, Map<string, LangData>>
+  activeDataset: 'messages',// default
+  activeLang: null
 };
 
-const $ = sel => document.querySelector(sel);
+const $  = sel => document.querySelector(sel);
 const $$ = sel => document.querySelectorAll(sel);
 
 const els = {
-  fileInput: $('#fileInput'),
-  exportBtn: $('#exportBtn'),
-  themeBtn: $('#themeBtn'),
-  tabs: $('#langTabs'),
-  addMsgBtn: $('#addMsgBtn'),
-  delMsgBtn: $('#delMsgBtn'),
-  checkAll: $('#checkAll'),
-  searchBox: $('#searchBox'),
-  msgTableBody: $('#msgTable tbody'),
-  status: $('#status'),
+  fileInput:   $('#fileInput'),
+  exportBtn:   $('#exportBtn'),
+  themeBtn:    $('#themeBtn'),
+  tabs:        $('#langTabs'),
+  addMsgBtn:   $('#addMsgBtn'),
+  delMsgBtn:   $('#delMsgBtn'),
+  checkAll:    $('#checkAll'),
+  searchBox:   $('#searchBox'),
+  msgTableBody:$('#msgTable tbody'),
+  status:      $('#status'),
 };
 
 /* ==========
    Helpers
    ========== */
-
 function setStatus(msg){ if (els.status) els.status.textContent = msg; }
 
-// Parse hoogste nummer uit IDs als "nl_001"
 function parseNumericId(id){
   if (typeof id !== 'string') return null;
   const m = id.match(/(\d+)\s*$/);
   return m ? parseInt(m[1], 10) : null;
 }
-
-// Genereer volgende ID op basis van hoogste suffix
 function nextIdFor(langKey, messages){
   const prefix = (langKey || 'id').toLowerCase() + '_';
   let max = 0;
@@ -48,7 +50,14 @@ function nextIdFor(langKey, messages){
   return `${prefix}${next}`;
 }
 
-function currentLangData(){ return DB.active ? DB.langs.get(DB.active) : null; }
+function currentLangData(){
+  const map = DB.data.get(DB.activeDataset);
+  return map ? map.get(DB.activeLang) : null;
+}
+function ensureDatasetMap(key){
+  if (!DB.data.has(key)) DB.data.set(key, new Map());
+  return DB.data.get(key);
+}
 function getSelectedIds(){
   return [...els.msgTableBody.querySelectorAll('input[type="checkbox"]:checked')]
     .map(cb => cb.dataset.id);
@@ -57,12 +66,16 @@ function getSelectedIds(){
 /* ==========
    Persistence
    ========== */
-const STORAGE_KEY = 'msg_admin_v2';
+const STORAGE_KEY = 'msg_admin_v3';
 
 function saveLocal(){
-  const obj = {};
-  for (const [k, v] of DB.langs) obj[k] = v;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(obj));
+  // serialize Map → plain obj
+  const out = { activeDataset: DB.activeDataset, activeLang: DB.activeLang, data: {} };
+  for (const [ds, langMap] of DB.data) {
+    out.data[ds] = {};
+    for (const [lang, v] of langMap) out.data[ds][lang] = v;
+  }
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(out));
 }
 
 function loadLocal(){
@@ -70,25 +83,58 @@ function loadLocal(){
   if (!raw) return;
   try{
     const obj = JSON.parse(raw);
-    for (const k of Object.keys(obj)) DB.langs.set(k, obj[k]);
-    if (DB.langs.size) DB.active = DB.active ?? [...DB.langs.keys()][0];
+    DB.activeDataset = obj.activeDataset || 'messages';
+    DB.activeLang    = obj.activeLang || null;
+    if (obj.data && typeof obj.data === 'object') {
+      for (const ds of Object.keys(obj.data)) {
+        const langMap = ensureDatasetMap(ds);
+        for (const lang of Object.keys(obj.data[ds])) {
+          langMap.set(lang, obj.data[ds][lang]);
+        }
+      }
+    }
+    // fallback activeLang
+    if (!DB.activeLang) {
+      const firstDs = [...DB.data.keys()][0];
+      if (firstDs) {
+        DB.activeDataset = firstDs;
+        const firstLang = [...DB.data.get(firstDs).keys()][0];
+        if (firstLang) DB.activeLang = firstLang;
+      }
+    }
   }catch(e){ console.error(e); }
 }
 
 /* ==========
-   Import / Export  (messages.{lang}.json schema)
+   Import / Export
    ========== */
+function guessDatasetFromName(name, jsonObj){
+  // 1) filename prefix
+  const lower = String(name || '').toLowerCase();
+  if (lower.startsWith('messages.'))  return 'messages';
+  if (lower.startsWith('birthdays.')) return 'birthdays';
+  // 2) json shape hints (desnoods uitbreiden)
+  if (Array.isArray(jsonObj?.messages))  return 'messages';
+  if (Array.isArray(jsonObj?.birthdays)) return 'birthdays';
+  // default
+  return 'messages';
+}
+
 function normalizeImported(jsonObj, fallbackLangFromFileName){
   const lang = String(jsonObj?.lang || fallbackLangFromFileName || '').toLowerCase() || 'xx';
   const sentiments = Array.isArray(jsonObj?.sentiments) ? jsonObj.sentiments.filter(Boolean) : [];
-  const messages = Array.isArray(jsonObj?.messages) ? jsonObj.messages.map(m => ({
+  // We hanteren voor ál onze datasets hetzelfde veld "messages"
+  const src = Array.isArray(jsonObj?.messages)
+    ? jsonObj.messages
+    : (Array.isArray(jsonObj?.birthdays) ? jsonObj.birthdays : []);
+  const messages = src.map(m => ({
     id: String(m.id || '').trim(),
     icon: String(m.icon || ''),
     text: String(m.text || ''),
     sentiments: Array.isArray(m.sentiments) ? m.sentiments.filter(Boolean) : [],
     special_day: (m.special_day === null || typeof m.special_day === 'string') ? (m.special_day || null) : null,
     weight: Number.isFinite(m.weight) ? m.weight : 1
-  })) : [];
+  }));
   return { lang, sentiments, messages };
 }
 
@@ -98,19 +144,25 @@ async function importFiles(fileList){
     let json; try{ json = JSON.parse(text); }
     catch{ setStatus(`❌ ${file.name}: geen geldige JSON`); continue; }
 
+    const dataset = guessDatasetFromName(file.name, json);
     const langGuess = (json.lang || file.name.replace(/\.[^.]+$/, '')).toLowerCase();
     const data = normalizeImported(json, langGuess);
 
-    // lege of dubbele id's fixen bij import
+    // lege of dubbele id's fixen
     const used = new Set();
     for (const m of data.messages) {
       if (!m.id || used.has(m.id)) m.id = nextIdFor(data.lang, data.messages);
       used.add(m.id);
     }
 
-    DB.langs.set(data.lang, data);
-    DB.active = DB.active || data.lang;
-    setStatus(`✅ Geïmporteerd: ${file.name} → taal "${data.lang}" (${data.messages.length} messages)`);
+    const langMap = ensureDatasetMap(dataset);
+    langMap.set(data.lang, { lang: data.lang, sentiments: data.sentiments, messages: data.messages });
+
+    // active cursors
+    DB.activeDataset = dataset;
+    DB.activeLang    = DB.activeLang || data.lang;
+
+    setStatus(`✅ Geïmporteerd: ${file.name} → ${dataset}.${data.lang} (${data.messages.length} messages)`);
   }
   saveLocal();
   renderAll();
@@ -118,7 +170,7 @@ async function importFiles(fileList){
 
 function exportActive(){
   const data = currentLangData();
-  if (!data) { setStatus('Geen actieve taal.'); return; }
+  if (!data) { setStatus('Geen actieve dataset/taal.'); return; }
 
   const out = {
     lang: data.lang,
@@ -133,28 +185,63 @@ function exportActive(){
     }))
   };
 
+  const fname = `${DB.activeDataset}.${data.lang}.json`;
   const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `messages.${data.lang}.json`;
+  a.download = fname;
   document.body.appendChild(a);
   a.click();
   a.remove();
-  setStatus(`⬇️ Geëxporteerd: messages.${data.lang}.json`);
+  setStatus(`⬇️ Geëxporteerd: ${fname}`);
 }
 
 /* ==========
    Rendering
    ========== */
 function renderTabs(){
-  els.tabs.innerHTML = '';
-  for (const [lang] of DB.langs) {
+  // Eén nav (#langTabs) met 2 rijen: datasets + langs
+  const wrap = els.tabs;
+  if (!wrap) return;
+
+  const datasets = [...DB.data.keys()];
+  const langs    = DB.data.get(DB.activeDataset) ? [...DB.data.get(DB.activeDataset).keys()] : [];
+
+  wrap.innerHTML = '';
+
+  // — Dataset knoppen
+  const dsBar = document.createElement('div');
+  dsBar.className = 'tabs';
+  datasets.length ? null : dsBar.classList.add('muted');
+  (datasets.length ? datasets : ['messages']).forEach(ds => {
     const btn = document.createElement('button');
-    btn.textContent = lang;
-    btn.className = (DB.active === lang) ? 'active' : '';
-    btn.addEventListener('click', () => { DB.active = lang; saveLocal(); renderAll(); });
-    els.tabs.appendChild(btn);
-  }
+    btn.textContent = ds;
+    btn.className = (DB.activeDataset === ds) ? 'active' : '';
+    btn.addEventListener('click', () => {
+      DB.activeDataset = ds;
+      // corrigeer activeLang als deze niet voorkomt in nieuw ds
+      const map = DB.data.get(ds);
+      if (map && !map.has(DB.activeLang)) {
+        DB.activeLang = [...map.keys()][0] || null;
+      }
+      saveLocal();
+      renderAll();
+    });
+    dsBar.appendChild(btn);
+  });
+  wrap.appendChild(dsBar);
+
+  // — Lang knoppen
+  const langBar = document.createElement('div');
+  langBar.className = 'tabs';
+  (langs.length ? langs : []).forEach(lang => {
+    const btn = document.createElement('button');
+    btn.textContent = `${DB.activeDataset}.${lang}`;
+    btn.className = (DB.activeLang === lang) ? 'active' : '';
+    btn.addEventListener('click', () => { DB.activeLang = lang; saveLocal(); renderAll(); });
+    langBar.appendChild(btn);
+  });
+  wrap.appendChild(langBar);
 }
 
 function renderMessages(){
@@ -218,11 +305,10 @@ function renderMessages(){
     inW.addEventListener('input', () => { msg.weight = parseInt(inW.value || '1', 10) || 1; saveLocal(); });
     tdW.appendChild(inW); tr.appendChild(tdW);
 
-    // hele rij aanklikbaar voor single-select gemak
+    // hele rij → single-select gemak
     tr.addEventListener('click', (e) => {
-      if (e.target.closest('input,textarea,select,button,label')) return; // niet togglen bij editen
+      if (e.target.closest('input,textarea,select,button,label')) return;
       cb.checked = !cb.checked;
-      // enforce single-select: zet andere uit als deze aan gaat
       if (cb.checked) {
         els.msgTableBody.querySelectorAll('input[type="checkbox"]').forEach(other => {
           if (other !== cb) other.checked = false;
@@ -234,7 +320,6 @@ function renderMessages(){
     els.msgTableBody.appendChild(tr);
   });
 
-  // na render: herteken rechterpaneel voor (nieuwe) selectie
   renderSentimentEditor();
 }
 
@@ -259,14 +344,13 @@ function renderSentimentEditor(){
     return;
   }
 
-  status.textContent = `Message: ${ids[0]}`;
+  status.textContent = `${DB.activeDataset}.${data.lang} → ${ids[0]}`;
   const msg = (data.messages || []).find(m => m.id === ids[0]);
   if (!msg) return;
 
   const all = data.sentiments || [];
   const selected = new Set(msg.sentiments || []);
 
-  // bouw checkbox-pills in rechterpaneel
   const box = document.createElement('div');
   box.className = 'chipset';
 
@@ -305,7 +389,6 @@ function addMessage(){
   saveLocal();
   renderMessages();
 }
-
 function deleteSelectedMessages(){
   const data = currentLangData(); if (!data) return;
   const ids = [...els.msgTableBody.querySelectorAll('input[type="checkbox"]:checked')].map(cb => cb.dataset.id);
@@ -338,7 +421,7 @@ function bindEvents(){
 
   els.searchBox.addEventListener('input', renderMessages);
 
-  // Theme toggle
+  // Dag/Nacht
   els.themeBtn.addEventListener('click', () => {
     const cur = document.documentElement.getAttribute('data-theme') || 'dark';
     const next = (cur === 'dark') ? 'light' : 'dark';
@@ -351,7 +434,7 @@ function bindEvents(){
    Init
    ========== */
 (function init(){
-  // theme restore
+  // Theme herstellen
   const theme = localStorage.getItem('adminTheme') || 'dark';
   document.documentElement.setAttribute('data-theme', theme);
 

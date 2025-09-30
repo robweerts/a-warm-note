@@ -90,6 +90,33 @@ function themeColors(theme){
   }
 }
 
+function applyTheme(pref /* 'auto' | 'dark' | 'light' */){
+  const root = document.documentElement;
+  const mqDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const dark = (pref === 'dark') || (pref === 'auto' && mqDark);
+  root.classList.toggle('theme-dark', !!dark);
+}
+
+function getSavedThemePref(){
+  try { return localStorage.getItem('awn_theme') || 'auto'; } catch { return 'auto'; }
+}
+
+function setThemePref(next){           // aanroepen als je later een toggle maakt
+  try { localStorage.setItem('awn_theme', next); } catch {}
+  applyTheme(next);
+}
+
+/* Volg systeemwijziging in 'auto' */
+(function watchSystemTheme(){
+  try {
+    const m = window.matchMedia('(prefers-color-scheme: dark)');
+    if (m && typeof m.addEventListener === 'function') {
+      m.addEventListener('change', () => {
+        if (getSavedThemePref() === 'auto') applyTheme('auto');
+      });
+    }
+  } catch {}
+})();
 /* [B] DOM CACHE & HELPERS --------------------------------------------------- */
 const $ = (id) => document.getElementById(id);
 
@@ -164,6 +191,7 @@ const STATE = {
 /* [D] INIT (lifecycle) ------------------------------------------------------ */
 
 function init() {
+setThemePref('auto')
   // 1) Taal & basis
   STATE.lang = resolveLang();
   document.documentElement.setAttribute('lang', STATE.lang);
@@ -172,11 +200,11 @@ function init() {
   if (typeof wireLanguagePicker === 'function') wireLanguagePicker();
   wireLangDropdown?.();
   renderLangDropdownUI?.();
-  if (window.StickyAvatar && els.coachAvatar) {
-  StickyAvatar.mount(els.coachAvatar);
-  StickyAvatar.setFromCoach('init'); // startstand
-  positionAvatarNearAbout();
-  }
+ // if (window.StickyAvatar && els.coachAvatar) {
+  //StickyAvatar.mount(els.coachAvatar);
+  //StickyAvatar.setFromCoach('init'); // startstand
+  //positionAvatarNearAbout();
+ // }
 
   // 2) Strings → Messages
   ensureStringsLoaded()
@@ -242,12 +270,22 @@ function init() {
         const n = Number(sharedId);
         if (!Number.isNaN(n)) msgIdx = n;
       }
-
-      if (msgIdx != null && msgIdx >= 0 && msgIdx < STATE.allMessages.length) {
-        renderMessage({ requestedIdx: msgIdx, wiggle: false });
-      } else {
-        renderMessage({ newRandom: true, wiggle: false });
-      }
+	 
+	 
+	 // ... binnen init() na het bepalen van msgIdx
+	 if (msgIdx != null && msgIdx >= 0 && msgIdx < STATE.allMessages.length) {
+  	 renderMessage({ requestedIdx: msgIdx, wiggle: false });
+  	 // ⬇︎ Toon de splash uitsluitend in de ontvangen-flow
+  	 if (sharedMid) {
+  // open de splash heel kort ná de render, zodat de DOM/body klaar is
+	  	setTimeout(() => {
+    	openNoteSplashSimple({ holdMs: 4800, force: false });
+  		}, 140);
+	 } else {
+  	 	renderMessage({ newRandom: true, wiggle: false });
+	 }
+}
+	 
 
 	  // 9) Coach-status bijwerken
 	  if (isReceivedByMid) {
@@ -590,13 +628,19 @@ function setupChipsAffordance(){
     const hasOverflow = row.scrollWidth > row.clientWidth + 4;
     wrap.classList.toggle("has-chevrons", hasOverflow);
 
-    if (!hasOverflow){
-      left.style.display = "none";
-      right.style.display = "none";
-      return;
-    }
-    left.style.display  = row.scrollLeft > 6 ? "grid" : "none";
-    right.style.display = (row.scrollLeft + row.clientWidth) < (row.scrollWidth - 6) ? "grid" : "none";
+	if (!hasOverflow){
+  		left.style.opacity = "0";  left.style.pointerEvents = "none";
+  		right.style.opacity = "0"; right.style.pointerEvents = "none";
+  	return;
+	}
+		const showL = row.scrollLeft > 6;
+		const showR = (row.scrollLeft + row.clientWidth) < (row.scrollWidth - 6);
+
+		left.style.opacity = showL ? "1" : "0";
+		left.style.pointerEvents = showL ? "auto" : "none";
+
+		right.style.opacity = showR ? "1" : "0";
+		right.style.pointerEvents = showR ? "auto" : "none";
   };
 
   row.addEventListener("scroll", throttle(updateChevrons, 80));
@@ -2118,119 +2162,256 @@ function wireGlobalUI(){
   });
 }
 /* -------------------------- A) SPLASH (overlay) -------------------------- */
-(function SplashLiveClone(){
-  // Settings
-  const MARGINS = { vw: 0.96, vh: 0.86 };
-  const LIMITS  = { min: 1.2, max: 3.0 };
-  const TIMES   = { hold: 5200, out: 1280 };
-  const AUTO_OPEN_ON_MID = true;               // auto-open aan
+/* ============================================================
+   QUICK SPLASH (lean) — geen clones, geen observers
+   - gebruikt bestaande helpers/DOM: getTo(), getFrom(), personalize(), els.msg/els.icon
+   - toont 1x kort icon + Voor/Van + body
+   ============================================================ */
 
-  const NOTE_SEL = [
-    '[data-note-root]', '.note', '.postit', '.note-card', '.noteRoot', 'article.note'
-  ];
+/** Neem een snapshot van de huidige note vanuit de bestaande UI/helpers. */
+function getCurrentNoteSnapshot(){
+  const to   = (typeof getTo   === 'function') ? getTo()   : '';
+  const from = (typeof getFrom === 'function') ? getFrom() : '';
 
-  // Helpers
-  const waitFonts = () =>
-    (document.fonts && document.fonts.ready) ? document.fonts.ready.catch(()=>{}) : Promise.resolve();
-  const pick = (root, sels) => { for (const s of sels){ const el=root.querySelector(s); if (el) return el; } return null; };
-  function findLiveNote(){ return pick(document, NOTE_SEL); }
-  function getMID(){
-    const qs = new URLSearchParams(location.search);
-    if (qs.get('mid')) return qs.get('mid');
-    const h = location.hash || '';
-    const m = /(?:[?#]|^)mid=([^&]+)/.exec(h);
-    if (m && m[1]) return decodeURIComponent(m[1]);
-    const p = location.pathname || '';
-    const mp = p.match(/\/(?:mid|m)\/([^/]+)/i);
-    if (mp && mp[1]) return decodeURIComponent(mp[1]);
-    return null;
+  // body: vanuit data-raw (bron) personaliseren; val terug op textContent
+  let raw = '';
+  if (els?.msg) {
+    raw = els.msg.getAttribute('data-raw') || els.msg.textContent || '';
   }
-  function computeScale(box){
-    const vw = innerWidth * MARGINS.vw;
-    const vh = innerHeight * MARGINS.vh;
-    const sx = vw / box.width;
-    const sy = vh / box.height;
-    let s = Math.min(sx, sy);
+  const body = (typeof personalize === 'function') ? personalize(raw) : raw;
+
+const icon =
+  (STATE?.allMessages?.[STATE.currentIdx]?.icon) ||
+  (els?.icon?.textContent || '💛');
+  
+  // Labels via je bestaande helpers (multilingual)
+  const toLabelTxt   = (typeof toLabel   === 'function') ? toLabel(to)     : (to ? `Voor ${to}` : '');
+  const fromLabelTxt = (typeof fromLabel === 'function') ? fromLabel(from) : (from ? `Van ${from}` : '');
+
+  return { to, from, toLabelTxt, fromLabelTxt, body, icon };
+}
+
+/** Zorg dat er precies één overlay host bestaat. */
+function ensureQuickSplashEl(){
+  let host = document.getElementById('quick-splash');
+  if (host) return host;
+
+  host = document.createElement('div');
+  host.id = 'quick-splash';
+  // Minimal inline styles zodat je geen extra CSS hoeft te wijzigen
+  Object.assign(host.style, {
+    position: 'fixed',
+    inset: '0',
+    display: 'grid',
+    placeItems: 'center',
+    zIndex: '9999',
+    background: 'transparent',      // géén donkere veil; voelt sneller
+    pointerEvents: 'none',           // overlay blokkeert niets
+    opacity: '0',
+    transition: 'opacity .22s ease'
+  });
+  document.body.appendChild(host);
+  return host;
+}
+
+/* === Minimal Note Splash (gebruikt CSS .splash-overlay / .splash-stage) === */
+
+function openNoteSplashSimple({ holdMs = 4800, force = false, stickUntilEsc = false } = {}) {
+  // Eén-keer-per-mid guard (tenzij force:true)
+  if (!force) {
+    const mid = new URLSearchParams(location.search).get('mid');
+    if (mid) {
+      const key = `splash_shown:${mid}`;
+      if (sessionStorage.getItem(key) === '1') return;
+      sessionStorage.setItem(key, '1');
+    }
+  }
+
+  // Als er al een overlay open staat: eerst weg
+  const existing = document.querySelector('.splash-overlay');
+  if (existing) {
+    try {
+      if (existing.__awnTimer) clearTimeout(existing.__awnTimer);
+      if (existing.__awnEsc) document.removeEventListener('keydown', existing.__awnEsc);
+    } catch {}
+    existing.remove();
+  }
+
+  // Vind de live note die we willen klonen (DIT ontbrak)
+  const liveNote = document.getElementById('note') || document.querySelector('.note');
+  if (!liveNote) return;
+
+  // Snapshot uit bestaande UI/helpers
+  const snap = (typeof getCurrentNoteSnapshot === 'function') ? getCurrentNoteSnapshot() : {
+    to: '', from: '', toLabelTxt: '', fromLabelTxt: '',
+    body: (document.getElementById('message')?.textContent || ''),
+    icon: (document.getElementById('iconline')?.textContent || '💛')
+  };
+
+  // Overlay + stage (haakt in op je CSS)
+  const overlay = document.createElement('div');
+  overlay.className = 'splash-overlay is-live';
+  const stage = document.createElement('div');
+  stage.className = 'splash-stage';
+  overlay.appendChild(stage);
+  document.body.appendChild(overlay);
+
+  // Deep clone van live note
+  const clone = liveNote.cloneNode(true);
+  clone.classList.add('note--splash');
+  stage.appendChild(clone);
+
+  // Hydrateer clone met actuele content
+  const cMsg  = clone.querySelector('#message')  || clone.querySelector('.message,[data-message]');
+  const cIcon = clone.querySelector('#iconline') || clone.querySelector('.iconline,[data-icon]');
+  const cTo   = clone.querySelector('#toline')   || clone.querySelector('.toline,[data-to]');
+  const cFrom = clone.querySelector('#fromline') || clone.querySelector('.fromline,[data-from]');
+  if (cMsg)  { cMsg.textContent  = snap.body || ''; cMsg.removeAttribute('data-raw'); }
+  if (cIcon) { cIcon.textContent = snap.icon || '💛'; }
+  if (cTo)   { cTo.textContent   = snap.toLabelTxt   || ''; }
+  if (cFrom) { cFrom.textContent = snap.fromLabelTxt || ''; }
+
+  // Scale passend maken
+  requestAnimationFrame(() => {
+    const r  = clone.getBoundingClientRect();
+    const vw = window.innerWidth  * 0.96;
+    const vh = window.innerHeight * 0.86;
+    let s = Math.min(vw / Math.max(1, r.width), vh / Math.max(1, r.height));
     if (!isFinite(s) || s <= 0) s = 1;
-    if (s < LIMITS.min) s = LIMITS.min;
-    if (s > LIMITS.max) s = LIMITS.max;
-    return s;
-  }
-  function makeOverlay(){
-    const old = document.querySelector('.splash-overlay');
-    if (old) old.remove();
-    const overlay = document.createElement('div');
-    overlay.className = 'splash-overlay';
-    const stage = document.createElement('div');
-    stage.className = 'splash-stage';
-    overlay.appendChild(stage);
-    document.body.appendChild(overlay);
-    return { overlay, stage };
-  }
+    if (s < 1.05) s = 1.05;
+    if (s > 3.0)  s = 3.0;
+    stage.style.setProperty('--splash-scale', String(s));
+    overlay.classList.add('is-in');
+  });
 
-  async function showSplash(){
-    await waitFonts();
-    const live = findLiveNote();
-    if (!live){ console.warn('[splash] geen live note gevonden'); return; }
-
-    const clone = live.cloneNode(true);                // 1:1 deep clone (alles mee)
-    const { overlay, stage } = makeOverlay();
-    stage.appendChild(clone);
-
-    requestAnimationFrame(()=>{
-      const rect = (stage.firstElementChild || stage).getBoundingClientRect();
-      stage.style.setProperty('--splash-scale', String(computeScale(rect)));
-      overlay.classList.add('is-in');
+  // Expand in splash laten werken
+  const bindExpand = (root) => {
+    const btn = root.querySelector('#btn-expand, .btn-expand, [data-action="expand"], [data-expand], [data-action="expand-note"]');
+    if (!btn) return;
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      clone.classList.toggle('expanded');
+      clone.classList.toggle('note--expanded');
     });
+  };
+  bindExpand(clone);
 
-    // sluiters (klik buiten / ESC / automatische hold)
-    const close = ()=>{
-      overlay.classList.remove('is-in');
-      setTimeout(()=> overlay.remove(), TIMES.out);
-      document.removeEventListener('keydown', onEsc, true);
-      window.removeEventListener('resize', onResize, true);
-    };
-    const onEsc = e => { if (e.key === 'Escape') close(); };
-    const onResize = ()=>{
-      const rect = (stage.firstElementChild || stage).getBoundingClientRect();
-      stage.style.setProperty('--splash-scale', String(computeScale(rect)));
-    };
+  // Sluiten
+  const close = () => closeNoteSplashSimple();
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+  const onEsc = (e) => { if (e.key === 'Escape') close(); };
+  document.addEventListener('keydown', onEsc, { once: !stickUntilEsc }); // bij stickUntilEsc mag je vaker ESC'en
+  overlay.__awnEsc = onEsc;
 
-    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
-    document.addEventListener('keydown', onEsc, true);
-    window.addEventListener('resize', onResize, true);
-    setTimeout(close, TIMES.hold);
+  // Auto-close timer (uit als stickUntilEsc true is)
+  if (!stickUntilEsc && holdMs > 0) {
+    overlay.__awnTimer = setTimeout(close, holdMs);
+  }
+}
+
+function closeNoteSplashSimple() {
+  const overlay = document.querySelector('.splash-overlay');
+  if (!overlay) return;
+  if (overlay.__awnTimer) { clearTimeout(overlay.__awnTimer); overlay.__awnTimer = null; }
+  if (overlay.__awnEsc)    { document.removeEventListener('keydown', overlay.__awnEsc); overlay.__awnEsc = null; }
+  overlay.classList.remove('is-in');
+  // wacht op CSS transition (zelfde timing als jouw CSS; hier ~220–280ms oké)
+  setTimeout(() => overlay.remove(), 280);
+}
+/** Render de splash-content in de host. */
+function renderQuickSplashContent(host, snap){
+  // klein, subtiel kaartje; alleen tekst/icon, geen inputs
+  const card = document.createElement('div');
+  Object.assign(card.style, {
+    maxWidth: 'min(92vw, 560px)',
+    width: 'auto',
+    borderRadius: '16px',
+    padding: '14px 16px',
+    boxShadow: '0 6px 24px rgba(0,0,0,.14)',
+    background: 'rgba(255,255,255,.92)',
+    backdropFilter: 'blur(4px)',
+    WebkitBackdropFilter: 'blur(4px)',
+    transform: 'translateY(8px)',
+    transition: 'transform .24s cubic-bezier(.2,.8,.2,1)',
+    pointerEvents: 'auto' // voor toegankelijkheid (selecteerbaar), maar host blijft non-blocking
+  });
+
+  const icon = document.createElement('div');
+  icon.textContent = snap.icon || '💛';
+  Object.assign(icon.style, { fontSize: '24px', lineHeight: '1', marginBottom: '6px' });
+
+  const lines = document.createElement('div');
+  Object.assign(lines.style, { fontSize: '14px', opacity: '.9', marginBottom: '6px' });
+  lines.innerHTML = [
+    snap.toLabelTxt   ? `<div>${snap.toLabelTxt}</div>`     : '',
+    snap.fromLabelTxt ? `<div>${snap.fromLabelTxt}</div>`   : ''
+  ].join('');
+
+  const body = document.createElement('div');
+  body.textContent = snap.body || '';
+  Object.assign(body.style, {
+    fontSize: '16px',
+    lineHeight: '1.35',
+    whiteSpace: 'pre-wrap'
+  });
+
+  card.appendChild(icon);
+  if (lines.innerHTML.trim()) card.appendChild(lines);
+  card.appendChild(body);
+
+  host.innerHTML = '';
+  host.appendChild(card);
+
+  // kleine pop-in
+  requestAnimationFrame(()=> { card.style.transform = 'translateY(0)'; });
+}
+
+/**
+ * Toon de splash 1x kort. 
+ * @param {object} snap – uit getCurrentNoteSnapshot()
+ * @param {object} opts – { hold: ms, sessionKey: string }
+ */
+function showQuickSplash(snap, opts = {}){
+  const { hold = 13600, sessionKey = null } = opts;
+
+  // Session guard (optioneel, maar handig bij deeplink):
+  if (sessionKey) {
+    try {
+      if (sessionStorage.getItem(sessionKey) === '1') return;
+      sessionStorage.setItem(sessionKey, '1');
+    } catch {}
   }
 
-  // Publiek voor ⤢
-  window.openNoteSplash = showSplash;
+  // Als er geen body is, heeft het weinig zin.
+  if (!snap || !snap.body || !snap.body.trim()) return;
 
-  // Auto-open bij ?mid=… (precies 1× per sessie/tab)
-  function maybeAutoOpenOnce(){
-    if (!AUTO_OPEN_ON_MID) return;
-    const mid = getMID();
-    if (!mid) return;
-    const key = `splashShown:${mid}`;
-    if (sessionStorage.getItem(key)) return;   // al getoond in deze tab
+  const host = ensureQuickSplashEl();
+  renderQuickSplashContent(host, snap);
 
-    Promise.resolve()
-      .then(waitFonts)
-      .then(()=> new Promise(r => setTimeout(r, 120))) // rustmomentje voor render
-      .then(()=>{
-        const live = findLiveNote();
-        if (!live) return;
-        showSplash();
-        sessionStorage.setItem(key, '1');
-      })
-      .catch(()=>{ /* stil falen */ });
-  }
+  // Fade-in
+  requestAnimationFrame(()=> { host.style.opacity = '1'; });
 
-  if (document.readyState === 'loading'){
-    document.addEventListener('DOMContentLoaded', maybeAutoOpenOnce, { once:true });
-  } else {
-    maybeAutoOpenOnce();
-  }
-})();
+  // Na hold → fade-out + cleanup
+  const fade = () => {
+    host.style.opacity = '0';
+    setTimeout(() => {
+      // Je mag de node laten hangen en hergebruiken; hier leegmaken:
+      host.innerHTML = '';
+    }, 260);
+  };
+  setTimeout(fade, Math.max(400, hold)); // minimaal 400ms zodat het niet flitst
+}
+
+/** Handige hulpfunctie: roep dit aan NA je eerste render bij ontvangen deeplink. */
+function quickSplashMaybeForReceived(sharedMid){
+  // alleen bij echte ontvangen-flow
+  if (!sharedMid) return;
+  // snapshot ná render (je hebt dan data-raw/body/icon)
+  const snap = getCurrentNoteSnapshot();
+  // session key per mid, zodat hij 1x per deeplink toont
+  const key  = `qs:${sharedMid}`;
+  showQuickSplash(snap, { hold: 1200, sessionKey: key });
+}
 
 /* --------------------- B) BUTTONS (expand + about) ---------------------- */
 (function WireExpandAndAbout(){
@@ -2301,9 +2482,9 @@ function wireGlobalUI(){
     const expand = document.querySelector(EXPAND_SEL);
     if (expand && !expand.dataset.wired){
       expand.dataset.wired = '1';
-      expand.addEventListener('click', ()=> {
-        if (typeof window.openNoteSplash === 'function') openNoteSplash();
-      });
+	expand.addEventListener('click', () => {
+  		openNoteSplashSimple({ holdMs: 4800, force: true });
+	});
     }
     const about = document.getElementById(ABOUT_FAB_ID);
     if (about && !about.dataset.wired){
@@ -2335,7 +2516,7 @@ function wireGlobalUI(){
   if (!(isCoarse || isSmall)) { el.classList.add('is-hide'); return; }
 
   // Minimum toontijd zodat het niet flitst
-  const MIN_SHOW = 600; // ms — pas aan naar smaak (bijv. 800–1200)
+  const MIN_SHOW = 800; // ms — pas aan naar smaak (bijv. 800–1200)
   const t0 = performance.now();
   let canSkip = false, hidden = false;
 

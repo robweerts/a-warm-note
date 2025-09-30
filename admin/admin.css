@@ -127,3 +127,14 @@ td textarea { min-height: 15px; resize: vertical; line-height: 1.4; }
 
 /* Status */
 .statusbar { padding: 10px 16px; border-top: 1px solid var(--border); color: var(--muted); }
+
+/* tabs */
+.tabs{ display:flex; gap:.5rem; padding:.5rem 0; flex-wrap:wrap; }
+.tabs .tab, .tabs button{ padding:.4rem .7rem; border-radius:8px; border:1px solid #ddd; background:#f7f7f8; cursor:pointer; }
+.tabs .active{ background:#111; color:#fff; border-color:#111; }
+
+/* list */
+.list-header{ font-weight:600; background:#f2f2f5; }
+.list-row{ display:grid; grid-template-columns: 36px 160px 80px 1fr 240px 60px; gap:.5rem; align-items:start; padding:.4rem; border-bottom:1px solid #eee; }
+.list-row input[type="text"], .list-row input[type="number"], .list-row textarea{ width:100%; box-sizing:border-box; font:inherit; padding:.35rem .5rem; }
+.col--text textarea{ min-height:52px; }
