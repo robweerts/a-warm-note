@@ -734,50 +734,51 @@ function setPaperLook(){
   els.note.style.transform  = `rotate(${(Math.random()*4-2).toFixed(2)}deg)`;
 }
 
-function renderMessage({ newRandom=false, requestedIdx=null, wiggle=false } = {}){
-  let idx = (typeof opts.requestedIdx === 'number') ? opts.requestedIdx : STATE.currentIdx;
-
-  // Als er een msg is meegegeven, probeer index via id te bepalen
-  if ((idx == null || idx < 0 || idx >= STATE.allMessages.length) && opts.msg && opts.msg.id != null) {
-    const found = STATE.allMessages.findIndex(m => m && m.id === opts.msg.id);
-    if (found >= 0) idx = found;
-  }
-
-  // Clamp index naar geldige range
-  if (idx == null || !Number.isInteger(idx)) idx = 0;
-  if (idx < 0) idx = 0;
-  if (idx >= STATE.allMessages.length) idx = STATE.allMessages.length - 1;
-
-  // Pak de message; abort als er nog steeds niets is
-  const msg = STATE.allMessages[idx];
-  if (!msg) {
-    console.warn('renderMessage: geen message voor idx=', idx, ' lijstlengte=', STATE.allMessages.length);
-    return; // zacht falen
-  }
-
-  // Bewaar de gekozen index
-  STATE.currentIdx = idx;
-  
-  // --- GUARD: oversla initiele auto-render zolang welcome-lock actief is ---
+function renderMessage({ newRandom = false, requestedIdx = null, wiggle = false, msg = null } = {}) {
+  // 0) Guard tegen welcome-lock (jouw bestaande logic)
   const now = (window.performance?.now?.() || Date.now());
-  if (window._awnWelcomeGuardUntil && now < window._awnWelcomeGuardUntil) {
+  if (window._awnWelcomeGuardUntil && now < window._awnWelcomeGuardUntil) return;
+
+  // 1) Basislijst en leegte-check
+  const list = Array.isArray(STATE.allMessages) ? STATE.allMessages : [];
+  if (list.length === 0) {
+    console.warn('renderMessage: geen messages beschikbaar.');
     return;
   }
-  let idx = STATE.currentIdx;
-  // 1) Direct aangevraagde index krijgt voorrang
-  if (requestedIdx != null) {
-    idx = requestedIdx;
+
+  // 2) Doel-index bepalen (nooit "idx" redeclareren)
+  let targetIdx = STATE.currentIdx;
+
+  // 2a) requested index heeft voorrang
+  if (typeof requestedIdx === 'number') {
+    targetIdx = requestedIdx;
   }
-  // 2) Nieuwe random (of nog geen index) → gewogen selectie
-  else if (newRandom || idx == null) {
+
+  // 2b) als msg-object meegegeven is, bepaal index (eerst via id, dan via referentie)
+  if ((targetIdx == null || targetIdx < 0 || targetIdx >= list.length) && msg) {
+    let byId = -1;
+    if (msg.id != null) {
+      byId = list.findIndex(m => m && m.id === msg.id);
+    }
+    if (byId >= 0) {
+      targetIdx = byId;
+    } else {
+      // laatste redmiddel: referentie-vergelijking (werkt als deck uit dezelfde lijst komt)
+      const byRef = list.indexOf(msg);
+      if (byRef >= 0) targetIdx = byRef;
+    }
+  }
+
+  // 2c) newRandom of nog geen geldige index → kies uit (gefilterde) pool
+  if (newRandom || targetIdx == null || targetIdx < 0 || targetIdx >= list.length) {
     // begin met hele lijst
-    let pool = STATE.allMessages;
+    let pool = list;
 
     // actieve sentiment-filter respecteren (alleen toepassen als er resultaten zijn)
     if (STATE.activeSentiment) {
       const s = STATE.activeSentiment;
       const filtered = pool.filter(m => Array.isArray(m.sentiments) && m.sentiments.includes(s));
-      if (filtered.length) pool = filtered;
+      if (filtered.length > 0) pool = filtered;
     }
 
     // kies gewogen index binnen pool
@@ -785,45 +786,69 @@ function renderMessage({ newRandom=false, requestedIdx=null, wiggle=false } = {}
     if (typeof pickWeightedIndex === 'function') {
       localIdx = pickWeightedIndex(pool);
     }
-    // fallback: normale random als helper ontbreekt of niets teruggeeft
+    // fallback: normale random
     if (localIdx == null) {
       localIdx = Math.floor(Math.random() * Math.max(pool.length, 1));
     }
 
-    // map terug naar globale index
+    // map terug naar globale index — liever via id als beschikbaar
     const chosen = pool[localIdx];
-    idx = STATE.allMessages.indexOf(chosen);
-    if (idx < 0) idx = localIdx; // defensieve fallback (zou zelden gebeuren)
+    if (chosen && chosen.id != null) {
+      const globalById = list.findIndex(m => m && m.id === chosen.id);
+      targetIdx = (globalById >= 0) ? globalById : list.indexOf(chosen);
+    } else {
+      targetIdx = list.indexOf(chosen);
+    }
+
+    if (targetIdx < 0) targetIdx = 0; // defensieve fallback
   }
 
-  // 4) State + recent bijwerken
-  STATE.currentIdx = idx;
-  bumpRecent(idx);
+  // 3) Clamp naar geldige range
+  if (!Number.isInteger(targetIdx)) targetIdx = 0;
+  if (targetIdx < 0) targetIdx = 0;
+  if (targetIdx >= list.length) targetIdx = list.length - 1;
 
-  const { icon, text, sentiments } = STATE.allMessages[idx];
+  // 4) Pak de message; zacht falen als er echt niets is
+  const cur = list[targetIdx];
+  if (!cur) {
+    console.warn('renderMessage: geen message voor index', targetIdx, '(len=', list.length, ')');
+    return;
+  }
 
-  // 5) Animatie + invullen (altijd from raw-template personaliseren)
+  // 5) State bijwerken en recent markeren
+  STATE.currentIdx = targetIdx;
+  if (typeof bumpRecent === 'function') {
+    try { bumpRecent(targetIdx); } catch(e){ /* stil falen */ }
+  }
+
+  // 6) UI vullen + animatie
+  const icon = cur.icon || "";
+  const text = typeof cur.text === 'string' ? cur.text : '';
+  const sentiments = cur.sentiments || [];
+
   if (els.msg && els.icon){
-    els.msg.style.opacity = 0; 
+    els.msg.style.opacity = 0;
     els.icon.style.opacity = 0;
-    const raw = (typeof text === 'string') ? text : '';
-    els.msg.setAttribute('data-raw', raw);
+
+    // raw bewaren voor correcte her-personalisatie
+    els.msg.setAttribute('data-raw', text);
+
     setTimeout(()=>{
-      // Her-personaliseren vanaf bron (fix voor Ria → Truus usecase)
-      const base = els.msg.getAttribute('data-raw') || raw || '';
-      els.msg.textContent  = personalize(base);
-      els.icon.textContent = icon || "";
-      els.msg.style.opacity = 1; 
+      const base = els.msg.getAttribute('data-raw') || text || '';
+      els.msg.textContent  = (typeof personalize === 'function') ? personalize(base) : base;
+      els.icon.textContent = icon;
+      els.msg.style.opacity = 1;
       els.icon.style.opacity = 1;
     }, 90);
   }
-  if (window.ensureNoteFits) window.ensureNoteFits();
-  // 6) rest van de UI
-  if (els.note) setPaperLook();
-  renderToFrom();
-  renderFromSymbol((sentiments && sentiments[0]) || STATE.activeSentiment || null);
 
-  if (wiggle && !prefersReducedMotion() && els.note){
+  if (typeof window.ensureNoteFits === 'function') window.ensureNoteFits();
+  if (els.note) setPaperLook?.();
+
+  renderToFrom?.();
+  renderFromSymbol?.((sentiments && sentiments[0]) || STATE.activeSentiment || null);
+
+  if (wiggle && !prefersReducedMotion?.() && els.note){
     els.note.animate(
       [
         { transform: 'rotate(-2deg)' },
@@ -833,7 +858,43 @@ function renderMessage({ newRandom=false, requestedIdx=null, wiggle=false } = {}
       { duration: 350, easing: 'cubic-bezier(.2,.8,.2,1)' }
     );
   }
-} 
+}
+
+// --- Filtering op basis van jouw STATE (app-specifiek) ---
+function buildDeckFromState() {
+  const all = Array.isArray(STATE.allMessages) ? STATE.allMessages : [];
+  let list = all;
+
+  // Special day filter
+  if (STATE.filterSpecialDay) {
+    list = list.filter(m => m.special_day === STATE.filterSpecialDay);
+  }
+  // Sentiment filter (jouw data: array 'sentiments')
+  if (STATE.activeSentiment) {
+    const s = STATE.activeSentiment;
+    const f = list.filter(m => Array.isArray(m.sentiments) && m.sentiments.includes(s));
+    if (f.length) list = f;
+  }
+  return list.slice();
+}
+
+// Optioneel: preferred (bv. mid) altijd vooraan
+function buildDeckWithPreferred(firstMsg){
+  const deck = buildDeckFromState();
+  if (!firstMsg) return deck;
+  const hasId = firstMsg?.id != null;
+  const exists = hasId ? deck.some(m => m?.id === firstMsg.id) : deck.includes(firstMsg);
+  return exists
+    ? [firstMsg, ...deck.filter(m => hasId ? m.id !== firstMsg.id : m !== firstMsg)]
+    : [firstMsg, ...deck];
+}
+
+function buildDeckFromState() {
+  return AWNDeck.utils.filterList(STATE.allMessages, {
+    sentiment: STATE.activeSentiment,
+    specialKey: STATE.filterSpecialDay
+  });
+}
 
 // Context wissel (bij kiezen van sentiment):
 function onSentimentChosen(lang, sentiment){
@@ -851,7 +912,7 @@ const detachNavUI = AWNDeck.UI.attachNav({
     const idx = STATE.allMessages.findIndex(m => m.id === msg.id);
     if (idx >= 0) {
       STATE.currentIdx = idx;
-      renderMessage({ requestedIdx: idx, wiggle: false });
+      renderMessage({ msg });
     }
   },
   // optioneel: andere selectors:
@@ -917,17 +978,19 @@ el.addEventListener("touchend", ()=>{
   active = false;
   if (Math.abs(dx) > 20 && Math.abs(dx) > Math.abs(dy)) {
     // Zorg dat er een navigator is
-    if (!NAV) onSentimentChosen(STATE.lang, STATE.activeSentiment || null);
-    if (!NAV) return;
-    // Links = volgende, rechts = vorige
-    const msg = (dx < 0) ? NAV.next() : NAV.prev();
-    if (msg) {
-      const idx = STATE.allMessages.findIndex(m => m.id === msg.id);
-      if (idx >= 0) {
-        STATE.currentIdx = idx;
-        renderMessage({ requestedIdx: idx, wiggle: false });
-      }
-    }
+// binnen touchend:
+if (!NAV) onSentimentChosen(STATE.lang, STATE.activeSentiment || null);
+if (!NAV) return;
+
+const nextMsg = (dx < 0) ? NAV.next() : NAV.prev();
+if (nextMsg) {
+  const idx = STATE.allMessages.findIndex(m => m && m.id === nextMsg.id);
+  if (idx >= 0) {
+    renderMessage({ requestedIdx: idx, wiggle: false, msg: nextMsg });
+  } else {
+    renderMessage({ msg: nextMsg });
+  }
+}
   }
 }, {passive:true});
 
@@ -2636,18 +2699,20 @@ let NAV = null;
 
 function onSentimentChosen(lang, sentiment){
   STATE.lang = lang || STATE.lang;
-  STATE.activeSentiment = sentiment ?? STATE.activeSentiment;
+  STATE.activeSentiment = (sentiment == null ? null : sentiment);
 
-  const deck = buildDeckFromState(); // gefilterde lijst
+  // Bouw deck op basis van je huidige filters
+  const deck = buildDeckFromState();
   NAV = window.AWNDeck.createNavigator({ lang: STATE.lang, sentiment: STATE.activeSentiment || 'all', deck });
 
-  const first = NAV.next(); // pakt eerste (en markeert)
+  const first = NAV.next(); // kan null zijn
   if (first) {
-    // Zorg dat STATE.currentIdx correct wijst (nodig voor share/deeplink)
-    const idx = STATE.allMessages.indexOf(first);
-    if (idx >= 0) STATE.currentIdx = idx;
-    // Render met jouw bestaande renderer
-    renderMessage({ requestedIdx: idx, wiggle: false });
+    const idx = STATE.allMessages.findIndex(m => m && m.id === first.id);
+    if (idx >= 0) {
+      renderMessage({ requestedIdx: idx, wiggle: false, msg: first });
+    } else {
+      renderMessage({ msg: first });
+    }
   }
 }
 
@@ -2678,6 +2743,14 @@ document.querySelector('[data-btn-next]')?.addEventListener('click', handleNext)
 function onMessageShown(msg){
   window.AWNDeck.markShown([msg.id]);
 }
+
+AWNDeck.UI.attachNav({
+  prevSelector: '[data-nav="prev"]',
+  nextSelector: '[data-nav="next"]',
+  swipeSelector: '#note',
+  getNav: ()=> NAV,
+  render: (msg)=> msg && renderMessage({ msg, wiggle:false })
+});
 
 /* ========================================================================
    DEBUG HARNESS — NIET PRODUCTIE, HELPT ZIEN WAT ER WEL/NIET TRIGGERT

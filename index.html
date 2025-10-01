@@ -67,7 +67,7 @@
 <button data-action="expand-note" id="btn-expand" class="btn" type="button" aria-label="Vergroot">⤢</button>
   </header>
   
-  <!-- Mobile boot intro (mobile-only via CSS) 
+  <!-- Mobile boot intro (mobile-only via CSS) -->
 <div id="intro-boot" class="intro-boot" aria-live="polite" aria-label="App wordt geladen" role="status">
   <div class="intro-boot__center">
 	<div class="intro-boot__logo" aria-hidden="true">
@@ -78,7 +78,6 @@
     <div class="intro-boot__spinner" aria-hidden="true"></div>
   </div>
 </div>
--->
 
   <!-- =================== APP =================== -->
   <main class="page" role="main">
@@ -87,25 +86,30 @@
       <div id="chip-row" class="chip-row" role="tablist" aria-label="Gevoelsfilters"></div>
     </section>
 
-    <!-- Note -->
-    <section class="note-wrap" aria-labelledby="note-title">
-      <h2 id="note-title" class="vh">Jouw warme note</h2>
-      <div id="note" class="note" role="region" aria-label="Notitie met boodschap">
-        <div class="tape tape--tl"></div>
-        <div class="tape tape--tr"></div>
-        <div id="toline"></div>
-        <p id="message" class="message"></p>
-        <div id="iconline"></div>
-        <div class="from-wrap">
-          <div id="from-symbol" aria-hidden="true"></div>
-          <div id="fromline"></div>
-        </div>
-      </div>
-    <div class="nav-ctl">
-  		<button type="button" data-btn-prev aria-label="Vorige">‹ Vorige</button>
-  		<button type="button" data-btn-next aria-label="Volgende">Volgende ›</button>
-	</div>
-    </section>
+<!-- Note -->
+<section class="note-wrap" aria-labelledby="note-title">
+  <h2 id="note-title" class="vh">Jouw warme note</h2>
+
+  <div id="note" class="note" role="region" aria-label="Notitie met boodschap">
+    <div class="tape tape--tl"></div>
+    <div class="tape tape--tr"></div>
+    <div id="toline"></div>
+    <p id="message" class="message"></p>
+    <div id="iconline"></div>
+    <div class="from-wrap">
+      <div id="from-symbol" aria-hidden="true"></div>
+      <div id="fromline"></div>
+    </div>
+  </div>
+  <div class="nav-ctl">
+    <button type="button" class="nav-btn nav-btn--prev" data-btn-prev aria-label="Vorige">
+      <span class="sr-only">Vorige</span>
+    </button>
+    <button type="button" class="nav-btn nav-btn--next" data-btn-next aria-label="Volgende">
+      <span class="sr-only">Volgende</span>
+    </button>
+  </div>
+</section>
 
     <!-- Compose -->
     <section id="compose-strip" class="compose" aria-label="Personaliseer">

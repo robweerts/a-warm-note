@@ -1,4 +1,10 @@
-/*! awn.deck.js — Deck builder + weighted order + history navigator (v1.0.1) */
+/*! awn.deck.js — Deck builder + weighted order + history navigator (v1.0.3)
+ *  Fixes:
+ *    - Geen 'Cannot access API before initialization' meer (UI/utils vóór API, geen losse API-assignments)
+ *    - msgKey(): stabiele sleutel voor items zonder id (history werkt door)
+ *    - markShown alleen bij echte msg.id
+ *    - UI-helpers en optionele utils.filterList opgenomen via API literal
+ */
 ;(function(global){
   'use strict';
 
@@ -8,7 +14,6 @@
   const HIST_PREFIX = 'awn_hist_'; // per lang+sentiment key in sessionStorage
 
   // ========================= [CONFIG] =========================
-  // Pas desgewenst aan
   const DEFAULTS = {
     weightDefault: 1,
     includePinnedFirst: true,
@@ -79,7 +84,7 @@
     let w = Number(msg.weight ?? DEFAULTS.weightDefault);
     // Voorbeeld-boosts (pas aan naar tags indien aanwezig)
     const m = today.getMonth()+1, d = today.getDate();
-    if ((m===2 && d===14) && /valent/i.test(msg.text||'')) w *= 2.0;     // Valentijn
+    if ((m===2 && d===14) && /valent/i.test(msg.text||'')) w *= 2.0;       // Valentijn
     if ((m===12 && d===31) && /(nieuw|year)/i.test(msg.text||'')) w *= 1.5; // Oud & Nieuw
     return Math.max(0, w);
   }
@@ -143,6 +148,14 @@
     return enforced.slice(0, limit);
   }
 
+  // ========================= [MESSAGE KEY HELPERS] =========================
+  // Stabiele sleutel voor history/vergelijking, ook als 'id' ontbreekt.
+  function msgKey(m, fallbackIndex = 0){
+    if (!m || typeof m !== 'object') return `__nil__${fallbackIndex}`;
+    // Voorkeur: bekende id-achtige velden; anders index-based fallback
+    return (m.id ?? m.mid ?? m._id ?? m.key ?? `__idx_${fallbackIndex}`);
+  }
+
   // ========================= [HISTORY NAVIGATOR] =========================
   /**
    * HistoryNavigator bewaart een “trail” van bekeken messages,
@@ -168,6 +181,7 @@
     const api = {
       lang, sentiment,
       deck: Array.isArray(deck) ? deck.slice() : [],
+      deckKeys: Array.isArray(deck) ? deck.map((m,i)=> msgKey(m,i)) : [],
       state,
 
       hasPrev(){ return this.state.idx > 0; },
@@ -193,9 +207,14 @@
           saveHistory(this.lang, this.sentiment, this.state);
           return this.current();
         }
-        // Geen volgende → pak uit deck (volgende onbeziene)
-        const currIds = new Set(this.state.stack.map(m => m.id));
-        const nextMsg = this.deck.find(m => !currIds.has(m.id)) || this.deck[0] || null;
+        // Zoek eerste deck-item dat nog NIET in history zit (op key-niveau)
+        const currKeys = new Set(this.state.stack.map((m,i)=> msgKey(m,i)));
+        let nextMsg = null;
+        for (let i=0; i<this.deck.length; i++){
+          const k = this.deckKeys[i] ?? msgKey(this.deck[i], i);
+          if (!currKeys.has(k)) { nextMsg = this.deck[i]; break; }
+        }
+        if (!nextMsg) nextMsg = this.deck[0] || null; // fallback
         if (nextMsg) this.push(nextMsg, {mark:true, advance:true});
         return this.current();
       },
@@ -210,6 +229,7 @@
         this.state.stack.push(msg);
         if (advance) this.state.idx = this.state.stack.length-1;
         saveHistory(this.lang, this.sentiment, this.state);
+        // Alleen recency markeren als er een echte id is
         if (mark && msg.id != null) markShown([msg.id]);
         return this.current();
       },
@@ -217,6 +237,7 @@
       // Reset (bijv. sentiment/lang wissel)
       resetWithDeck(newDeck){
         this.deck = Array.isArray(newDeck) ? newDeck.slice() : [];
+        this.deckKeys = Array.isArray(newDeck) ? newDeck.map((m,i)=> msgKey(m,i)) : [];
         this.state.stack = [];
         this.state.idx = -1;
         saveHistory(this.lang, this.sentiment, this.state);
@@ -242,10 +263,10 @@
 
   function bindSwipe({ container, getNav, render, threshold=40, maxOffAxis=60 }) {
     if (!container) return { unbind(){ } };
-    let startX=0, startY=0, active=false;
-    const onStart = (e)=>{ const t=e.changedTouches[0]; startX=t.clientX; startY=t.clientY; active=true; };
-    const onEnd   = (e)=>{ if(!active) return; active=false;
-      const t=e.changedTouches[0]; const dx=t.clientX-startX; const dy=t.clientY-startY;
+    let startX=0, startY=0, active=false, dx=0, dy=0;
+    const onStart = (e)=>{ const t=e.changedTouches[0]; startX=t.clientX; startY=t.clientY; active=true; dx=0; dy=0; };
+    const onMove  = (e)=>{ if (!active) return; const t=e.changedTouches[0]; dx=t.clientX-startX; dy=t.clientY-startY; };
+    const onEnd   = ()=>{ if(!active) return; active=false;
       if (Math.abs(dx)>threshold && Math.abs(dy)<maxOffAxis){
         const nav = getNav(); if (!nav) return;
         const m = (dx<0) ? nav.next() : nav.prev();
@@ -253,9 +274,11 @@
       }
     };
     container.addEventListener('touchstart', onStart, {passive:true});
+    container.addEventListener('touchmove',  onMove,  {passive:true});
     container.addEventListener('touchend',   onEnd,   {passive:true});
     return { unbind(){
       container.removeEventListener('touchstart', onStart);
+      container.removeEventListener('touchmove',  onMove);
       container.removeEventListener('touchend',   onEnd);
     }};
   }
@@ -281,6 +304,15 @@
     }
   };
 
+  // ========================= [OPTIONELE GENERIEKE UTILS] =========================
+  // Stateless filter helper (geen kennis van jouw STATE)
+  function filterList(list, { sentiment, specialKey, sentimentField='sentiments', specialField='special_day' } = {}) {
+    let out = Array.isArray(list) ? list.slice() : [];
+    if (specialKey) out = out.filter(m => m && m[specialField] === specialKey);
+    if (sentiment)  out = out.filter(m => Array.isArray(m?.[sentimentField]) && m[sentimentField].includes(sentiment));
+    return out;
+  }
+
   // ========================= [PUBLIC API] =========================
   const API = {
     // Optioneel: set defaults (nu niet gebruikt, maar handig)
@@ -288,7 +320,7 @@
       Object.assign(DEFAULTS, opts||{});
     },
 
-    // Bouw deck voor UI
+    // Bouw deck voor UI (met dagelijkse seed; optioneel te gebruiken in jouw eigen build)
     buildDeckFor({messagesByLang, lang, sentiment, limit}){
       const seed = dailySeed({lang, sentiment});
       const all = (messagesByLang && messagesByLang[lang]) ? messagesByLang[lang] : [];
@@ -303,8 +335,9 @@
     // Exporteer nuttige helpers
     markShown,
     dailySeed,
-    weightedShuffle, // indien je zelf experimenteert
-    UI,              // UI helpers: attachNav(), bindPrevNext(), bindSwipe()
+    weightedShuffle,
+    UI, // UI helpers: attachNav(), bindPrevNext(), bindSwipe()
+    utils: { filterList }, // optioneel te gebruiken vanuit je script.js
   };
 
   // Attach to window
