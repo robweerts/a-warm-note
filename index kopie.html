@@ -1,7 +1,6 @@
 <!doctype html>
 <html lang="nl">
 <head>
-  <!-- a warm note — NL-only minimal prototype -->
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>a warm note to someone You care about</title>
@@ -22,17 +21,17 @@
   <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png"> <!-- 180×180 -->
   <link rel="icon" type="image/png" sizes="192x192" href="/assets/icons/android-chrome-192x192.png">
   <link rel="icon" type="image/png" sizes="512x512" href="/assets/icons/android-chrome-512x512.png">
-  <!-- (optioneel) themekleur voor mobiele UI chrome -->
   <meta name="theme-color" content="#000000">
 </head>
-<body>
+<body class="has-bg">
 
   <!-- =================== TOPBAR =================== -->
   <header class="topbar" data-topbar>
     <h1 class="brand">a warm note to someone You care about<span class="brand-payoff"></span></h1>
     <nav class="actions" aria-label="Acties">
       <button id="btn-new" class="btn btn-ico" type="button" aria-label="Nieuwe boodschap">
-        <span class="btn-label">Kies bericht</span>
+		<!-- “sticky note” icoon (voor Nieuwe boodschap) -->
+        <span class="btn-label">Nieuwe boodschap</span>
       </button>
         <!-- =================== AI Message =================== 
 
@@ -65,8 +64,7 @@
     </button>
   </div>
 </div>
-      <button class="btn btn-ico" data-action="expand-note" type="button" aria-label="Bericht vergroten" title="Vergroot de note"> ⤢ </button>
-    </nav>
+<button data-action="expand-note" id="btn-expand" class="btn" type="button" aria-label="Vergroot">⤢</button>
   </header>
   
   <!-- Mobile boot intro (mobile-only via CSS) -->
@@ -83,28 +81,35 @@
 
   <!-- =================== APP =================== -->
   <main class="page" role="main">
-    <div class="intro-hint" id="intro-hint">Tip <span class="hint-swipe">: swipe door de Gevoelens & Boodschap →</span></div>
-
     <!-- Sentiment chips -->
     <section class="chips-wrap" aria-label="Kies gevoel">
       <div id="chip-row" class="chip-row" role="tablist" aria-label="Gevoelsfilters"></div>
     </section>
 
-    <!-- Note -->
-    <section class="note-wrap" aria-labelledby="note-title">
-      <h2 id="note-title" class="vh">Jouw warme note</h2>
-      <div id="note" class="note" role="region" aria-label="Notitie met boodschap">
-        <div class="tape tape--tl"></div>
-        <div class="tape tape--tr"></div>
-        <div id="toline"></div>
-        <p id="message" class="message"></p>
-        <div id="iconline"></div>
-        <div class="from-wrap">
-          <div id="from-symbol" aria-hidden="true"></div>
-          <div id="fromline"></div>
-        </div>
-      </div>
-    </section>
+<!-- Note -->
+<section class="note-wrap" aria-labelledby="note-title">
+  <h2 id="note-title" class="vh">Jouw warme note</h2>
+
+  <div id="note" class="note" role="region" aria-label="Notitie met boodschap">
+    <div class="tape tape--tl"></div>
+    <div class="tape tape--tr"></div>
+    <div id="toline"></div>
+    <p id="message" class="message"></p>
+    <div id="iconline"></div>
+    <div class="from-wrap">
+      <div id="from-symbol" aria-hidden="true"></div>
+      <div id="fromline"></div>
+    </div>
+  </div>
+  <div class="nav-ctl">
+    <button type="button" class="nav-btn nav-btn--prev" data-btn-prev aria-label="Vorige">
+      <span class="sr-only">Vorige</span>
+    </button>
+    <button type="button" class="nav-btn nav-btn--next" data-btn-next aria-label="Volgende">
+      <span class="sr-only">Volgende</span>
+    </button>
+  </div>
+</section>
 
     <!-- Compose -->
     <section id="compose-strip" class="compose" aria-label="Personaliseer">
@@ -113,10 +118,11 @@
         <input id="from-inline" class="compose-from" type="text" placeholder="Van jou (optioneel)" aria-label="Van wie is dit?">
       </div>
     </section>
-
-    <div id="coach-tip" class="coach" role="status" aria-live="polite">
-      <span class="coach-text">Welkom</span>
-    </div>
+	<div id="coach-tip" class="coach hidden" role="status" aria-live="polite">
+  		<span class="coach-text"></span>
+		  <p class="coach-text"><span class="coach-heart">💛</span></p>
+	</div>
+    <div id="coach-avatar"></div> 
   </main>
 
   <!-- =================== SHARE SHEET =================== -->
@@ -209,7 +215,7 @@
         <ol class="msgr-steps">
           <li>Kies een contact in Messenger.</li>
           <li>Plak de link in het berichtveld.</li>
-          <li>Verstuur je warme note. 💛</li>
+          <li>Verstuur je 'warm note'. 💛</li>
         </ol>
 
         <div class="sheet-actions">
@@ -235,12 +241,10 @@
         <div class="sheet-actions">
           <button id="qr-download" class="btn primary" type="button">Download QR</button>
           <button id="qr-copy" class="btn" type="button">Kopieer link</button>
-          <button id="qr-close" class="btn" type="button">Sluiten</button>
         </div>
       </div>
     </section>
   </div>
-
   <!-- =================== ABOUT SHEET =================== -->
   <div id="about-backdrop" class="sheet-backdrop hidden" aria-hidden="true">
     <section class="sheet sheet--about" role="dialog" aria-modal="true" aria-labelledby="about-title">
@@ -259,10 +263,7 @@
           <span class="about-tag">Iets kleins, veel betekenis</span>
         </div>
       </div>
-      <footer class="sheet-actions">
-        <button class="btn" id="about-close">Sluiten</button>
-      </footer>
-    </section>
+
   </div>
 
   <!-- =================== SPLASH OVERLAY (blijft bestaan) =================== -->
@@ -278,14 +279,130 @@
   <div id="confetti-layer" class="vh" aria-live="polite">Viering: berichtje verstuurd.</div>
 
   <!-- =================== SCRIPTS =================== -->
-  <script defer src="script.js"></script>
-  <script defer src="mail.js"></script>
-  <script defer src="whatsapp.js"></script>
-  <script defer src="download.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>"
+  <script src="awn.deck.js"></script>
+  <script defer src="/sticky-avatar.js"></script>
+  <script defer src="/script.js"></script>
+  <script defer src="/mail.js"></script>
+  <script defer src="/whatsapp.js"></script>
+  <script defer src="/download.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
+  <script async src="https://cdn.seez-analytics.com/8f68301d-71fc-418b-a7b3-9f4201bd63c3.js"></script>
 
   <!-- helpers -->
   <style>.vh{position:absolute!important;height:1px;width:1px;overflow:hidden;clip:rect(1px,1px,1px,1px);white-space:nowrap;}</style>
+<script>
+(function () {
+  const isLocal = ['localhost', '127.0.0.1', '::1'].includes(location.hostname);
+  if (!('serviceWorker' in navigator) || isLocal || location.protocol !== 'https:') return;
 
+  let newSw; // installing/ waiting worker ref
+
+  navigator.serviceWorker.register('/sw.js').then(reg => {
+    // 1) Update-detectie
+    reg.addEventListener('updatefound', () => {
+      newSw = reg.installing;
+      if (!newSw) return;
+      newSw.addEventListener('statechange', () => {
+        // SW is geïnstalleerd, er is al een controller => nieuwe versie beschikbaar
+        if (newSw.state === 'installed' && navigator.serviceWorker.controller) {
+          // Toon jouw UI (banner/toast/knop) – voorbeeld:
+          const el = document.querySelector('[data-sw-update]');
+          if (el) el.hidden = false;
+        }
+      });
+    });
+
+    // 2) Controller change => pagina ververst automatisch na SKIP_WAITING
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      // Herlaad 1x om nieuwe assets te krijgen
+      if (!sessionStorage.getItem('sw-reloaded')) {
+        sessionStorage.setItem('sw-reloaded', '1');
+        location.reload();
+      }
+    });
+
+    // 3) Optioneel: bericht van SW (bijv. "SW_READY")
+    navigator.serviceWorker.addEventListener('message', (e) => {
+      if (e.data && e.data.type === 'SW_READY') {
+        const el = document.querySelector('[data-sw-update]');
+        if (el) el.hidden = false;
+      }
+    });
+  }).catch(() => { /* stil falen */ });
+
+  // Publieke helper om update meteen te activeren
+  window.activateNewVersion = function () {
+    if (!navigator.serviceWorker.controller) return;
+    // Stuur SKIP_WAITING naar de nieuwe worker (die in 'waiting' staat)
+    navigator.serviceWorker.getRegistration().then(reg => {
+      const w = reg && reg.waiting;
+      if (w) w.postMessage({ type: 'SKIP_WAITING' });
+    });
+  };
+})();
+</script>
+<!-- Global Privacy trigger (mag in je bestaande footer/nav elders staan) -->
+<footer class="site-footer">
+  <nav><a href="#privacy" data-open-privacy>Privacy notice</a></nav>
+</footer>
+
+<!-- Global Privacy modal (losstaand, niet genest in een sheet) -->
+<dialog id="privacy-modal" aria-labelledby="privacy-title">
+  <article>
+    <header>
+      <h2 id="privacy-title" tabindex="-1">Privacy Notice</h2>
+      <button type="button" data-close-privacy aria-label="Close dialog">×</button>
+    </header>
+    <section>
+      <p><em>Last updated: 1 October 2025</em></p>
+
+      <p><strong>Who we are</strong><br>
+      This website is operated by <strong>[Your name/company]</strong> (data controller).
+      Contact: <strong>[your email]</strong>.</p>
+
+      <p><strong>What data we process</strong><br>
+      We do <strong>not</strong> set cookies and we do <strong>not</strong> use analytics or trackers.
+      Notes you create stay in your browser until you choose to share them.
+      Our hosting provider may temporarily process standard server logs (IP, timestamp, URL, user-agent) solely to deliver and protect the website.</p>
+
+      <p><strong>Purpose & legal basis</strong><br>
+      Provide and secure the website (Art. 6(1)(b) and 6(1)(f) GDPR).</p>
+
+      <p><strong>Sharing</strong><br>
+      Hosting/CDN: <strong>[provider name]</strong> for operating this site only. No selling, profiling, or advertising.</p>
+
+      <p><strong>Retention</strong><br>
+      Logs kept for <strong>[x days/weeks]</strong> for security/troubleshooting, then deleted or anonymized. No other personal data is stored.</p>
+
+      <p><strong>Your rights</strong><br>
+      You can request access, rectification, deletion, restriction, or object to processing.
+      Contact <strong>[your email]</strong>. You may also lodge a complaint with your Data Protection Authority.</p>
+
+      <p><strong>Security</strong><br>
+      Served over HTTPS.</p>
+
+      <p><strong>Cookies</strong><br>
+      We do not use cookies.</p>
+    </section>
+  </article>
+</dialog>
+
+<script>
+  // ultra-licht: open/close voor index.html
+  (function(){
+    const modal = document.getElementById('privacy-modal');
+    if (!modal) return;
+    const openers = document.querySelectorAll('[data-open-privacy]');
+    const closeBtn = modal.querySelector('[data-close-privacy]');
+    openers.forEach(a => a.addEventListener('click', (e) => {
+      e.preventDefault();
+      modal.showModal();
+      const title = modal.querySelector('#privacy-title');
+      title?.focus?.();
+    }));
+    closeBtn?.addEventListener('click', () => modal.close());
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.close(); });
+  })();
+</script>
 </body>
 </html>

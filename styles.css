@@ -686,8 +686,8 @@ button[data-action="expand-note"].is-hot::after{
 #coach-tip {
   position: relative;
   display: flex;
-  align-items: flex-end;
-  gap: 12px;
+  align-items: center;
+  gap: 8px;
   overflow: visible;                    /* avatar mag uitsteken */
   padding-inline-end: max(0px, env(safe-area-inset-right));
 }
@@ -813,7 +813,7 @@ button[data-action="expand-note"].is-hot::after{
 @media (max-width: 767px){
   #coach-tip{
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     gap: 8px;
   }
   #coach-tip .coach-text{
@@ -1071,4 +1071,275 @@ button[data-action="expand-note"].is-hot::after{
 /* Dark mode */
 @media (prefers-color-scheme: dark){
   .nav-btn{ background: rgba(255,255,255,.10); color: #eee; }
+}
+/* Subtiele, zuinige “double-beat” voor het hartje in de coach */
+.coach-heart{
+  display:inline-block;
+  transform-origin: center;
+  will-change: transform, filter, text-shadow, opacity;
+  animation: coach-heart-beat 7s ease-in-out infinite;
+  /* iets minder opdringerig standaard */
+  opacity: .92;
+}
+
+/* Hover/focus mag iets nadrukkelijker zijn */
+#coach-tip:hover .coach-heart,
+#coach-tip:focus-within .coach-heart{
+  animation-duration: 6.5s;
+  opacity: 1;
+}
+
+@keyframes coach-heart-beat{
+  /* Rustfase */
+  0%   { transform: scale(1);   filter: none; text-shadow: none; }
+  /* Beat 1 (kort-krachtig) */
+  8%   { transform: scale(1.16); filter: saturate(1.2); text-shadow: 0 0 6px rgba(255,200,0,.25); }
+  12%  { transform: scale(1.00); filter: none;           text-shadow: none; }
+  /* Beat 2 (iets kleiner) */
+  16%  { transform: scale(1.10); filter: saturate(1.1);  text-shadow: 0 0 4px rgba(255,200,0,.18); }
+  20%  { transform: scale(1.00); filter: none;           text-shadow: none; }
+  /* Lange rust tot volgende cyclus */
+  100% { transform: scale(1);    filter: none;           text-shadow: none; }
+}
+
+/* Respecteer reduce motion */
+@media (prefers-reduced-motion: reduce){
+  .coach-heart{ animation: none; }
+}
+/* ==== Coach pulse (halo rondom de coach-box) ========================= */
+#coach-tip{ position: relative; isolation: isolate; } /* eigen stacking context */
+
+#coach-tip::after{
+  content: "";
+  position: absolute;
+  inset: -6px;                 /* halo net buiten de box */
+  border-radius: 14px;         /* match je coach-box radius */
+  pointer-events: none;
+  z-index: -1;                 /* achter de inhoud van coach-tip */
+  background: radial-gradient(
+    circle,
+    rgba(255, 210, 0, .30) 0%,  /* warme gele gloed */
+    rgba(255, 210, 0, .18) 35%,
+    rgba(255, 210, 0, .00) 70%
+  );
+  transform: scale(.95);
+  opacity: 0;
+  animation: coach-pulse 2.6s ease-out infinite;
+}
+
+/* Iets actiever bij hover/focus (kortere cycle) */
+#coach-tip:hover::after,
+#coach-tip:focus-within::after{
+  animation-duration: 2.0s;
+}
+
+@keyframes coach-pulse{
+  0%   { transform: scale(.94); opacity: .0; }
+  10%  { transform: scale(1.00); opacity: .70; }  /* snelle opbouw */
+  35%  { transform: scale(1.08); opacity: .30; }
+  60%  { transform: scale(1.12); opacity: .12; }  /* spreidt uit */
+  100% { transform: scale(1.20); opacity: .0; }    /* volledig vervaagd */
+}
+
+/* Respecteer OS-instelling */
+@media (prefers-reduced-motion: reduce){
+  #coach-tip::after{ animation: none; opacity: 0; }
+  
+}/* Calm Breathe <div id="coach-tip" class="breathe">…</div> */
+#coach-tip.breathe{ position:relative; isolation:isolate; }
+#coach-tip.breathe::after{
+  content:""; position:absolute; inset:-6px; border-radius:14px; pointer-events:none; z-index:-1;
+  background: radial-gradient(circle, rgba(255,210,0,.22) 0%, rgba(255,210,0,.10) 40%, rgba(255,210,0,0) 72%);
+  transform: scale(.96); opacity:.0; animation: coach-breathe 5.5s ease-in-out infinite;
+}
+@keyframes coach-breathe{
+  0%{   transform:scale(.96); opacity:.00; }
+  25%{  transform:scale(1.02); opacity:.35; }
+  50%{  transform:scale(1.06); opacity:.18; }
+  75%{  transform:scale(1.02); opacity:.30; }
+  100%{ transform:scale(.96); opacity:.00; }
+}
+@media (prefers-reduced-motion: reduce){
+  #coach-tip.breathe::after{ animation:none; opacity:0; }
+}
+
+/* Footer link zichtbaar/onderstreept (alle pagina's) */
+.site-footer nav, .site-footer a {
+  display: inline-block;
+  visibility: visible;
+  opacity: 1;
+  text-decoration: underline;
+  color: inherit;
+}
+/* ===== About theme (scoped) =========================================== */
+.about-theme { --ink:#151515; --muted:rgba(0,0,0,.62); --card:#fff; --ring:rgba(255,210,0,.28); }
+@media (prefers-color-scheme: dark){
+  .about-theme { --ink:#eee; --muted:rgba(255,255,255,.68); --card:#1b1b1b; --ring:rgba(255,210,0,.20); }
+}
+.about-theme { color: var(--ink); }
+
+/* layout helpers */
+.container { max-width: 960px; margin: 0 auto; padding: 24px; }
+
+/* topbar */
+.about-topbar{
+  position: sticky; top: 0; z-index: 5;
+  display:flex; align-items:center; justify-content:space-between;
+  padding: 12px 24px; backdrop-filter: blur(6px);
+  background: color-mix(in srgb, var(--card) 78%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--ink) 10%, transparent);
+}
+.about-back{ text-decoration:none; color:inherit; opacity:.85; }
+.about-back:hover{ opacity:1; }
+.about-nav .about-link{ text-decoration: underline; color: inherit; }
+
+/* hero */
+.about-heroSection{
+  display:grid; place-items:center; padding: 36px 16px 24px;
+  background:
+    radial-gradient(1200px 600px at 50% -10%, rgba(255,230,109,.25), transparent 60%),
+    radial-gradient(800px 400px at 10% 0%, rgba(255,210,0,.18), transparent 55%),
+    radial-gradient(900px 520px at 90% 0%, rgba(255,170,0,.12), transparent 50%);
+}
+.about-heroCard{
+  text-align:center; background: var(--card);
+  border: 1px solid color-mix(in srgb, var(--ink) 10%, transparent);
+  border-radius: 20px; padding: 24px 20px; width: min(840px, 96vw);
+  box-shadow: 0 12px 40px rgba(0,0,0,.08);
+  position: relative; isolation: isolate;
+}
+.about-heroCard::after{
+  content:""; position:absolute; inset:-8px; border-radius: 22px; z-index:-1;
+  background: radial-gradient(circle, var(--ring), transparent 70%);
+  transform: scale(.96); opacity: .0; animation: aboutHalo 3.8s ease-out infinite;
+}
+@keyframes aboutHalo{
+  0%{transform:scale(.94); opacity:0;}
+  12%{transform:scale(1.02); opacity:.55;}
+  60%{transform:scale(1.10); opacity:.12;}
+  100%{transform:scale(1.18); opacity:0;}
+}
+.about-logo{ width:64px; height:64px; margin-bottom: 8px; }
+.about-title{ margin: 4px 0 6px; font-size: clamp(28px, 4.5vw, 40px); line-height:1.15; }
+.about-subtitle{ display:block; font-size: clamp(14px, 2.1vw, 18px); color: var(--muted); }
+.about-tagline{ margin: 8px 0 14px; color: var(--muted); }
+.about-heart{
+  display:inline-block; transform-origin:center;
+  animation: heartBeat 6.5s ease-in-out infinite; opacity:.95;
+}
+@keyframes heartBeat{
+  8%{ transform: scale(1.16); } 12%{ transform: scale(1.00); }
+  16%{ transform: scale(1.10); } 20%{ transform: scale(1.00); }
+}
+.about-pillRow{ display:flex; flex-wrap:wrap; gap:8px; justify-content:center; }
+.about-pill{
+  padding:6px 10px; border-radius:999px; font-size:13px;
+  background: color-mix(in srgb, var(--ink) 6%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ink) 10%, transparent);
+}
+
+/* content */
+.about-main{ padding: 16px 24px 24px; }
+.about-section{ margin: 18px 0 12px; }
+.about-h2{ font-size: clamp(20px, 3vw, 26px); margin: 0 0 8px; }
+.about-h3{ font-size: clamp(16px, 2.1vw, 18px); margin: 0 0 6px; }
+
+.about-grid{
+  display:grid; gap: 12px; margin: 16px 0 8px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+.about-card{
+  background: var(--card);
+  border: 1px solid color-mix(in srgb, var(--ink) 10%, transparent);
+  border-radius: 16px; padding: 14px 14px 16px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.06);
+}
+
+/* privacy */
+.about-privacy{ scroll-margin-top: 80px; } /* anchor lands netjes onder topbar */
+.about-updated{ color: var(--muted); margin: 4px 0 10px; }
+
+.about-acc{
+  margin: 8px 0; background: var(--card);
+  border: 1px solid color-mix(in srgb, var(--ink) 10%, transparent);
+  border-radius: 14px; padding: 0;
+  overflow: clip;
+  box-shadow: 0 6px 18px rgba(0,0,0,.05);
+}
+.about-acc > summary{
+  cursor: pointer; list-style: none; padding: 12px 14px; position: relative;
+  font-weight: 600;
+}
+.about-acc > summary::-webkit-details-marker{ display:none; }
+.about-acc > summary::after{
+  content: "›"; position:absolute; right: 12px; top: 50%; transform: translateY(-50%) rotate(90deg);
+  opacity:.7; transition: transform .18s ease;
+}
+.about-acc[open] > summary::after{ transform: translateY(-50%) rotate(270deg); }
+.about-acc > div{ padding: 0 14px 12px; color: var(--muted); }
+
+/* footer */
+.about-footer{
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  padding: 18px 24px; margin-top: 12px;
+  border-top: 1px solid color-mix(in srgb, var(--ink) 10%, transparent);
+}
+.about-footer .about-link{ text-decoration: underline; color: inherit; }
+
+/* print (compact, privacy only) */
+@media print{
+  .about-topbar, .about-heroSection, .about-grid, .about-footer { display:none !important; }
+  .about-section { margin: 0; }
+  .about-privacy { margin-top: 0; }
+}
+/* === ABOUT FIX PACK: contrast & compact ================================= */
+
+/* Forceer donker leesbare tekst (soms overschreven door globale thema's) */
+.about-theme,
+.about-theme * {
+  color: #222 !important;
+}
+
+/* Hero-kaart en pills: lichte achtergrond met duidelijke rand */
+.about-heroCard {
+  background: #fff !important;
+  border-color: rgba(0,0,0,.10) !important;
+}
+.about-pill {
+  background: rgba(0,0,0,.05) !important;
+  border-color: rgba(0,0,0,.12) !important;
+}
+
+/* Typografie kleiner en rustiger */
+.about-title     { font-size: clamp(24px, 4vw, 32px) !important; }
+.about-subtitle  { font-size: clamp(13px, 1.8vw, 16px) !important; }
+.about-tagline   { font-size: clamp(14px, 2vw, 16px) !important; }
+.about-h2        { font-size: clamp(18px, 2.5vw, 22px) !important; }
+.about-h3        { font-size: clamp(15px, 2vw, 17px) !important; }
+.about-main p,
+.about-card p,
+.about-privacy div { font-size: 15px !important; line-height: 1.5; }
+
+/* Cards compacter */
+.about-card { padding: 12px 12px 14px !important; }
+
+/* Accordeon headings compacter + betere klikdoel */
+.about-acc > summary { padding: 10px 12px !important; }
+.about-acc > div     { padding: 0 12px 10px !important; }
+
+/* Hero-anim glans wat subtieler zodat tekst leesbaar blijft */
+.about-heroCard::after { opacity: .0 !important; }
+@media (prefers-reduced-motion: no-preference){
+  .about-heroCard::after { opacity: .10 !important; }
+}
+
+/* Link-stijl zichtbaar maar niet schreeuwerig */
+.about-link { text-decoration: underline; color: inherit !important; }
+
+/* Donker thema fijntunen (mocht systeem donker zijn) */
+@media (prefers-color-scheme: dark){
+  .about-theme,
+  .about-theme * { color: #eee !important; }
+  .about-heroCard { background: #1b1b1b !important; border-color: rgba(255,255,255,.12) !important; }
+  .about-pill { background: rgba(255,255,255,.08) !important; border-color: rgba(255,255,255,.14) !important; }
 }

@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>About · A Warm Note</title>
+  <link rel="stylesheet" href="styles.css" />
+  <meta name="theme-color" content="#FFE66D" />
+</head>
+<body class="has-bg about-theme">
+
+  <!-- Top bar -->
+  <header class="about-topbar">
+    <a class="about-back" href="index.html" aria-label="Back to home">← Back</a>
+    <nav class="about-nav">
+    </nav>
+  </header>
+
+  <!-- Hero -->
+  <section class="about-heroSection">
+    <div class="about-heroCard">
+      <img class="about-logo" src="/assets/icons/logo_transparent_128px.png" width="64" height="64" alt="" />
+      <h1 class="about-title">
+        a warm note
+        <span class="about-subtitle">to someone You care about</span>
+      </h1>
+      <p class="about-tagline">
+        Small notes, big meaning. Crafted fast, shared with heart. <span class="about-heart" aria-hidden="true">💛</span>
+      </p>
+      <div class="about-pillRow" aria-label="Values">
+        <span class="about-pill">No cookies</span>
+        <span class="about-pill">Client-side</span>
+        <span class="about-pill">Fast & light</span>
+        <span class="about-pill">Private by design</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- About copy -->
+  <main class="about-main container">
+    <section class="about-section">
+      <h2 class="about-h2">What is this?</h2>
+      <p>
+        <em>A Warm Note</em> helps you make a short, heartfelt message—quickly.
+        Everything runs in your browser; you decide when and how to share.
+      </p>
+    </section>
+
+    <section class="about-grid">
+      <article class="about-card">
+        <h3 class="about-h3">How it works</h3>
+        <p>Pick a vibe, tweak the note, and share via your favorite app. That’s it.</p>
+      </article>
+
+      <article class="about-card">
+        <h3 class="about-h3">Designed for calm</h3>
+        <p>No accounts, no feeds, no distractions—just kindness, sent quickly.</p>
+      </article>
+
+      <article class="about-card">
+        <h3 class="about-h3">Accessibility</h3>
+        <p>Keyboard friendly, reduced-motion aware, and strong contrast by default.</p>
+      </article>
+    </section>
+
+    <!-- Privacy (anchor target) -->
+    <section id="privacy" class="about-section about-privacy">
+      <h2 class="about-h2">Privacy Notice</h2>
+      <p class="about-updated"><em>Last updated: 1 October 2025</em></p>
+
+      <details open class="about-acc">
+        <summary>Who we are</summary>
+        <div>
+          This website is operated by <strong>ShareNet</strong> (data controller).
+          Contact: <strong><a href="mailto:note@awarmnote.com">note@awarmnote.com</a></strong>.
+        </div>
+      </details>
+
+      <details class="about-acc">
+        <summary>What data we process</summary>
+        <div>
+          We do <strong>not</strong> set cookies and we do <strong>not</strong> use analytics or trackers.
+          Notes you create stay in your browser until you choose to share them.
+          Our hosting provider may temporarily process standard server logs
+          (IP address, timestamp, URL, user-agent) solely to deliver and protect the website.
+        </div>
+      </details>
+
+      <details class="about-acc">
+        <summary>Purpose &amp; legal basis</summary>
+        <div>Provide and secure the website (Art. 6(1)(b) and 6(1)(f) GDPR).</div>
+      </details>
+
+      <details class="about-acc">
+        <summary>Sharing</summary>
+        <div>
+          Hosting/CDN: <strong>Trans IP</strong> for operating this site only.
+          No selling, profiling, or advertising.
+        </div>
+      </details>
+
+      <details class="about-acc">
+        <summary>Retention</summary>
+        <div>
+          Logs kept for <strong>REPLACE_WITH_RETENTION (e.g., 14 days)</strong> for security and troubleshooting,
+          then deleted or anonymized. No other personal data is stored.
+        </div>
+      </details>
+
+      <details class="about-acc">
+        <summary>Your rights</summary>
+        <div>
+          You may request access, rectification, deletion, restriction, or object to processing.
+          Contact <strong><a href="mailto:note@awarmnote.com">note@awarmnote.com</a></strong>.
+          You may also lodge a complaint with your local Data Protection Authority.
+        </div>
+      </details>
+
+      <details class="about-acc">
+        <summary>Security &amp; Cookies</summary>
+        <div>
+          Served over HTTPS. We do not use cookies.
+        </div>
+      </details>
+    </section>
+
+    <p class="about-small">
+      Prefer Dutch? We’re working on a NL version of this page.
+    </p>
+  </main>
+
+  <!-- Footer -->
+  <footer class="about-footer">
+    <p>© <span id="y"></span> A Warm Note</p>
+    <nav><a class="about-link" href="#privacy">Privacy</a></nav>
+  </footer>
+
+  <script>
+    (function(){
+      document.getElementById('y').textContent = new Date().getFullYear();
+      if (location.hash === '#privacy') {
+        requestAnimationFrame(() => {
+          const el = document.getElementById('privacy');
+          if (el) el.scrollIntoView({ block: 'start', behavior: 'smooth' });
+        });
+      }
+    })();
+  </script>
+</body>
+</html>

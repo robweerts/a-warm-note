@@ -1161,75 +1161,6 @@ function trapFocusIn(el, e){
   else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
 }
 
-/* Smart Messenger opener (platform-aware)
-   - Desktop: meteen Messenger Web in nieuwe tab
-   - Android/Chrome: intent:// met browser_fallback_url (detect+fallback door Chrome)
-   - iOS/Safari: schema via verborgen iframe + timer → web in nieuwe tab als app niet opent
-*/
-function openMessengerSmart(shareUrl, { timeout = 1400 } = {}) {
-  if (!shareUrl) return;
-
-  const webFallback = `https://www.messenger.com/t/?link=${encodeURIComponent(shareUrl)}`;
-
-  const UA = navigator.userAgent || navigator.vendor || "";
-  const IS_ANDROID = /Android/i.test(UA);
-  const IS_IOS     = /iPhone|iPad|iPod/i.test(UA);
-  const IS_MOBILE  = IS_ANDROID || IS_IOS;
-
-  // 1) DESKTOP → altijd web in nieuwe tab
-  if (!IS_MOBILE) {
-    window.open(webFallback, '_blank', 'noopener');
-    return;
-  }
-
-  // 2) ANDROID → intent:// met fallback (Chrome handelt detectie af)
-  if (IS_ANDROID) {
-    const intent = `intent://share?link=${encodeURIComponent(shareUrl)}#Intent;scheme=fb-messenger;package=com.facebook.orca;S.browser_fallback_url=${encodeURIComponent(webFallback)};end`;
-    try { window.location.href = intent; } catch { window.open(webFallback, '_blank', 'noopener'); }
-    return;
-  }
-
-  // 3) iOS → schema via verborgen iframe + timer → web fallback (nieuwe tab)
-  const deeplink = `fb-messenger://share?link=${encodeURIComponent(shareUrl)}`;
-
-  let fired = false;
-  const clear = () => document.removeEventListener('visibilitychange', onVis);
-
-  const onVis = () => {
-    if (document.hidden && !fired) {
-      fired = true; // app kwam naar voren
-      clear();
-    }
-  };
-  document.addEventListener('visibilitychange', onVis, { passive: true });
-
-  // Fallback naar web als app niet opent binnen timeout
-  const t = setTimeout(() => {
-    if (!fired) {
-      window.open(webFallback, '_blank', 'noopener');
-    }
-    clear();
-  }, timeout);
-
-  // Probeer app via verborgen iframe (pagina blijft staan → timer blijft lopen)
-  try {
-    const iframe = document.createElement('iframe');
-    iframe.style.position = 'absolute';
-    iframe.style.width = '1px';
-    iframe.style.height = '1px';
-    iframe.style.opacity = '0';
-    iframe.style.pointerEvents = 'none';
-    iframe.tabIndex = -1;
-    iframe.src = deeplink;
-    document.body.appendChild(iframe);
-    // opruimen na even
-    setTimeout(() => { try { document.body.removeChild(iframe); } catch {} }, timeout + 1000);
-  } catch {
-    // laatste redmiddel
-    try { window.location.href = deeplink; } catch {}
-  }
-}
-
 function openShareSheet(){
   renderShareSheetPairsInline();
   if (!els.sheet) return;
@@ -1389,9 +1320,6 @@ function onShareMessenger(){
     catch { prompt(i18n.prompt, url); }
     closeShareSheet();
     openMessengerHelp();
-
-    // ⬇︎ NIEUW: eerst de app proberen, web pas als fallback
-    openMessengerSmart(url, { timeout: 1400 });
   })();
 }
 
@@ -2313,21 +2241,12 @@ function wireGlobalUI(){
   els.sheet && els.sheet.addEventListener("click", (e)=>{ if (e.target === els.sheet) closeShareSheet(); });
 
   // Messenger help
-els.msgrHelp  = document.getElementById("msgr-help-backdrop");
-els.msgrOpen  = document.getElementById("msgr-open");
-els.msgrClose = document.getElementById("msgr-close");
-
-els.msgrHelp  && els.msgrHelp.addEventListener("click", (e)=>{ 
-  if (e.target === els.msgrHelp) closeMessengerHelp(); 
-});
-
-els.msgrOpen && els.msgrOpen.addEventListener("click", () => {
-  const shareUrl = (typeof buildSharedURL === "function" ? buildSharedURL().toString() : location.href);
-  openMessengerSmart(shareUrl, { timeout: 1400 });
-  closeMessengerHelp();
-});
-
-els.msgrClose && els.msgrClose.addEventListener("click", closeMessengerHelp);
+  els.msgrHelp  = document.getElementById("msgr-help-backdrop");
+  els.msgrOpen  = document.getElementById("msgr-open");
+  els.msgrClose = document.getElementById("msgr-close");
+  els.msgrHelp  && els.msgrHelp.addEventListener("click", (e)=>{ if (e.target === els.msgrHelp) closeMessengerHelp(); });
+  els.msgrOpen  && els.msgrOpen.addEventListener("click", ()=>{ actuallyOpenMessenger(); closeMessengerHelp(); });
+  els.msgrClose && els.msgrClose.addEventListener("click", closeMessengerHelp);
 
   // QR
   document.getElementById("share-qr")?.addEventListener("click", onShareQR);
