@@ -1343,3 +1343,24 @@ button[data-action="expand-note"].is-hot::after{
   .about-heroCard { background: #1b1b1b !important; border-color: rgba(255,255,255,.12) !important; }
   .about-pill { background: rgba(255,255,255,.08) !important; border-color: rgba(255,255,255,.14) !important; }
 }
+
+/* Taalgestuurd tonen/verbergen */
+html[lang="nl"] .seo-snippet--en { display: none; }
+html[lang="en"] .seo-snippet--nl { display: none; }
+
+/* Subtiele opmaak */
+.seo-snippet {
+  margin: 3rem auto;
+  max-width: 640px;
+  font-size: .95rem;
+  line-height: 1.55;
+  color: #444;
+  text-align: center;
+}
+.seo-snippet h2 {
+  font-size: 1.2rem;
+  margin-bottom: .5rem;
+  color: #222;
+}
+
+/* --

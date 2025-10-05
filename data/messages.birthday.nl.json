@@ -1,24 +1,251 @@
 {
   "lang": "nl",
-  "sentiments": ["birthday"],
+  "sentiments": [
+    "birthday"
+  ],
   "messages": [
-    { "id": "nl_b001", "icon": "🎉", "text": "Hoera {{name}}! Vandaag ben jij de slinger om alles mooier te maken 🎊", "sentiments": ["birthday", "joy"], "special_day": "birthday", "weight": 2 },
-    { "id": "nl_b002", "icon": "🥳", "text": "Hiep hiep {{name}}! Toeter aan, puntmuts op — feestje! 🎺🎈", "sentiments": ["birthday", "humor", "joy"], "special_day": "birthday", "weight": 1 },
-    { "id": "nl_b003", "icon": "🎂", "text": "Lieve {{name}}, gefeliciteerd! Een jaar vol zachte lichtjes voor jou 💛🕯️", "sentiments": ["birthday", "friendship"], "special_day": "birthday", "weight": 2 },
-    { "id": "nl_b004", "icon": "🍾", "text": "Pop die kurk, {{name}} — vandaag klinken we op jou! 🥂", "sentiments": ["birthday", "joy", "success"], "special_day": "birthday", "weight": 1 },
-    { "id": "nl_b005", "icon": "🎁", "text": "Het mooiste cadeau? Jij. Fijne verjaardag, {{name}} 🎁💫", "sentiments": ["birthday", "friendship"], "special_day": "birthday", "weight": 2 },
-    { "id": "nl_b006", "icon": "🎈", "text": "Meer wensen, meer lachen, meer jij. Gefeliciteerd {{name}}! 🎈", "sentiments": ["birthday", "joy"], "special_day": "birthday", "weight": 1 },
-    { "id": "nl_b007", "icon": "🎊", "text": "Confetti in de lucht en warmte in je hart — proost, {{name}}! 🥂🎊", "sentiments": ["birthday", "gratitude"], "special_day": "birthday", "weight": 1 },
-    { "id": "nl_b008", "icon": "🧁", "text": "Een extra zoete dag voor {{name}} — met sprinkles en al 🧁✨", "sentiments": ["birthday", "joy"], "special_day": "birthday", "weight": 1 },
-    { "id": "nl_b009", "icon": "💛", "text": "Vandaag vieren we jou, {{name}} — precies goed zoals je bent 💛", "sentiments": ["birthday", "friendship", "gratitude"], "special_day": "birthday", "weight": 2 },
-    { "id": "nl_b010", "icon": "🍰", "text": "Een stukje taart en een berg geluk voor jou, {{name}} 🎂", "sentiments": ["birthday", "joy"], "special_day": "birthday", "weight": 1 },
-    { "id": "nl_b011", "icon": "🎺", "text": "Toetertooooet voor {{name}}! Nog een rondje zon te vieren ☀️🎺", "sentiments": ["birthday", "humor", "joy"], "special_day": "birthday", "weight": 1 },
-    { "id": "nl_b012", "icon": "🎉", "text": "Slingers omhoog, zorgen omlaag — fijne dag, {{name}}! 🎉", "sentiments": ["birthday", "calm", "joy"], "special_day": "birthday", "weight": 1 },
-    { "id": "nl_b013", "icon": "🥂", "text": "Op jou, {{name}} — op warmte, liefde en kleine wondertjes 🥂✨", "sentiments": ["birthday", "gratitude", "love"], "special_day": "birthday", "weight": 1 },
-    { "id": "nl_b014", "icon": "🎈", "text": "Blaas zacht en wens groots, {{name}} — vandaag mag alles 🎈", "sentiments": ["birthday"], "special_day": "birthday", "weight": 1 },
-    { "id": "nl_b015", "icon": "🎊", "text": "Puntmuts scheef, glimlach recht — gefeliciteerd {{name}}! 🥳", "sentiments": ["birthday", "humor"], "special_day": "birthday", "weight": 1 },
-    { "id": "nl_b016", "icon": "🍾", "text": "Klink! Op nieuwe kansen en zachte dagen, {{name}} 🍾🥂", "sentiments": ["birthday", "encouraging"], "special_day": "birthday", "weight": 1 },
-    { "id": "nl_b017", "icon": "🎂", "text": "Kaarsjes aan, wens aan — jij straalt, {{name}} 🕯️🎂", "sentiments": ["birthday", "proud"], "special_day": "birthday", "weight": 1 },
-    { "id": "nl_b018", "icon": "💫", "text": "Nieuwe ronde, nieuwe glans. Fijne verjaardag, {{name}} 💫", "sentiments": ["birthday", "joy"], "special_day": "birthday", "weight": 1 }
+    {
+      "id": "nl_022",
+      "icon": "🎊",
+      "text": "Hopelijk is je verjaardag net zoals jij, helemaal geweldig dus.🫶🏼",
+      "sentiments": [
+        "birthday"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "nl_021",
+      "icon": "🎊",
+      "text": "Fijne verjaardag voor de meest bijzondere persoon die ik ken.",
+      "sentiments": [
+        "birthday"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "nl_020",
+      "icon": "🎁",
+      "text": "Gevoel dat je oud(er) wordt? Nee hoor, je krijgt vooral meer aanzien! 🪩 Gefeliciteerd!",
+      "sentiments": [
+        "birthday"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "nl_019",
+      "icon": "🍷",
+      "text": "Gefeliciteerd! Jij bent als een goede wijn: hoe ouder, hoe beter.🍇",
+      "sentiments": [
+        "birthday"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "nl_b001",
+      "icon": "🎉",
+      "text": "Hoera {{name}}! Vandaag ben jij de slinger om alles mooier te maken 🎊",
+      "sentiments": [
+        "birthday",
+        "joy"
+      ],
+      "special_day": "birthday",
+      "weight": 2
+    },
+    {
+      "id": "nl_b002",
+      "icon": "🥳",
+      "text": "Hiep hiep {{name}}! Toeter aan, puntmuts op — feestje! 🎺🎈",
+      "sentiments": [
+        "birthday",
+        "humor",
+        "joy"
+      ],
+      "special_day": "birthday",
+      "weight": 1
+    },
+    {
+      "id": "nl_b003",
+      "icon": "🎂",
+      "text": "Lieve {{name}}, gefeliciteerd! Een jaar vol stralende lichtjes voor jou 💛🕯️",
+      "sentiments": [
+        "birthday",
+        "friendship"
+      ],
+      "special_day": "birthday",
+      "weight": 2
+    },
+    {
+      "id": "nl_b004",
+      "icon": "🍾",
+      "text": "Pop die kurk, {{name}} — vandaag klinken we op jou! 🥂",
+      "sentiments": [
+        "birthday",
+        "joy",
+        "success"
+      ],
+      "special_day": "birthday",
+      "weight": 1
+    },
+    {
+      "id": "nl_b005",
+      "icon": "🎁",
+      "text": "Het mooiste cadeau? Jij. Fijne verjaardag, {{name}} 🎁💫",
+      "sentiments": [
+        "birthday",
+        "friendship"
+      ],
+      "special_day": "birthday",
+      "weight": 2
+    },
+    {
+      "id": "nl_b006",
+      "icon": "🎈",
+      "text": "Meer wensen, meer lachen, meer jij. Gefeliciteerd {{name}}! 🎈",
+      "sentiments": [
+        "birthday",
+        "joy"
+      ],
+      "special_day": "birthday",
+      "weight": 1
+    },
+    {
+      "id": "nl_b007",
+      "icon": "🎊",
+      "text": "Confetti in de lucht en warmte in je hart — proost, {{name}}! 🥂🎊",
+      "sentiments": [
+        "birthday",
+        "gratitude"
+      ],
+      "special_day": "birthday",
+      "weight": 1
+    },
+    {
+      "id": "nl_b008",
+      "icon": "🧁",
+      "text": "Een extra zoete dag voor {{name}} — met sprinkles en al 🧁✨",
+      "sentiments": [
+        "birthday",
+        "joy"
+      ],
+      "special_day": "birthday",
+      "weight": 1
+    },
+    {
+      "id": "nl_b009",
+      "icon": "💛",
+      "text": "Vandaag vieren we jou, {{name}} — precies goed zoals je bent 💛",
+      "sentiments": [
+        "birthday",
+        "friendship",
+        "gratitude"
+      ],
+      "special_day": "birthday",
+      "weight": 2
+    },
+    {
+      "id": "nl_b010",
+      "icon": "🍰",
+      "text": "Een stukje taart en een berg geluk voor jou, {{name}} 🎂",
+      "sentiments": [
+        "birthday",
+        "joy"
+      ],
+      "special_day": "birthday",
+      "weight": 1
+    },
+    {
+      "id": "nl_b011",
+      "icon": "🎺",
+      "text": "Toetertooooet voor {{name}}! Nog een rondje zon te vieren ☀️🎺",
+      "sentiments": [
+        "birthday",
+        "humor",
+        "joy"
+      ],
+      "special_day": "birthday",
+      "weight": 1
+    },
+    {
+      "id": "nl_b012",
+      "icon": "🎉",
+      "text": "Slingers omhoog, zorgen omlaag — fijne dag, {{name}}! 🎉",
+      "sentiments": [
+        "birthday",
+        "calm",
+        "joy"
+      ],
+      "special_day": "birthday",
+      "weight": 1
+    },
+    {
+      "id": "nl_b013",
+      "icon": "🥂",
+      "text": "Op jou, {{name}} — op warmte, liefde en kleine wondertjes 🥂✨",
+      "sentiments": [
+        "birthday",
+        "gratitude",
+        "love"
+      ],
+      "special_day": "birthday",
+      "weight": 1
+    },
+    {
+      "id": "nl_b014",
+      "icon": "🎈",
+      "text": "Blaas zacht en wens groots, {{name}} — vandaag mag alles 🎈",
+      "sentiments": [
+        "birthday"
+      ],
+      "special_day": "birthday",
+      "weight": 1
+    },
+    {
+      "id": "nl_b015",
+      "icon": "🎊",
+      "text": "Puntmuts scheef, glimlach recht — gefeliciteerd {{name}}! 🥳",
+      "sentiments": [
+        "birthday",
+        "humor"
+      ],
+      "special_day": "birthday",
+      "weight": 1
+    },
+    {
+      "id": "nl_b016",
+      "icon": "🍾",
+      "text": "Klink! Op nieuwe kansen en gezonde dagen, {{name}} 🥂",
+      "sentiments": [
+        "birthday",
+        "encouraging"
+      ],
+      "special_day": "birthday",
+      "weight": 1
+    },
+    {
+      "id": "nl_b017",
+      "icon": "🎂",
+      "text": "Kaarsjes aan, wens aan — jij straalt, {{name}} 🕯️🎂",
+      "sentiments": [
+        "birthday",
+        "proud"
+      ],
+      "special_day": "birthday",
+      "weight": 1
+    },
+    {
+      "id": "nl_b018",
+      "icon": "💫",
+      "text": "Nieuwe ronde, nieuwe glans. Fijne verjaardag, {{name}} 💫",
+      "sentiments": [
+        "birthday",
+        "joy"
+      ],
+      "special_day": "birthday",
+      "weight": 1
+    }
   ]
 }

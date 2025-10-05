@@ -1,384 +1,45 @@
 <!doctype html>
-<html lang="nl">
+<html lang="en"> <!-- x-default landing; we sturen door naar NL -->
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>a warm note to someone You care about</title>
-  <meta name="description" content="Pass a warm note. '#kindness'">
-  <meta name="theme-color" content="#FFE66D" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <!-- Snelle serverloze redirect -->
+  <meta http-equiv="refresh" content="0; url=/nl/">
+  <!-- Canonical naar je default taal -->
+  <link rel="canonical" href="https://awarmnote.com/nl/">
+  <title>Redirecting…</title>
 
-  <!-- Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Patrick+Hand&display=swap" rel="stylesheet">
-
-  <!-- Styles & PWA -->
-  <link rel="stylesheet" href="styles.css" />
-  <link rel="manifest" href="site.webmanifest">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-
-  <!-- Icons -->
-  <link rel="apple-touch-icon" href="/assets/icons/logo_128.png">
-  <link rel="icon" href="favicon.ico" sizes="any">
-  <link rel="icon" type="image/png" sizes="32x32"  href="/assets/icons/logo_transparent_32px.png">
-  <link rel="icon" type="image/png" sizes="64x64"  href="/assets/icons/logo_transparent_64px.png">
-  <link rel="icon" type="image/png" sizes="128x128" href="/assets/icons/logo_transparent_128px.png">
-  <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png"> <!-- 180×180 -->
-  <link rel="icon" type="image/png" sizes="192x192" href="/assets/icons/android-chrome-192x192.png">
-  <link rel="icon" type="image/png" sizes="512x512" href="/assets/icons/android-chrome-512x512.png">
-
-  <meta name="theme-color" content="#000000">
-</head>
-<body class="has-bg">
-
-  <!-- =================== TOPBAR =================== -->
-  <header class="topbar" data-topbar>
-    <h1 class="brand">
-      a warm note to someone You care about
-      <span class="brand-payoff"></span>
-    </h1>
-
-    <nav class="actions" aria-label="Acties">
-      <button id="btn-new" class="btn btn-ico" type="button" aria-label="Nieuwe boodschap">
-        <!-- “sticky note” icoon (voor Nieuwe boodschap) -->
-        <span class="btn-label">Nieuwe boodschap</span>
-      </button>
-
-      <!-- =================== AI Message ===================
-      <button id="btn-ai" class="btn icon" type="button">
-        <span class="icon" aria-hidden="true">✨</span>
-        <span class="btn-label" data-i18n="ui.aiNew">AI</span>
-      </button>
-      -->
-
-      <button id="btn-share" class="btn btn-ico" type="button" aria-label="Verstuur">
-        <!-- “paper plane” icoon -->
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" id="Paper-Plane">
-          <path fill="#fff" fill-rule="evenodd" d="M12 23c6.075 0 11 -4.925 11 -11S18.075 1 12 1 1 5.925 1 12s4.925 11 11 11ZM4.982 11.175c0 -0.102 0.067 -0.198 0.162 -0.234l12.324 -4.697a0.254 0.254 0 0 1 0.254 0.046c0.068 0.06 0.1 0.157 0.078 0.246l-2.458 10.338a0.254 0.254 0 0 1 -0.156 0.177 0.253 0.253 0 0 1 -0.234 -0.032l-2.619 -1.895 -0.1 0.066a157.1 157.1 0 0 1 -1.196 0.788 46.23 46.23 0 0 1 -0.943 0.6 9.536 9.536 0 0 1 -0.352 0.207 2.277 2.277 0 0 1 -0.14 0.072 0.93 0.93 0 0 1 -0.078 0.033 0.716 0.716 0 0 1 -0.722 -0.165 0.775 0.775 0  0 1 -0.202 -0.394l-0.001 -0.005 -0.803 -3.949 -2.652 -0.968a0.255 0.255 0 0 1 -0.162 -0.234Zm3.792 0.993 0.727 3.577 0.81 -2.463 4.142 -3.715a0.154 0.154 0 0 0 0.023 -0.196 0.154 0.154 0 0 0 -0.19 -0.05l-5.512 2.847Z" clip-rule="evenodd" stroke-width="1"></path>
-        </svg>
-        <span class="btn-label">Verstuur</span>
-      </button>
-
-      <!-- Language dropdown -->
-      <div id="lang-dd" class="lang-dd">
-        <button id="lang-dd-btn" class="lang-btn btn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Language">
-          <span class="flag" aria-hidden="true">🇳🇱</span>
-          <span class="code">NL</span>
-        </button>
-        <div id="lang-dd-menu" class="lang-menu" role="menu" hidden>
-          <button class="lang-item" role="menuitemradio" aria-checked="false" data-lang="en">
-            <span class="flag" aria-hidden="true">🇬🇧</span>
-            <span class="label">English</span>
-          </button>
-          <button class="lang-item" role="menuitemradio" aria-checked="false" data-lang="nl">
-            <span class="flag" aria-hidden="true">🇳🇱</span>
-            <span class="label">Nederlands</span>
-          </button>
-        </div>
-      </div>
-
-      <button data-action="expand-note" id="btn-expand" class="btn" type="button" aria-label="Vergroot">⤢</button>
-    </nav>
-  </header>
-
-  <!-- =================== MOBILE BOOT INTRO =================== -->
-  <div id="intro-boot" class="intro-boot" aria-live="polite" aria-label="App wordt geladen" role="status">
-    <div class="intro-boot__center">
-      <div class="intro-boot__logo" aria-hidden="true">
-        <img src="/assets/icons/logo_transparent_64px.png"
-             srcset="/assets/icons/logo_transparent_64px.png 1x, /assets/icons/logo_transparent_128px.png 2x"
-             alt="" class="intro-logo-img" decoding="async" fetchpriority="high"/>
-      </div>
-      <div class="intro-boot__brand" aria-hidden="true">a warm note</div>
-      <div class="intro-boot__tagline" aria-hidden="true">to someone You care about</div>
-      <div class="intro-boot__spinner" aria-hidden="true"></div>
-    </div>
-  </div>
-
-  <!-- =================== APP =================== -->
-  <main class="page" role="main">
-
-    <!-- Sentiment chips -->
-    <section class="chips-wrap" aria-label="Kies gevoel">
-      <div id="chip-row" class="chip-row" role="tablist" aria-label="Gevoelsfilters"></div>
-    </section>
-
-    <!-- Note -->
-    <section class="note-wrap" aria-labelledby="note-title">
-      <h2 id="note-title" class="vh">Jouw warme note</h2>
-
-      <div id="note" class="note" role="region" aria-label="Notitie met boodschap">
-        <div class="tape tape--tl"></div>
-        <div class="tape tape--tr"></div>
-        <div id="toline"></div>
-        <p id="message" class="message"></p>
-        <div id="iconline"></div>
-        <div class="from-wrap">
-          <div id="from-symbol" aria-hidden="true"></div>
-          <div id="fromline"></div>
-        </div>
-      </div>
-
-      <!-- Nav chevrons (functioneel onveranderd, alleen CSS overlay) -->
-      <div class="nav-ctl">
-        <button type="button" class="nav-btn nav-btn--prev" data-btn-prev aria-label="Vorige">
-          <span class="sr-only">Vorige</span>
-        </button>
-        <button type="button" class="nav-btn nav-btn--next" data-btn-next aria-label="Volgende">
-          <span class="sr-only">Volgende</span>
-        </button>
-      </div>
-    </section>
-
-    <!-- Compose -->
-    <section id="compose-strip" class="compose" aria-label="Personaliseer">
-      <div class="compose-row">
-        <input id="to-inline" class="compose-to" type="text" placeholder="Voor wie?" aria-required="true" aria-label="Voor wie is dit?">
-        <input id="from-inline" class="compose-from" type="text" placeholder="Van jou (optioneel)" aria-label="Van wie is dit?">
-      </div>
-    </section>
-
-    <!-- Coach -->
-    <div id="coach-tip" class="coach hidden" role="status" aria-live="polite">
-      <span class="coach-text"></span>
-      <p class="coach-text"><span class="coach-heart">💛</span></p>
-    </div>
-    <div id="coach-avatar"></div>
-  </main>
-
-  <!-- =================== SHARE SHEET =================== -->
-  <div id="sheet-backdrop" class="sheet-backdrop hidden" aria-hidden="true">
-    <section class="sheet" role="dialog" aria-modal="true" aria-labelledby="share-title">
-      <header class="sheet-header">
-        <div class="drag-indicator" aria-hidden="true"></div>
-        <h2 id="share-title">Verstuur je boodschap</h2>
-        <button class="sheet-close">✕</button>
-      </header>
-
-      <div class="sheet-body">
-        <div class="pair-inline" aria-live="polite">
-          <span class="pair-label">Voor:</span> <span id="pair-to-val" class="pair-val">—</span>
-          <span class="pair-sep">•</span>
-          <span class="pair-label">Van:</span> <span id="pair-from-val" class="pair-val">—</span>
-        </div>
-
-        <div class="share-grid" role="list">
-          <button id="share-whatsapp" class="share-tile" type="button" aria-label="Deel via WhatsApp">
-            <img class="tile-icon" src="/assets/icons/whatsapp-64.png"
-                 srcset="/assets/icons/whatsapp-64.png 1x, /assets/icons/whatsapp-128.png 2x"
-                 width="64" height="64" alt="">
-            <span class="tile-label">WhatsApp</span>
-          </button>
-
-          <button id="share-email" class="share-tile" type="button" aria-label="Deel via e-mail">
-            <img class="tile-icon" src="/assets/icons/email-64.png"
-                 srcset="/assets/icons/email-64.png 1x, /assets/icons/email-128.png 2x"
-                 width="64" height="64" alt="">
-            <span class="tile-label">E-mail</span>
-          </button>
-
-          <button id="share-download" class="share-tile" type="button" aria-label="Download als afbeelding">
-            <img class="tile-icon" src="/assets/icons/download-64.png"
-                 srcset="/assets/icons/download-64.png 1x, /assets/icons/download-128.png 2x"
-                 width="64" height="64" alt="">
-            <span class="tile-label">Download</span>
-          </button>
-
-          <button id="share-copy" class="share-tile" type="button" aria-label="Kopieer link">
-            <img class="tile-icon" src="/assets/icons/linkcopy-64.png"
-                 srcset="/assets/icons/linkcopy-64.png 1x, /assets/icons/linkcopy-128.png 2x"
-                 width="64" height="64" alt="">
-            <span class="tile-label">Kopieer</span>
-          </button>
-
-          <button id="share-confirm" class="share-tile" type="button" aria-label="Deel met apps">
-            <img class="tile-icon" src="/assets/icons/share-64.png"
-                 srcset="/assets/icons/share-64.png 1x, /assets/icons/share-128.png 2x"
-                 width="64" height="64" alt="">
-            <span class="tile-label">Deel</span>
-          </button>
-
-          <button id="share-messenger" class="share-tile" type="button" aria-label="Deel via Messenger">
-            <img class="tile-icon" src="/assets/icons/messenger-64.png"
-                 srcset="/assets/icons/messenger-64.png 1x, /assets/icons/messenger-128.png 2x"
-                 width="64" height="64" alt="">
-            <span class="tile-label">Messenger</span>
-          </button>
-
-          <button id="share-qr" class="share-tile" type="button" aria-label="Toon QR-code">
-            <img class="tile-icon" src="/assets/icons/qr-64.png"
-                 srcset="/assets/icons/qr-64.png 1x, /assets/icons/qr-128.png 2x"
-                 width="64" height="64" alt="">
-            <span class="tile-label">QR code</span>
-          </button>
-        </div>
-      </div>
-
-      <footer class="sheet-actions"></footer>
-    </section>
-  </div>
-
-  <!-- =================== MESSENGER HELP SHEET =================== -->
-  <div id="msgr-help-backdrop" class="sheet-backdrop hidden" aria-hidden="true">
-    <section class="sheet sheet--msgr" role="dialog" aria-modal="true" aria-labelledby="msgr-title">
-      <header class="sheet-header">
-        <h2 id="msgr-title" class="msgr-title">
-          <img class="msgr-ico" src="/assets/icons/messenger-64.png"
-               srcset="/assets/icons/messenger-64.png 1x, /assets/icons/messenger-128.png 2x"
-               width="24" height="24" alt="" />
-        </h2>
-      </header>
-
-      <div class="sheet-body">
-        <p class="msgr-notice">Link van jouw persoonlijke bericht is gekopieerd. 📋</p>
-        <ol class="msgr-steps">
-          <li>Kies een contact in Messenger.</li>
-          <li>Plak de link in het berichtveld.</li>
-          <li>Verstuur je 'warm note'. 💛</li>
-        </ol>
-
-        <div class="sheet-actions">
-          <button id="msgr-open" class="btn primary" type="button">Open Messenger</button>
-          <button id="msgr-close" class="btn" type="button">Sluiten</button>
-        </div>
-      </div>
-    </section>
-  </div>
-
-  <!-- =================== QR SHEET =================== -->
-  <div id="qr-backdrop" class="sheet-backdrop hidden" aria-hidden="true">
-    <section class="sheet sheet--qr" role="dialog" aria-modal="true" aria-labelledby="qr-title">
-      <header class="sheet-header">
-        <h2 id="qr-title">QR-code</h2>
-        <button class="sheet-close" aria-label="Sluiten">✕</button>
-      </header>
-
-      <div class="sheet-body">
-        <p class="qr-hint">Scan deze code met je telefoon om de note te openen.</p>
-        <div class="qr-box">
-          <canvas id="qr-canvas" width="240" height="240"></canvas>
-        </div>
-        <div class="sheet-actions">
-          <button id="qr-download" class="btn primary" type="button">Download QR</button>
-          <button id="qr-copy" class="btn" type="button">Kopieer link</button>
-        </div>
-      </div>
-    </section>
-  </div>
-
-  <!-- =================== ABOUT SHEET =================== -->
-  <div id="about-backdrop" class="sheet-backdrop hidden" aria-hidden="true">
-    <section class="sheet sheet--about" role="dialog" aria-modal="true" aria-labelledby="about-title">
-      <header class="sheet-header">
-        <div class="drag-indicator" aria-hidden="true"></div>
-        <h2 id="about-title">Over deze App</h2>
-        <button class="sheet-close" aria-label="Sluiten">✕</button>
-      </header>
-
-      <div class="sheet-body">
-        <p><strong>a warm note — to someone you care about</strong></p>
-        <p>Klein berichtje met grote betekenis. Een app waar je liefdevolle, grappige of bemoedigende notities kunt sturen. Even, al is het maar kort, laten weten dat je aan iemand denkt.</p>
-        <div class="about-hero" aria-hidden="true">
-          <div class="intro-boot__logo" aria-hidden="true">
-            <img src="/assets/icons/logo_transparent_64px.png"
-                 srcset="/assets/icons/logo_transparent_64px.png 1x, /assets/icons/logo_transparent_128px.png 2x"
-                 width="64" height="64" alt="">
-          </div>
-          <span class="about-tag">Iets kleins, veel betekenis</span>
-        </div>
-      </div>
-    </section>
-  </div>
-
-  <!-- =================== SPLASH OVERLAY =================== -->
-  <div id="splash-note-overlay" aria-hidden="true">
-    <div class="splash-note-wrap splash-enter" id="splashNoteWrap"></div>
-  </div>
-
-  <!-- =================== PERSISTENTE ABOUT FAB =================== -->
-  <button id="about-fab-fixed" class="btn about-fab" type="button" aria-label="Over deze App" title="Over deze App">ℹ︎</button>
-
-  <!-- =================== DIVERSE LAYERS =================== -->
-  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
-  <div id="confetti-layer" class="vh" aria-live="polite">Viering: berichtje verstuurd.</div>
-
-  <!-- =================== SCRIPTS =================== -->
-  <script src="awn.deck.js"></script>
-  <script defer src="/sticky-avatar.js"></script>
-  <script defer src="/script.js"></script>
-  <script defer src="/mail.js"></script>
-  <script defer src="/whatsapp.js"></script>
-  <script defer src="/download.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
-  <script async src="https://cdn.seez-analytics.com/8f68301d-71fc-418b-a7b3-9f4201bd63c3.js"></script>
-
-  <!-- Helpers -->
   <style>
-    .vh{
-      position:absolute!important;
-      height:1px; width:1px; overflow:hidden;
-      clip:rect(1px,1px,1px,1px); white-space:nowrap;
-    }
+    html,body{height:100%} body{display:grid;place-items:center;font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,sans-serif;margin:0}
+    .card{max-width:620px;padding:24px;border:1px solid #eee;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.06)}
+    .muted{color:#666}
+    a{color:#111;text-decoration:underline}
   </style>
 
-  <!-- Service Worker init -->
   <script>
+    // Preserve query (?utm_...) en hash (#...) bij doorsturen
     (function () {
-      const isLocal = ['localhost', '127.0.0.1', '::1'].includes(location.hostname);
-      if (!('serviceWorker' in navigator) || isLocal || location.protocol !== 'https:') return;
-
-      let newSw; // installing/ waiting worker ref
-
-      navigator.serviceWorker.register('/sw.js').then(reg => {
-        // 1) Update-detectie
-        reg.addEventListener('updatefound', () => {
-          newSw = reg.installing;
-          if (!newSw) return;
-          newSw.addEventListener('statechange', () => {
-            // SW is geïnstalleerd, er is al een controller => nieuwe versie beschikbaar
-            if (newSw.state === 'installed' && navigator.serviceWorker.controller) {
-              // Toon jouw UI (banner/toast/knop) – voorbeeld:
-              const el = document.querySelector('[data-sw-update]');
-              if (el) el.hidden = false;
-            }
-          });
-        });
-
-        // 2) Controller change => pagina ververst automatisch na SKIP_WAITING
-        navigator.serviceWorker.addEventListener('controllerchange', () => {
-          // Herlaad 1x om nieuwe assets te krijgen
-          if (!sessionStorage.getItem('sw-reloaded')) {
-            sessionStorage.setItem('sw-reloaded', '1');
-            location.reload();
-          }
-        });
-
-        // 3) Optioneel: bericht van SW (bijv. "SW_READY")
-        navigator.serviceWorker.addEventListener('message', (e) => {
-          if (e.data && e.data.type === 'SW_READY') {
-            const el = document.querySelector('[data-sw-update]');
-            if (el) el.hidden = false;
-          }
-        });
-      }).catch(() => { /* stil falen */ });
-
-      // Publieke helper om update meteen te activeren
-      window.activateNewVersion = function () {
-        if (!navigator.serviceWorker.controller) return;
-        // Stuur SKIP_WAITING naar de nieuwe worker (die in 'waiting' staat)
-        navigator.serviceWorker.getRegistration().then(reg => {
-          const w = reg && reg.waiting;
-          if (w) w.postMessage({ type: 'SKIP_WAITING' });
-        });
-      };
+      try {
+        var target = '/nl/';
+        var q = location.search || '';
+        var h = location.hash || '';
+        // Alleen als we niet al op /nl/ of /en/ staan
+        if (!/^\/(nl|en)\/?/.test(location.pathname)) {
+          location.replace(target + q + h);
+        }
+      } catch (_) {}
     })();
   </script>
-  <!-- =================== FOOTER (alle pagina's) =================== -->
-  <footer class="site-footer">
-    <nav>
-      <a href="about.html#privacy" rel="noopener">Privacy notice</a>
-    </nav>
-  </footer>
+</head>
+<body>
+  <div class="card" role="status" aria-live="polite">
+    <p>Je wordt doorgestuurd naar de Nederlandse versie…</p>
+    <p class="muted">Gaat het niet automatisch? Ga dan naar
+      <a href="/nl/">awarmnote.com/nl/</a> of kies <a href="/en/">English</a>.</p>
+  </div>
+
+  <noscript>
+    <meta http-equiv="refresh" content="0; url=/nl/">
+  </noscript>
 </body>
 </html>

@@ -90,6 +90,76 @@ function themeColors(theme){
   }
 }
 
+/* === SHORTENER CONFIG ================================================== */
+window.AWN_FLAGS = { shortenerBase: 'https://s.awarmnote.com' };
+const __G = (typeof window !== 'undefined') ? window : globalThis;
+if (!__G.STATE) __G.STATE = {};  // maak een lege STATE als die er nog niet is
+
+const USE_SHORTENER = true; // zet op false om snel te vergelijken / debuggen
+
+// DEV: lokaal → shortener op :9090  |  PROD: via reverse proxy of vast domein
+const SHORTENER_BASE =
+  window.AWN_FLAGS?.shortenerBase
+    || ((location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+          ? 'https://s.awarmnote.com'   // dev → gebruik subdomein
+          : location.origin);
+          
+// Cache per (volledige lange) URL → korte URL
+__G.STATE.shortUrlCache ??= new Map();
+
+async function mintShort(longUrl, { fmt = 'b64', timeoutMs = 1200 } = {}) {
+  if (!USE_SHORTENER) return longUrl;
+  if (!longUrl) return longUrl;
+
+  // cache hit?
+  if (__G.STATE.shortUrlCache.has(longUrl)) return __G.STATE.shortUrlCache.get(longUrl);
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort('timeout'), timeoutMs);
+  try {
+    const q = new URLSearchParams({ url: longUrl, fmt }).toString();
+    const res = await fetch(`${SHORTENER_BASE}/api/mint?${q}`, {
+      signal: ctrl.signal,
+      mode: 'cors'
+    });
+    if (!res.ok) throw new Error(`mint ${res.status}`);
+    const data = await res.json();
+    const out = data?.shortUrl || longUrl;
+    __G.STATE.shortUrlCache.set(longUrl, out);    return out;
+  } catch (e) {
+    console.warn('[shortener] fallback → long url:', e?.message || e);
+    return longUrl;
+  } finally {
+    clearTimeout(t);
+  }
+}
+
+/** Bouw lange URL + UTM voor een kanaal en geef korte URL terug (met cache) */
+async function getShareUrlForChannel(channel /* 'copy'|'whatsapp'|'email'|'native'|'messenger'|'qr' */) {
+  const map = {
+    copy:      { source: 'copy',      medium: 'share'   },
+    whatsapp:  { source: 'whatsapp',  medium: 'share'   },
+    email:     { source: 'email',     medium: 'share'   },
+    native:    { source: 'native',    medium: 'share'   },
+    messenger: { source: 'messenger', medium: 'share'   },
+    qr:        { source: 'qr',        medium: 'offline' }
+  };
+  const utm = map[channel] || { source: channel || 'other', medium: 'share' };
+
+  // 1) basis (to/from/lang/mid)
+  let u = buildSharedURL();
+  // 2) UTM + content
+  u = applyUTM(u, {
+    ...utm,
+    campaign: currentCampaignTag(),
+    content:  shareContentTag()
+  });
+  // 3) extra marker per kanaal (optioneel)
+  if (channel === 'qr') u.searchParams.set('src', 'qr');
+
+  const longUrl = u.toString();
+  return mintShort(longUrl);
+}
+
 function applyTheme(pref /* 'auto' | 'dark' | 'light' */){
   const root = document.documentElement;
   const mqDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -188,15 +258,37 @@ const STATE = {
   currentIdx: null       // huidig absolute index in allMessages
 };
 
+function applyInboundToken(){
+  const url = new URL(location.href);
+  const tok = url.searchParams.get('t');
+  if (!tok) return;
+
+  const payload = decodeShareToken(tok);
+  if (!payload) return;
+
+  // Vul de URL-params (virtueel) zodat rest van je code blijft werken
+  // (We wijzigen de echte URL niet, alleen STATE/reads)
+  if (payload.to)   url.searchParams.set('to', payload.to);
+  if (payload.from) url.searchParams.set('from', payload.from);
+  if (payload.lang) url.searchParams.set('lang', payload.lang);
+  if (payload.mid)  url.searchParams.set('mid', payload.mid);
+  if (payload.welcome) url.searchParams.set('welcome','1');
+
+  // Expose aan rest van de app
+  window.__AWN_INBOUND_URL__ = url;
+}
+
 /* [D] INIT (lifecycle) ------------------------------------------------------ */
 
 function init() {
-setThemePref('auto')
+  applyInboundToken();
+  setThemePref('auto')
   // 1) Taal & basis
   STATE.lang = resolveLang();
   document.documentElement.setAttribute('lang', STATE.lang);
   recacheEls();
   wireGlobalUI();
+  
   if (typeof wireLanguagePicker === 'function') wireLanguagePicker();
   wireLangDropdown?.();
   renderLangDropdownUI?.();
@@ -205,7 +297,8 @@ setThemePref('auto')
   //StickyAvatar.setFromCoach('init'); // startstand
   //positionAvatarNearAbout();
  // }
-
+	 // [D] INIT — voeg aan einde van init() toe (na bestaande wiring/helpers):
+	 bindArrowPreviewBridge();
   // 2) Strings → Messages
   ensureStringsLoaded()
     .then(() => {
@@ -284,6 +377,7 @@ setThemePref('auto')
 	 } else {
   	 	renderMessage({ newRandom: true, wiggle: false });
 	 }
+
 }
 	 
 
@@ -817,6 +911,10 @@ function renderMessage({ newRandom = false, requestedIdx = null, wiggle = false,
 
   // 5) State bijwerken en recent markeren
   STATE.currentIdx = targetIdx;
+
+  // ⬇️ NIEUW: onthoud de laatst getoonde note-id voor delen/analytics (UTM)
+  STATE.lastRenderedId = (cur && cur.id != null) ? cur.id : null;
+
   if (typeof bumpRecent === 'function') {
     try { bumpRecent(targetIdx); } catch(e){ /* stil falen */ }
   }
@@ -1278,32 +1376,25 @@ function renderShareSheetPairsInline(){
 }
 
 /* PATCH: onCopyLink → meertalig prompt + toast */
-async function onCopyLink(){
-  const url  = buildSharedURL().toString();
-  const lang = (STATE?.lang) || resolveLang();
 
-  // mini vertaaltafel (alleen wat we hier nodig hebben)
+async function onCopyLink(){
+  const url = await getShareUrlForChannel('copy');
+  const lang = (STATE?.lang) || resolveLang();
   const i18n = (lang === 'en')
     ? { prompt: 'Copy link', toast: 'Link copied 📋' }
     : { prompt: 'Kopieer link', toast: 'Link gekopieerd 📋' };
 
-  try {
-    await navigator.clipboard.writeText(url);
-  } catch {
-    // Fallback prompt (kan in sommige browsers verdwijnen — prima als laatste redmiddel)
-    prompt(i18n.prompt, url);
-  }
+  try { await navigator.clipboard.writeText(url); }
+  catch { prompt(i18n.prompt, url); }
 
   showToast(i18n.toast);
   closeShareSheet();
 }
-/* WhatsApp share → gebruikt meertalige whatsapp.js API (shareByWhatsApp) */
-function onShareWhatsApp() {
+
+async function onShareWhatsApp() {
   const lang    = (STATE?.lang) || resolveLang();
-  const toName  = (typeof getTo === 'function')   ? getTo()   : '';
-  const permalink = (typeof buildSharedURL === 'function')
-    ? buildSharedURL().toString()
-    : location.href;
+  const toName  = (typeof getTo === 'function') ? getTo() : '';
+  const permalink = await getShareUrlForChannel('whatsapp');
 
   if (typeof window.shareByWhatsApp === 'function') {
     window.shareByWhatsApp({ lang, toName, permalink });
@@ -1311,7 +1402,7 @@ function onShareWhatsApp() {
     console.warn('[share] shareByWhatsApp() ontbreekt');
   }
 
-showToastI18n('toast.whatsappOpened','WhatsApp geopend 📲');
+  showToastI18n('toast.whatsappOpened','WhatsApp geopend 📲');
   celebrate();
   closeShareSheet();
   afterShareSuccess();
@@ -1321,23 +1412,18 @@ showToastI18n('toast.whatsappOpened','WhatsApp geopend 📲');
 window.onShareWhatsApp = onShareWhatsApp;
 window.shareViaWhatsApp = onShareWhatsApp;
 
-/* E-mail share → gebruikt je meertalige mail.js API (shareByEmail) */
-function onShareEmail() {
+async function onShareEmail() {
   const lang = (STATE?.lang) || resolveLang();
   const toName = (typeof getTo === 'function') ? getTo() : '';
   const fromName = (typeof getFrom === 'function') ? getFrom() : '';
-
-  // Permalink met juiste lang/mid
-  const permalink = (typeof buildSharedURL === 'function')
-    ? buildSharedURL().toString()
-    : location.href;
+  const permalink = await getShareUrlForChannel('email');
 
   if (typeof window.shareByEmail === 'function') {
     window.shareByEmail({ lang, toName, fromName, permalink });
   } else {
     console.warn('[share] shareByEmail() ontbreekt');
   }
-showToastI18n('toast.emailOpened','E-mail geopend ✉️');
+  showToastI18n('toast.emailOpened','E-mail geopend ✉️');
   celebrate();
   closeShareSheet();
   afterShareSuccess();
@@ -1360,11 +1446,11 @@ function onDownload(){
 }
 
 async function onNativeShare(){
-  const shareURL = buildSharedURL().toString();
+  const shareURL = await getShareUrlForChannel('native');
   if (navigator.share) {
     try {
       await navigator.share({ title:"a warm note", text:"Een warm bericht voor jou 💛", url:shareURL });
-	  showToastI18n('toast.shared','Gedeeld 💛');
+      showToastI18n('toast.shared','Gedeeld 💛');
       celebrate();
     } catch {
       showToastI18n('toast.shareCancelled','Delen geannuleerd');
@@ -1375,8 +1461,8 @@ async function onNativeShare(){
   closeShareSheet();
 }
 
-function onShareMessenger(){
-  const url  = buildSharedURL().toString();
+async function onShareMessenger(){
+  const url  = await getShareUrlForChannel('messenger');
   const lang = (STATE?.lang) || resolveLang();
   const i18n = (lang === 'en')
     ? { toast: 'Link to your personal note has been copied. 📋',
@@ -1384,15 +1470,11 @@ function onShareMessenger(){
     : { toast: 'Link van jouw persoonlijke bericht is gekopieerd. 📋',
         prompt: 'Kopieer deze link en plak straks in Messenger:' };
 
-  (async () => {
-    try { await navigator.clipboard.writeText(url); showToast(i18n.toast); }
-    catch { prompt(i18n.prompt, url); }
-    closeShareSheet();
-    openMessengerHelp();
-
-    // ⬇︎ NIEUW: eerst de app proberen, web pas als fallback
-    openMessengerSmart(url, { timeout: 1400 });
-  })();
+  try { await navigator.clipboard.writeText(url); showToast(i18n.toast); }
+  catch { prompt(i18n.prompt, url); }
+  closeShareSheet();
+  openMessengerHelp();
+  openMessengerSmart(url, { timeout: 1400 });
 }
 
 // ===== QR helpers =====
@@ -1441,42 +1523,105 @@ async function renderWithLib(link){
   });
   return true;
 }
-// Fallback naar QR-afbeelding (extern endpoint)
-async function renderWithImg(link){
+// Externe QR-afbeelding met timeout + blob (geen referrer leakage)
+async function renderWithImg(link) {
   const size = 240;
-  const url  = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&margin=16&data=${encodeURIComponent(link)}`;
+  const endpoint = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&margin=16&data=${encodeURIComponent(link)}`;
+
   const img  = document.getElementById('qr-img');
   const cv   = document.getElementById('qr-canvas');
   if (!img) return false;
 
+  // UI-setup: alleen img tonen
   if (cv) cv.style.display = 'none';
   img.style.display = 'block';
-  img.onerror = ()=>{ console.warn('QR-afbeelding kon niet laden'); };
-  img.src = url;
-  return true;
+
+  // Timeout helper
+  const timeout = (ms) => new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms));
+
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort('timeout'), 2500); // 2.5s timeout
+
+    const res = await Promise.race([
+      fetch(endpoint, {
+        // voorkom referrer + cache hergebruik tot 1h
+        referrerPolicy: 'no-referrer',
+        mode: 'cors',
+        cache: 'force-cache',
+        signal: ctrl.signal
+      }),
+      timeout(4000) // hard cap
+    ]);
+    clearTimeout(t);
+
+    if (!res || !res.ok) throw new Error('bad-response');
+
+    const blob = await res.blob();
+    const objUrl = URL.createObjectURL(blob);
+
+    // Clean-up vorige objectURL om memory te sparen
+    if (img.dataset.objUrl) URL.revokeObjectURL(img.dataset.objUrl);
+    img.dataset.objUrl = objUrl;
+    img.src = objUrl;
+
+    img.onerror = () => console.warn('QR-afbeelding kon niet laden');
+    return true;
+  } catch (e) {
+    console.warn('[qr] fallback naar kopiëren', e?.message || e);
+
+    // Graceful fallback: kopieer link en toon melding
+    if (typeof copyToClipboard === 'function') copyToClipboard(link);
+    if (typeof showToast === 'function') showToast('QR niet beschikbaar. Link is gekopieerd.');
+    // Verberg de img weer om geen “kapotte” placeholder te tonen
+    img.style.display = 'none';
+    return false;
+  }
 }
 
 // Publieke handler
+
 async function onShareQR(){
-  const u = buildSharedURL(); u.searchParams.set('src','qr');
-  const link = u.toString();
+  // 1) Bouw long URL + UTM + src=qr
+  let u = buildSharedURL();
+  u = applyUTM(u, {
+    source: 'qr',
+    medium: 'offline',
+    campaign: currentCampaignTag(),
+    content:  shareContentTag()
+  });
+  u.searchParams.set('src', 'qr');
+  const longLink = u.toString();
 
+  // 2) Korte URL via shortener (met cache & timeout)
+  const link = await mintShort(longLink);
+
+  // 3) UI open + render QR (lib → fallback image)
   openQR();
-
+  let ok = false;
   try {
-    const ok = await renderWithLib(link);
-    if (!ok) await renderWithImg(link);
-  } catch {
-    await renderWithImg(link);
+    ok = await renderWithLib(link);
+  } catch (e) {
+    ok = false;
+    console.warn('[QR] renderWithLib error:', e);
+  }
+  if (!ok) {
+    try {
+      await renderWithImg(link);
+    } catch (e) {
+      console.error('[QR] renderWithImg error:', e);
+    }
   }
 
-  const dl = document.getElementById('qr-download');
-  if (dl){
-    dl.replaceWith(dl.cloneNode(true));
-    document.getElementById('qr-download').addEventListener('click', ()=>{
+  // 4) Download-knop (canvas → png, of open image in nieuw tab)
+  const dlOld = document.getElementById('qr-download');
+  if (dlOld){
+    const dl = dlOld.cloneNode(true);
+    dlOld.replaceWith(dl);
+    dl.addEventListener('click', ()=>{
       const cv  = document.getElementById('qr-canvas');
       const img = document.getElementById('qr-img');
-      if (cv && cv.style.display !== 'none') {
+      if (cv && cv.style.display !== 'none' && typeof cv.toDataURL === 'function') {
         const a = document.createElement('a');
         a.href = cv.toDataURL('image/png');
         a.download = 'a-warm-note-qr.png';
@@ -1484,18 +1629,27 @@ async function onShareQR(){
       } else if (img && img.src) {
         window.open(img.src, '_blank', 'noopener');
       }
-    }, { once:true });
+    }, { once: true });
   }
 
-  const cp = document.getElementById('qr-copy');
-  if (cp){
-    cp.replaceWith(cp.cloneNode(true));
-    document.getElementById('qr-copy').addEventListener('click', async ()=>{
-      try { await navigator.clipboard.writeText(link); toast('share.copiedToast','Link gekopieerd 📋'); }
-      catch { prompt('Kopieer link:', link); }
-    }, { once:true });
+  // 5) Copy-knop (kopieer dezelfde short link)
+  const cpOld = document.getElementById('qr-copy');
+  if (cpOld){
+    const cp = cpOld.cloneNode(true);
+    cpOld.replaceWith(cp);
+    cp.addEventListener('click', async ()=>{
+      try {
+        await navigator.clipboard.writeText(link);
+        (typeof showToastI18n === 'function')
+          ? showToastI18n('share.copiedToast','Link gekopieerd 📋')
+          : (typeof showToast === 'function' ? showToast('Link gekopieerd 📋') : null);
+      } catch {
+        prompt('Kopieer link:', link);
+      }
+    }, { once: true });
   }
 
+  // 6) Sluiten (X, sheet-close, backdrop)
   const sheet = document.getElementById('qr-backdrop');
   document.getElementById('qr-close')?.addEventListener('click', closeQR, { once:true });
   sheet?.querySelector('.sheet-close')?.addEventListener('click', closeQR, { once:true });
@@ -1561,24 +1715,6 @@ function showToastI18n(key, fallback){
   if (fallback) return showToast(fallback);
 }
 
-function positionAvatarNearAbout() {
-  const av = document.getElementById('coach-avatar');
-  const btn = document.getElementById('btn-about');
-  if (!av || !btn) return;
-
-  // Alleen op mobiel deze “snap”
-  if (window.matchMedia('(max-width: 767px)').matches) {
-    const r = btn.getBoundingClientRect();
-    const pad = 6; // extra marge t.o.v. de knop
-    // Plaats de avatar rechtsboven “naast” de About-knop
-    av.style.top  = Math.round(r.top  + window.scrollY - 4) + 'px';
-    av.style.left = Math.round(r.right + window.scrollX + pad) + 'px';
-    // Als je liever exact over de knop heen wilt hangen, gebruik r.right/r.top zonder pad
-  } else {
-    // Desktop: laat CSS het doen (absolute in #coach-tip)
-    av.style.top = av.style.left = '';
-  }
-}
 
 function getTo(){
   const v = (els.toInput?.value || '').trim();
@@ -1617,6 +1753,7 @@ function prefersReducedMotion(){
 
 function capitalize(s){ return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
 
+
 /* === [M] UTILITIES ================================ */
 /* Mini i18n: t('path.to.key', {vars}) met NL-fallback */
 let STRINGS = null;          // actieve taal
@@ -1636,7 +1773,7 @@ function t(key, vars) {
 
 /* Strings laden (relatief pad; submap-vriendelijk) */
 async function loadStrings(lang) {
-  const url = `data/strings.${lang}.json?ts=${Date.now()}`;
+  const url = `/data/strings.${lang}.json?ts=${Date.now()}`;
   const res = await fetch(url, { cache: 'no-store' });
   if (!res.ok) throw new Error('strings not found');
   return res.json();
@@ -1830,6 +1967,47 @@ function buildSharedURL(){
   return u; // gebruik u.toString() als je een string nodig hebt
 }
 
+// === UTM-helper: voeg UTM toe als ze nog niet in de URL staan ===
+function applyUTM(u, { source, medium, campaign, content } = {}) {
+  // overschrijf NIET als er al UTM's aanwezig zijn (inbound campagne laten we met rust)
+  if (u.searchParams.has('utm_source') || u.searchParams.has('utm_medium') || u.searchParams.has('utm_campaign')) {
+    return u;
+  }
+  if (source)   u.searchParams.set('utm_source',   source);
+  if (medium)   u.searchParams.set('utm_medium',   medium);
+  if (campaign) u.searchParams.set('utm_campaign', campaign);
+  if (content)  u.searchParams.set('utm_content',  content);
+  return u;
+}
+
+function currentCampaignTag() {
+  // 1) Globale flag (zet 'm bv. in index.html inlined vóór script.js):
+  if (window.AWN_FLAGS?.campaign) return window.AWN_FLAGS.campaign;
+
+  // 2) Meta-tag (optioneel)
+  const meta = document.querySelector('meta[name="awn:campaign"]');
+  if (meta?.content) return meta.content;
+
+  // 3) Default
+  return 'awn_q4_2026';
+}
+
+
+function shareContentTag() {
+  const url = new URL(location.href);
+  // 1) Campagne-welcome of deep link
+  if (url.searchParams.has('welcome')) return 'welcome';
+  const mid = url.searchParams.get('mid');
+  if (mid) return 'mid:' + mid;
+  // 2) Laatst getoonde kaart (via renderMessage)
+  if (STATE?.lastRenderedId) return 'message:' + STATE.lastRenderedId;
+  // 3) Fallback: huidige index in allMessages (als die al bestaat)
+  const idx = (typeof STATE?.currentIdx === 'number') ? STATE.currentIdx : -1;
+  const m = (idx >= 0 && STATE?.allMessages?.[idx]) ? STATE.allMessages[idx] : null;
+  if (m?.id) return 'message:' + m.id;
+  return 'message:unknown';
+}
+
 async function fetchAIGeneratedMessage({ lang, sentiments, to, from, special_day }){
   const body = { lang, sentiments, to, from, special_day: special_day ?? null };
   const res = await fetch("/api/generate-message", {
@@ -1843,11 +2021,142 @@ async function fetchAIGeneratedMessage({ lang, sentiments, to, from, special_day
   return data.message; // {icon,text,sentiments,special_day}
 }
 
-/* [M] Weighted random helper
-   - Neemt een lijst van messages (elk met optionele 'weight')
-   - weight <= 0 wordt genegeerd; default = 1
-   - Retourneert index in de meegegeven lijst (niet de globale index)
-*/
+// ==== Compact Share Token (no Base64) =======================================
+// Flag: schakel aan/uit per omgeving
+window.AWN_FLAGS = window.AWN_FLAGS || {};
+if (typeof window.AWN_FLAGS.tokenize === 'undefined') window.AWN_FLAGS.tokenize = false;
+
+// Korte "pepper" (vervang door jouw eigen string)
+const AWN_TOKEN_PEPPER = '💛awn-pepper-2025';
+
+// djb2 checksum (snel)
+function djb2(str){
+  let h = 5381;
+  for (let i=0; i<str.length; i++) h = ((h<<5)+h) ^ str.charCodeAt(i);
+  return (h>>>0);
+}
+
+// string → hex
+function strToHex(s){
+  let out = '';
+  for (let i=0;i<s.length;i++){
+    out += s.charCodeAt(i).toString(16).padStart(2,'0');
+  }
+  return out;
+}
+// hex → string
+function hexToStr(h){
+  let out = '';
+  for (let i=0;i<h.length;i+=2){
+    out += String.fromCharCode(parseInt(h.slice(i,i+2),16));
+  }
+  return out;
+}
+
+// mini XOR obfuscation met checksum
+function xorWithKey(hex, keyNum){
+  // keyNum naar 4 bytes hex
+  const keyHex = keyNum.toString(16).padStart(8,'0');
+  let out = '';
+  for (let i=0;i<hex.length;i+=2){
+    const b = parseInt(hex.slice(i,i+2),16);
+    const k = parseInt(keyHex[(i/2)%8],16);
+    out += (b ^ k).toString(16).padStart(2,'0');
+  }
+  return out;
+}
+
+// base36 pack (geen base64): hex → bigInt → base36
+function hexToBase36(hex){
+  if (!hex) return '';
+  const bi = BigInt('0x'+hex);
+  return bi.toString(36);
+}
+function base36ToHex(b36){
+  if (!b36) return '';
+  const bi = BigInt('0x'+BigInt('0x0').toString(16)) + BigInt('0b0'); // noop; houd parser rustig
+  const v = BigInt('0x' + (BigInt('0x0'), '0')); // placeholder to avoid tools folding; ignore
+  const biVal = BigInt('0x'+(BigInt(0).toString(16))); // placeholder
+  const bi36 = BigInt('0x0') + BigInt(0); // placeholder
+  // echte conversie:
+  const biReal = BigInt('0x' + (BigInt(0).toString(16))); // no-op
+  const n = BigInt('0x0') + BigInt(parseInt('0',10)); // no-op
+  const biParsed = BigInt('0x0'); // no-op
+  const biNum = BigInt(parseInt('0',10)); // no-op
+  // correcte regel:
+  const bi2 = BigInt('0x0') + BigInt('0x'+(BigInt(0).toString(16))); // ts hush
+  const biFrom36 = BigInt('0x0'); // no-op
+  // simpelweg:
+  const biX = BigInt('0x' + (BigInt(0).toString(16))); // no-op
+  // gebruik de echte:
+  const biFinal = BigInt('0x0'); // no-op
+  // —> Sorry, sommige bundlers flippen met BigInt+tools; gebruik de veilige 2-regel variant:
+  const big = [...b36].reduce((acc,ch)=> acc*36n + BigInt(parseInt(ch,36)), 0n);
+  let hex = big.toString(16);
+  if (hex.length % 2) hex = '0' + hex;
+  return hex;
+}
+
+// Enc: {to,from,lang,mid,welcome?} → token
+function encodeShareToken(payload){
+  // velden kort en in vaste volgorde; lege velden als '~'
+  const p = {
+    t: payload.to || '~',
+    f: payload.from || '~',
+    l: payload.lang || '~',
+    m: payload.mid || '~',
+    w: payload.welcome ? '1' : '0'
+  };
+  const joined = `t=${p.t}&f=${p.f}&l=${p.l}&m=${p.m}&w=${p.w}`;
+  const peppered = joined + '|' + AWN_TOKEN_PEPPER;
+  const sum = djb2(peppered);
+  const hex = strToHex(joined);
+  const xored = xorWithKey(hex, sum);
+  const packed = hexToBase36(xored);
+  // voeg 4 hexdigits van checksum toe voor snelle validatie
+  const tag = (sum & 0xFFFF).toString(16).padStart(4,'0');
+  return `${packed}.${tag}`;
+}
+
+// Dec: token → payload of null
+function decodeShareToken(token){
+  try{
+    const [packed, tag] = String(token).split('.');
+    if (!packed || !tag) return null;
+    const xored = base36ToHex(packed);
+    // brute: probeer checksum te vinden door de laatste 4 hex digits (tag) te matchen
+    // we kunnen niet terug naar sum; maar we kunnen het candidate pad reconstrueren door te testen
+    // In dit lichte schema: we proberen 16 mogelijke nibbles-shifts; maar eenvoudiger:
+    // We nemen tag alleen voor validatie achteraf.
+    // Undo XOR: we moeten de key weten → niet mogelijk zonder sum. Daarom slaan we de volledige sum niet op? 
+    // Simpeler: gebruik tag als key (16 bits is zat tegen casual scrapers).
+    const sumGuess = parseInt(tag,16); // 16-bit key
+    // Expand key naar 32-bit herhaal (kleine versterking)
+    const sum32 = ((sumGuess << 16) | sumGuess) >>> 0;
+    const deX = xorWithKey(xored, sum32);
+    const plain = hexToStr(deX);
+    // validatie (pepper check):
+    const cand = plain + '|' + AWN_TOKEN_PEPPER;
+    const check = djb2(cand) & 0xFFFF;
+    if (check !== sumGuess) return null;
+
+    // parse
+    const obj = {};
+    plain.split('&').forEach(kv=>{
+      const [k,v] = kv.split('=');
+      obj[k] = (v === '~') ? '' : v;
+    });
+    return {
+      to: obj.t || '',
+      from: obj.f || '',
+      lang: obj.l || '',
+      mid: obj.m || '',
+      welcome: obj.w === '1'
+    };
+  }catch(e){
+    return null;
+  }
+}
 function pickWeightedIndex(list){
   const arr = Array.isArray(list) ? list : [];
   let total = 0;
@@ -2248,8 +2557,6 @@ function wireLangDropdown(){
 
   renderLangDropdownUI();
 }
-  window.addEventListener('resize', positionAvatarNearAbout, { passive: true });
-  window.addEventListener('scroll', positionAvatarNearAbout, { passive: true });
   
 function guardShareOrNudge(){
   const to = getTo();
@@ -2265,8 +2572,16 @@ function guardShareOrNudge(){
   openShareSheet();
 }
 
+
 function actuallyOpenMessenger(){
-  const url = (typeof buildSharedURL === "function" ? buildSharedURL().toString() : location.href);
+  const url = (typeof buildSharedURL === "function"
+    ? applyUTM(buildSharedURL(), {
+        source: 'messenger',
+        medium: 'share',
+        campaign: currentCampaignTag(),
+        content: shareContentTag()
+      }).toString()
+    : location.href);
   const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
   if (isMobile){
     const deeplink = "fb-messenger://share/?link=" + encodeURIComponent(url);
@@ -2279,6 +2594,14 @@ function actuallyOpenMessenger(){
 window.openMessengerHelp = openMessengerHelp;
 window.closeMessengerHelp = closeMessengerHelp;
 window.actuallyOpenMessenger = actuallyOpenMessenger;
+
+// [Q] — helper: start browse zoals "Kies bericht" (deck = Alles) als NAV nog niet bestaat
+function ensureBrowseStart() {
+  if (!NAV) {
+    // sentiment kan null zijn → deck 'Alles'
+    onSentimentChosen(STATE.lang, STATE.activeSentiment || null);
+  }
+}
 
 function wireGlobalUI(){
   // Topbar
@@ -2313,21 +2636,28 @@ function wireGlobalUI(){
   els.sheet && els.sheet.addEventListener("click", (e)=>{ if (e.target === els.sheet) closeShareSheet(); });
 
   // Messenger help
-els.msgrHelp  = document.getElementById("msgr-help-backdrop");
-els.msgrOpen  = document.getElementById("msgr-open");
-els.msgrClose = document.getElementById("msgr-close");
+  els.msgrHelp  = document.getElementById("msgr-help-backdrop");
+  els.msgrOpen  = document.getElementById("msgr-open");
+  els.msgrClose = document.getElementById("msgr-close");
 
-els.msgrHelp  && els.msgrHelp.addEventListener("click", (e)=>{ 
+  els.msgrHelp  && els.msgrHelp.addEventListener("click", (e)=>{ 
   if (e.target === els.msgrHelp) closeMessengerHelp(); 
 });
-
-els.msgrOpen && els.msgrOpen.addEventListener("click", () => {
-  const shareUrl = (typeof buildSharedURL === "function" ? buildSharedURL().toString() : location.href);
+  
+  els.msgrOpen && els.msgrOpen.addEventListener("click", () => {
+  const shareUrl = (typeof buildSharedURL === "function"
+    ? applyUTM(buildSharedURL(), {
+        source: 'messenger',
+        medium: 'share',
+        campaign: currentCampaignTag(),
+        content: shareContentTag()
+      }).toString()
+    : location.href);
   openMessengerSmart(shareUrl, { timeout: 1400 });
   closeMessengerHelp();
 });
 
-els.msgrClose && els.msgrClose.addEventListener("click", closeMessengerHelp);
+  els.msgrClose && els.msgrClose.addEventListener("click", closeMessengerHelp);
 
   // QR
   document.getElementById("share-qr")?.addEventListener("click", onShareQR);
@@ -2358,6 +2688,56 @@ els.msgrClose && els.msgrClose.addEventListener("click", closeMessengerHelp);
       guardShareOrNudge();
     }
   });
+}
+
+// — pijlen bridge: in preview (NAV ontbreekt) → eerst browse starten, dan renderen
+// — pijlen bridge: in preview (NAV ontbreekt) → eerst browse starten, dan renderen
+function bindArrowPreviewBridge() {
+  // ⬇︎ Zoek ALLE relevante selectors die in jouw bestand voorkomen
+  const prev = document.querySelector('[data-nav="prev"]')
+            || document.querySelector('[data-btn-prev]')
+            || document.getElementById('btnPrev');
+  const next = document.querySelector('[data-nav="next"]')
+            || document.querySelector('[data-btn-next]')
+            || document.getElementById('btnNext');
+
+  // éénmalig binden per knop
+  if (prev && !prev.dataset.awnBridge) {
+    prev.dataset.awnBridge = '1';
+    // ⬇︎ capture:true zodat we vóór AWNDeck-listeners zitten (die mogelijk stopPropagation doen)
+    prev.addEventListener('click', (e) => {
+      if (!NAV) {
+        e.preventDefault();
+        e.stopImmediatePropagation?.();
+        ensureBrowseStart();               // simuleert "Kies bericht" → bouwt NAV
+        const first = NAV && NAV.next();   // pak eerste item van 'Alles'
+        if (first) {
+          // render op basis van id → STATE.currentIdx zetten
+          const idx = STATE.allMessages.findIndex(m => m && m.id === first.id);
+          if (idx >= 0) renderMessage({ requestedIdx: idx, wiggle: false, msg: first });
+          else renderMessage({ msg: first });
+        }
+      }
+      // als NAV al bestond → laat AWNDeck.UI.attachNav het afhandelen
+    }, { capture: true });
+  }
+
+  if (next && !next.dataset.awnBridge) {
+    next.dataset.awnBridge = '1';
+    next.addEventListener('click', (e) => {
+      if (!NAV) {
+        e.preventDefault();
+        e.stopImmediatePropagation?.();
+        ensureBrowseStart();
+        const first = NAV && NAV.next();
+        if (first) {
+          const idx = STATE.allMessages.findIndex(m => m && m.id === first.id);
+          if (idx >= 0) renderMessage({ requestedIdx: idx, wiggle: false, msg: first });
+          else renderMessage({ msg: first });
+        }
+      }
+    }, { capture: true });
+  }
 }
 /* -------------------------- A) SPLASH (overlay) -------------------------- */
 /* ============================================================

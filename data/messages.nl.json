@@ -14,6 +14,44 @@
   ],
   "messages": [
     {
+      "id": "nl_068",
+      "icon": "🤔",
+      "text": "Als je minder denkt.. kun je meer dan je dacht.",
+      "sentiments": [
+        "bemoedigend",
+        "succes",
+        "doorzetten",
+        "kalmte"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "nl_067",
+      "icon": "❣",
+      "text": "Te leven is een gunst. Te weten hoé, is een kunst.",
+      "sentiments": [
+        "doorzetten",
+        "dankbaar",
+        "bemoedigend",
+        "troost"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "nl_066",
+      "icon": "😴",
+      "text": "Je verdient iemand die je elke avond appt om Weltrusten te zeggen. Weltrusten.",
+      "sentiments": [
+        "liefde",
+        "bemoedigend",
+        "dankbaar"
+      ],
+      "special_day": null,
+      "weight": 2
+    },
+    {
       "id": "nl_065",
       "icon": "🤓",
       "text": "Het leven is te belangrijk om het serieus te nemen.",

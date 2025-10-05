@@ -1,10 +1,12 @@
 <!doctype html>
-<html lang="nl">
+<html lang="{{LANG}}">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>a warm note to someone You care about</title>
-  <meta name="description" content="Pass a warm note. '#kindness'">
+
+  <!-- Language-specific <title> + meta (SEO/OG/Twitter) will be injected here -->
+  {{HEAD}}
+
   <meta name="theme-color" content="#FFE66D" />
 
   <!-- Fonts -->
@@ -13,14 +15,14 @@
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Patrick+Hand&display=swap" rel="stylesheet">
 
   <!-- Styles & PWA -->
-  <link rel="stylesheet" href="styles.css" />
-  <link rel="manifest" href="site.webmanifest">
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="manifest" href="/site.webmanifest">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
   <!-- Icons -->
   <link rel="apple-touch-icon" href="/assets/icons/logo_128.png">
-  <link rel="icon" href="favicon.ico" sizes="any">
+  <link rel="icon" href="/favicon.ico" sizes="any">
   <link rel="icon" type="image/png" sizes="32x32"  href="/assets/icons/logo_transparent_32px.png">
   <link rel="icon" type="image/png" sizes="64x64"  href="/assets/icons/logo_transparent_64px.png">
   <link rel="icon" type="image/png" sizes="128x128" href="/assets/icons/logo_transparent_128px.png">
@@ -29,6 +31,8 @@
   <link rel="icon" type="image/png" sizes="512x512" href="/assets/icons/android-chrome-512x512.png">
 
   <meta name="theme-color" content="#000000">
+  <meta name="awn:campaign" content="awn_q4_2025">
+  <script>window.AWN_FLAGS = { campaign: 'awn_q4_2025' };</script>
 </head>
 <body class="has-bg">
 
@@ -288,6 +292,12 @@
           <span class="about-tag">Iets kleins, veel betekenis</span>
         </div>
       </div>
+        <!-- =================== FOOTER (alle pagina's) =================== -->
+  <footer class="site-footer">
+    <nav>
+      <a href="/about.html#privacy" rel="noopener">Privacy notice</a>
+    </nav>
+  </footer>
     </section>
   </div>
 
@@ -304,13 +314,11 @@
   <div id="confetti-layer" class="vh" aria-live="polite">Viering: berichtje verstuurd.</div>
 
   <!-- =================== SCRIPTS =================== -->
-  <script src="awn.deck.js"></script>
-  <script defer src="/sticky-avatar.js"></script>
+  <script src="/awn.deck.js"></script>
   <script defer src="/script.js"></script>
   <script defer src="/mail.js"></script>
   <script defer src="/whatsapp.js"></script>
   <script defer src="/download.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
   <script async src="https://cdn.seez-analytics.com/8f68301d-71fc-418b-a7b3-9f4201bd63c3.js"></script>
 
   <!-- Helpers -->
@@ -374,11 +382,6 @@
       };
     })();
   </script>
-  <!-- =================== FOOTER (alle pagina's) =================== -->
-  <footer class="site-footer">
-    <nav>
-      <a href="about.html#privacy" rel="noopener">Privacy notice</a>
-    </nav>
-  </footer>
 </body>
 </html>
+

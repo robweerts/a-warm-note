@@ -3,8 +3,52 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>a warm note to someone You care about</title>
-  <meta name="description" content="Pass a warm note. '#kindness'">
+
+  <!-- Language-specific <title> + meta (SEO/OG/Twitter) will be injected here -->
+  <!-- Primary SEO -->
+<title>a warm note – Kleine boodschap, groot gebaar</title>
+<meta name="description" content="Iets kleins, veel betekenis. Stuur een warme notitie — zonder ruis, met aandacht.">
+<link rel="canonical" href="https://awarmnote.com/nl/">
+<meta name="robots" content="index, follow">
+
+<!-- Open Graph -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="a warm note">
+<meta property="og:title" content="Stuur een warm bericht met a warm note">
+<meta property="og:description" content="Een klein gebaar met grote betekenis. Verstuur in seconden een liefdevolle notitie.">
+<meta property="og:url" content="https://awarmnote.com/nl/">
+<meta property="og:image" content="https://awarmnote.com/assets/og/nl/preview-1200x630.jpg">
+<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta property="og:locale" content="nl_NL">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Stuur een warm bericht met a warm note">
+<meta name="twitter:description" content="Een klein gebaar met grote betekenis. Verstuur in seconden een liefdevolle notitie.">
+<meta name="twitter:image" content="https://awarmnote.com/assets/og/nl/preview-1200x630.jpg">
+
+<!-- i18n -->
+<link rel="alternate" hreflang="nl" href="https://awarmnote.com/nl/">
+<link rel="alternate" hreflang="en" href="https://awarmnote.com/en/">
+<link rel="alternate" hreflang="x-default" href="https://awarmnote.com/">
+
+<!-- JSON-LD -->
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@type":"WebSite",
+  "name":"a warm note",
+  "url":"https://awarmnote.com/nl/",
+  "inLanguage":"nl-NL",
+  "alternateName":"a warm note – Kleine berichtje, groot gebaar",
+  "publisher":{
+    "@type":"Organization",
+    "name":"a warm note",
+    "url":"https://awarmnote.com/"
+  }
+}
+</script>
+
   <meta name="theme-color" content="#FFE66D" />
 
   <!-- Fonts -->
@@ -13,14 +57,14 @@
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Patrick+Hand&display=swap" rel="stylesheet">
 
   <!-- Styles & PWA -->
-  <link rel="stylesheet" href="styles.css" />
-  <link rel="manifest" href="site.webmanifest">
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="manifest" href="/site.webmanifest">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
   <!-- Icons -->
   <link rel="apple-touch-icon" href="/assets/icons/logo_128.png">
-  <link rel="icon" href="favicon.ico" sizes="any">
+  <link rel="icon" href="/favicon.ico" sizes="any">
   <link rel="icon" type="image/png" sizes="32x32"  href="/assets/icons/logo_transparent_32px.png">
   <link rel="icon" type="image/png" sizes="64x64"  href="/assets/icons/logo_transparent_64px.png">
   <link rel="icon" type="image/png" sizes="128x128" href="/assets/icons/logo_transparent_128px.png">
@@ -29,6 +73,8 @@
   <link rel="icon" type="image/png" sizes="512x512" href="/assets/icons/android-chrome-512x512.png">
 
   <meta name="theme-color" content="#000000">
+  <meta name="awn:campaign" content="awn_q4_2025">
+  <script>window.AWN_FLAGS = { campaign: 'awn_q4_2025' };</script>
 </head>
 <body class="has-bg">
 
@@ -288,6 +334,12 @@
           <span class="about-tag">Iets kleins, veel betekenis</span>
         </div>
       </div>
+        <!-- =================== FOOTER (alle pagina's) =================== -->
+  <footer class="site-footer">
+    <nav>
+      <a href="/about.html#privacy" rel="noopener">Privacy notice</a>
+    </nav>
+  </footer>
     </section>
   </div>
 
@@ -304,13 +356,11 @@
   <div id="confetti-layer" class="vh" aria-live="polite">Viering: berichtje verstuurd.</div>
 
   <!-- =================== SCRIPTS =================== -->
-  <script src="awn.deck.js"></script>
-  <script defer src="/sticky-avatar.js"></script>
+  <script src="/awn.deck.js"></script>
   <script defer src="/script.js"></script>
   <script defer src="/mail.js"></script>
   <script defer src="/whatsapp.js"></script>
   <script defer src="/download.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
   <script async src="https://cdn.seez-analytics.com/8f68301d-71fc-418b-a7b3-9f4201bd63c3.js"></script>
 
   <!-- Helpers -->
@@ -374,11 +424,6 @@
       };
     })();
   </script>
-  <!-- =================== FOOTER (alle pagina's) =================== -->
-  <footer class="site-footer">
-    <nav>
-      <a href="about.html#privacy" rel="noopener">Privacy notice</a>
-    </nav>
-  </footer>
 </body>
 </html>
+

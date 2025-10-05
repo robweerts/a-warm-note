@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8" />
+  <title>AWN Shortener – Health Check</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    :root{--ok:#0a7f50;--bad:#b00020;--muted:#6b7280}
+    body{font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;max-width:800px;margin:40px auto;padding:0 16px}
+    h1{font-size:20px;margin:0 0 16px}
+    .card{border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin:12px 0}
+    label{display:block;margin:8px 0 4px;font-weight:600}
+    input,textarea{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:8px;font:inherit}
+    textarea{min-height:70px;resize:vertical}
+    .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+    button{appearance:none;border:1px solid #111827;background:#111827;color:#fff;border-radius:10px;padding:10px 14px;cursor:pointer}
+    code.mono{font-family:ui-monospace, SFMono-Regular, Menlo, monospace}
+    .muted{color:var(--muted)}
+    .ok{color:var(--ok);font-weight:700}
+    .bad{color:var(--bad);font-weight:700}
+    pre{background:#0b1020;color:#cde3ff;border-radius:10px;padding:12px;overflow:auto}
+    .kv{font-family:ui-monospace, SFMono-Regular, Menlo, monospace}
+  </style>
+</head>
+<body>
+  <h1>AWN Shortener – Health Check</h1>
+
+  <div class="card">
+    <label for="base">Shortener base (prod subdomein)</label>
+    <input id="base" type="text" value="https://s.awarmnote.com" />
+    <label for="long">Lange URL om te mints (test)</label>
+    <textarea id="long">https://awarmnote.com/</textarea>
+    <div class="row">
+      <button id="run">Run checks</button>
+      <span id="status" class="muted">Nog niet gestart</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Resultaten</h3>
+    <div id="out"></div>
+  </div>
+
+  <script>
+  const $ = (s)=>document.querySelector(s);
+  const out = $("#out");
+  const status = $("#status");
+
+  function line(label, value, cls=""){
+    const div = document.createElement('div');
+    div.innerHTML = `<div class="row"><div class="kv" style="min-width:140px">${label}:</div><div class="${cls}">${value}</div></div>`;
+    out.appendChild(div);
+  }
+  function block(title, body){
+    const pre = document.createElement('pre');
+    pre.textContent = body;
+    out.appendChild(document.createTextNode(title));
+    out.appendChild(pre);
+  }
+
+  async function run(){
+    out.innerHTML = "";
+    status.textContent = "Bezig…";
+
+    const BASE = $("#base").value.trim().replace(/\/+$/,"");
+    const LONG = $("#long").value.trim();
+    line("Base", BASE);
+    line("Long URL", LONG);
+
+    // 0) Health ping (root)
+    try {
+      const ping = await fetch(BASE+'/', { method:'GET', redirect:'manual' });
+      line("Ping", `${ping.status} ${ping.statusText}`, (ping.ok||ping.status===404) ? "ok" : "bad");
+    } catch(e){ line("Ping", "FAILED: "+e.message, "bad"); }
+
+    // 1) MINT
+    let token = null, shortUrl = null;
+    try {
+      const q = new URLSearchParams({ url: LONG, fmt: 'hex' }).toString();
+      const r = await fetch(`${BASE}/api/mint?${q}`, { method:'GET', redirect:'manual' });
+      const txt = await r.text();
+      line("Mint status", `${r.status}`, r.ok ? "ok":"bad");
+      block("Mint JSON", txt);
+      if (r.ok) {
+        const j = JSON.parse(txt);
+        token = j.token; shortUrl = j.shortUrl;
+        line("Token", token || "—");
+        line("Short URL", shortUrl || "—");
+      }
+    } catch(e){
+      line("Mint", "FAILED: "+e.message, "bad");
+    }
+
+    // 2) EXPAND (alleen als token er is)
+    if (token){
+      try {
+        const r = await fetch(`${BASE}/api/expand?token=${encodeURIComponent(token)}`, { redirect:'manual' });
+        const txt = await r.text();
+        line("Expand status", `${r.status}`, r.ok ? "ok":"bad");
+        block("Expand JSON", txt);
+      } catch(e){
+        line("Expand", "FAILED: "+e.message, "bad");
+      }
+    }
+
+    // 3) RESOLVE (HEAD, redirect manual om Location te zien)
+    if (token){
+      try {
+        const r = await fetch(`${BASE}/n/?t=${encodeURIComponent(token)}`, {
+          method: 'GET',
+          redirect: 'manual' // zodat we de Location-header kunnen lezen
+        });
+        const loc = r.headers.get('Location');
+        line("Resolve status", `${r.status}`, (r.status===301||r.status===302)? "ok":"bad");
+        line("Location", loc || "—");
+      } catch(e){
+        line("Resolve", "FAILED: "+e.message, "bad");
+      }
+    }
+
+    status.textContent = "Klaar";
+  }
+
+  $("#run").addEventListener('click', run);
+  </script>
+</body>
+</html>
