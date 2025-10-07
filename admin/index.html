@@ -1,0 +1,137 @@
+<!-- =============================
+AWN Admin Dashboard v2 — single-file bundle (HTML + linked CSS/JS shown below)
+Drop these 3 files into your /admin/ folder as admin.html, admin.css, admin.js
+============================= -->
+<!doctype html>
+<html lang="nl" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>AWN • Messages Admin</title>
+  <link rel="stylesheet" href="admin.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>AWN • Messages Admin</h1>
+        <div id="status">Importeer één of meer JSON-bestanden om te beginnen.</div>
+    <div class="actions">
+      <label class="file-btn" title="Importeer één of meer JSON-bestanden">
+        <input id="fileInput" type="file" accept=".json" multiple />
+        JSON importeren
+      </label>
+      <button id="exportBtn" title="Exporteer de actieve dataset/taal met versienummer">Exporteren</button>
+      <button id="insightBtn" title="Overzichten: aantallen per sentiment">Overzicht</button>
+      <button id="dupeBtn" title="Opsporen van dubbele berichten">Duplicaten</button>
+      <button id="themeBtn" title="Dag/Nacht">🌙 / ☀️</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- Tabs: datasets + talen -->
+    <nav id="langTabs" class="tabs" aria-label="Datasets & Talen"></nav>
+
+    <section class="panels" id="view-editor" data-view>
+      <!-- Links: messages-tabel -->
+      <div class="panel">
+        <div class="panel-header">
+          <h2>Messages</h2>
+          <div class="panel-actions">
+            <button id="addMsgBtn">+ Nieuw</button>
+            <button id="delMsgBtn" class="danger">Verwijderen</button>
+            <input id="searchBox" type="search" placeholder="Zoek in text/icon/id…" />
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table id="msgTable" aria-label="Messages">
+            <thead>
+              <tr>
+                <th><input type="checkbox" id="checkAll" /></th>
+                <th>ID</th>
+                <th>Icon</th>
+                <th>Text</th>
+                <th>Special day</th>
+                <th>Weight</th>
+              </tr>
+            </thead>
+            <tbody><!-- rows injected --></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Rechts: sentiments-editor -->
+      <div class="panel narrow">
+        <div class="panel-header">
+          <h2>Sentiments voor selectie</h2>
+          <div class="panel-actions">
+            <span class="muted" id="sentStatus">Selecteer precies 1 message</span>
+          </div>
+        </div>
+        <div id="sentEditor" class="sent-editor"><!-- checkbox-pills injected --></div>
+
+        <details class="help">
+          <summary>Uitleg</summary>
+          <ul>
+            <li>Importeer je JSON-bestanden (bijv. <code>messages.nl.json</code>, <code>messages.en.json</code>, <code>messages.birthday.nl.json</code>).</li>
+            <li>Selecteer links een bericht om rechts sentiments aan/uit te zetten.</li>
+            <li>Wijzigingen worden automatisch opgeslagen in je browser. Exporteer om bestanden te maken met een oplopend versienummer.</li>
+          </ul>
+        </details>
+      </div>
+    </section>
+
+    <!-- Overzicht: counts per sentiment -->
+    <section class="panels hidden" id="view-insights" data-view>
+      <div class="panel">
+        <div class="panel-header">
+          <h2>Overzicht — aantallen per sentiment</h2>
+          <div class="panel-actions">
+            <span id="insightContext" class="muted"></span>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table aria-label="Sentiment aantallen">
+            <thead>
+              <tr>
+                <th>Sentiment</th>
+                <th># Messages</th>
+              </tr>
+            </thead>
+            <tbody id="insightBody"><!-- rows --></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Duplicaten: zelfde (genormaliseerde) tekst -->
+    <section class="panels hidden" id="view-dupes" data-view>
+      <div class="panel">
+        <div class="panel-header">
+          <h2>Duplicaten — zelfde tekst</h2>
+          <div class="panel-actions">
+            <span id="dupeContext" class="muted"></span>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table aria-label="Duplicaten">
+            <thead>
+              <tr>
+                <th>Norm. tekst</th>
+                <th>IDs</th>
+                <th>Aantal</th>
+              </tr>
+            </thead>
+            <tbody id="dupeBody"><!-- rows --></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="statusbar">
+    <div id="status">Klaar. Importeer één of meer JSON-bestanden om te beginnen.</div>
+  </footer>
+
+  <script src="admin.js"></script>
+</body>
+</html>

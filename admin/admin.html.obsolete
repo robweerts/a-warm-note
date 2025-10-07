@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="nl" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Messages Admin</title>
+  <link rel="stylesheet" href="admin.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>Messages Admin</h1>
+    <div class="actions">
+      <label class="file-btn">
+        <input id="fileInput" type="file" accept=".json" multiple />
+        JSON importeren
+      </label>
+      <button id="exportBtn" title="Exporteer actieve taal">Exporteren</button>
+      <button id="themeBtn" title="Dag/Nacht modus">🌙 / ☀️</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- Taal-tabs -->
+    <nav id="langTabs" class="tabs" aria-label="Languages"></nav>
+
+    <section class="panels">
+      <!-- LINKS: messages-tabel -->
+      <div class="panel">
+        <div class="panel-header">
+          <h2>Messages</h2>
+          <div class="panel-actions">
+            <button id="addMsgBtn">+ Nieuw</button>
+            <button id="delMsgBtn" class="danger">Verwijderen</button>
+            <input id="searchBox" type="search" placeholder="Zoek in text/icon/id…" />
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table id="msgTable" aria-label="Messages">
+            <thead>
+              <tr>
+                <th><input type="checkbox" id="checkAll" /></th>
+                <th>ID</th>
+                <th>Icon</th>
+                <th>Text</th>
+                <th>Special day</th>
+                <th>Weight</th>
+              </tr>
+            </thead>
+            <tbody><!-- rows injected --></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- RECHTS: sentiments-editor voor 1 geselecteerde message -->
+      <div class="panel narrow">
+        <div class="panel-header">
+          <h2>Sentiments voor selectie</h2>
+          <div class="panel-actions">
+            <span class="muted" id="sentStatus">Selecteer precies 1 message</span>
+          </div>
+        </div>
+
+        <div id="sentEditor" class="sent-editor"><!-- checkbox-pills injected --></div>
+
+        <details class="help">
+          <summary>Uitleg</summary>
+          <ul>
+            <li>Selecteer <strong>één</strong> message aan de linkerkant.</li>
+            <li>Vink één of meer sentiments aan in dit paneel.</li>
+            <li>Wijzigingen worden direct opgeslagen en meegenomen in export.</li>
+          </ul>
+          <pre>{
+  "lang": "nl",
+  "sentiments": ["bemoedigend","kalmte","liefde","..."],
+  "messages": [
+    {
+      "id": "nl_001",
+      "icon": "✨",
+      "text": "Je bent genoeg…",
+      "sentiments": ["bemoedigend","kalmte"],
+      "special_day": null,
+      "weight": 1
+    }
+  ]
+}</pre>
+        </details>
+      </div>
+    </section>
+  </main>
+
+  <footer class="statusbar">
+    <div id="status">Klaar. Importeer één of meer JSON-bestanden om te beginnen.</div>
+  </footer>
+
+  <script src="admin.js"></script>
+</body>
+</html>

@@ -14,7 +14,131 @@
   ],
   "messages": [
     {
-      "id": "nl_068",
+      "id": "nl_gx92kb",
+      "icon": "🙏",
+      "text": "Dank je dat je er bent, gewoon zoals je bent.",
+      "sentiments": [
+        "dankbaar",
+        "liefde",
+        "vriendschap"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "nl_hb64uy",
+      "icon": "🌻",
+      "text": "Soms is ‘dank je’ te klein voor wat ik voel.",
+      "sentiments": [
+        "dankbaar",
+        "troost"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "nl_vz84em",
+      "icon": "☀️",
+      "text": "Je brengt licht, ook op mijn grijze dagen.",
+      "sentiments": [
+        "dankbaar",
+        "liefde"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "nl_qq98pk",
+      "icon": "🍀",
+      "text": "Geluk is iemand hebben zoals jij.",
+      "sentiments": [
+        "dankbaar",
+        "vriendschap"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "nl_xm31te",
+      "icon": "💛",
+      "text": "Dankbaarheid is de mooiste vorm van rijkdom.",
+      "sentiments": [
+        "dankbaar",
+        "kalmte"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "nl_f7p4ws",
+      "icon": "🌸",
+      "text": "Vandaag sta ik even stil — bij jou.",
+      "sentiments": [
+        "dankbaar",
+        "liefde"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "nl_jg2kfm",
+      "icon": "🕯️",
+      "text": "Dankbaarheid is het stille licht in een drukke dag.",
+      "sentiments": [
+        "dankbaar",
+        "kalmte"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "nl_yr2htx",
+      "icon": "🌿",
+      "text": "Dank je voor de kleine dingen die groot voelen.",
+      "sentiments": [
+        "dankbaar",
+        "bemoedigend"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "nl_kn9m0u",
+      "icon": "💐",
+      "text": "Zonder iets te zeggen geef je zó veel.",
+      "sentiments": [
+        "dankbaar",
+        "vriendschap"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "nl_w1uhde",
+      "icon": "☕",
+      "text": "Voor al die kleine momenten — dank je.",
+      "sentiments": [
+        "dankbaar",
+        "troost",
+        "liefde"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "nl_nlev46",
+      "icon": "🤩",
+      "text": "Super blij! Met iemand zoals jij!",
+      "sentiments": [
+        "dankbaar",
+        "bemoedigend",
+        "vriendschap"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "nl_njdfqo",
       "icon": "🤔",
       "text": "Als je minder denkt.. kun je meer dan je dacht.",
       "sentiments": [
@@ -27,9 +151,9 @@
       "weight": 1
     },
     {
-      "id": "nl_067",
+      "id": "nl_lkq4fj",
       "icon": "❣",
-      "text": "Te leven is een gunst. Te weten hoé, is een kunst.",
+      "text": "Te leven is een gunst. Te weten hoe, is een kunst.",
       "sentiments": [
         "doorzetten",
         "dankbaar",
@@ -40,7 +164,7 @@
       "weight": 1
     },
     {
-      "id": "nl_066",
+      "id": "nl_hinz44",
       "icon": "😴",
       "text": "Je verdient iemand die je elke avond appt om Weltrusten te zeggen. Weltrusten.",
       "sentiments": [
@@ -52,7 +176,7 @@
       "weight": 2
     },
     {
-      "id": "nl_065",
+      "id": "nl_vh0tf0",
       "icon": "🤓",
       "text": "Het leven is te belangrijk om het serieus te nemen.",
       "sentiments": [
@@ -63,7 +187,7 @@
       "weight": 1
     },
     {
-      "id": "nl_064",
+      "id": "nl_1ms31v",
       "icon": "🫶🏼",
       "text": "Laat je verleden achter je. Struikel niet langer over iets wat achter je ligt. Ga vooruit.",
       "sentiments": [
@@ -74,7 +198,7 @@
       "weight": 1
     },
     {
-      "id": "nl_063",
+      "id": "nl_w0szj5",
       "icon": "💪🏼",
       "text": "Kijk naar jezelf en bewonder je veerkracht. Je hebt al zo veel overwonnen. Blijf in jezelf geloven.",
       "sentiments": [
@@ -86,7 +210,7 @@
       "weight": 2
     },
     {
-      "id": "nl_001",
+      "id": "nl_ozj0qh",
       "icon": "✨",
       "text": "Je bent genoeg, precies zoals je nu bent.",
       "sentiments": [
@@ -97,7 +221,7 @@
       "weight": 1
     },
     {
-      "id": "nl_002",
+      "id": "nl_f1qjim",
       "icon": "🌿",
       "text": "Een kleine stap vooruit is óók vooruitgang.",
       "sentiments": [
@@ -108,7 +232,7 @@
       "weight": 1
     },
     {
-      "id": "nl_003",
+      "id": "nl_wtffyv",
       "icon": "💛",
       "text": "Iets kleins kan vandaag veel betekenen.",
       "sentiments": [
@@ -119,7 +243,7 @@
       "weight": 1
     },
     {
-      "id": "nl_004",
+      "id": "nl_67pp58",
       "icon": "🌊",
       "text": "Adem in. Adem uit. Je bent hier.",
       "sentiments": [
@@ -129,7 +253,7 @@
       "weight": 1
     },
     {
-      "id": "nl_005",
+      "id": "nl_w9624y",
       "icon": "🌅",
       "text": "Nieuwe dag, nieuwe kansen — rustig aan.",
       "sentiments": [
@@ -140,7 +264,7 @@
       "weight": 1
     },
     {
-      "id": "nl_006",
+      "id": "nl_573c2b",
       "icon": "🌻",
       "text": "Je doet ertoe, meer dan je denkt.",
       "sentiments": [
@@ -151,7 +275,7 @@
       "weight": 1
     },
     {
-      "id": "nl_007",
+      "id": "nl_djbe1t",
       "icon": "🎈",
       "text": "Licht en zacht: één vriendelijk gebaar.",
       "sentiments": [
@@ -162,7 +286,7 @@
       "weight": 1
     },
     {
-      "id": "nl_008",
+      "id": "nl_dk98q6",
       "icon": "☕",
       "text": "Neem je tijd. Je mag traag beginnen.",
       "sentiments": [
@@ -172,7 +296,7 @@
       "weight": 1
     },
     {
-      "id": "nl_009",
+      "id": "nl_ezbj0t",
       "icon": "🌸",
       "text": "Zacht voor jezelf is óók kracht.",
       "sentiments": [
@@ -183,7 +307,7 @@
       "weight": 1
     },
     {
-      "id": "nl_010",
+      "id": "nl_ko3hzi",
       "icon": "🏁",
       "text": "Kleine winst is echte winst.",
       "sentiments": [
@@ -194,7 +318,7 @@
       "weight": 1
     },
     {
-      "id": "nl_011",
+      "id": "nl_fyib2y",
       "icon": "🤝",
       "text": "Ik sta naast je — niet achter of voor.",
       "sentiments": [
@@ -205,7 +329,7 @@
       "weight": 1
     },
     {
-      "id": "nl_012",
+      "id": "nl_vabqfi",
       "icon": "📯",
       "text": "Trots op wat je (al) doet.",
       "sentiments": [
@@ -216,7 +340,7 @@
       "weight": 1
     },
     {
-      "id": "nl_013",
+      "id": "nl_qqccap",
       "icon": "🎉",
       "text": "Je mag dit vieren — hoe klein ook.",
       "sentiments": [
@@ -227,7 +351,7 @@
       "weight": 1
     },
     {
-      "id": "nl_014",
+      "id": "nl_g9f3c7",
       "icon": "🧩",
       "text": "Niet alles hoeft nu te passen.",
       "sentiments": [
@@ -238,7 +362,7 @@
       "weight": 1
     },
     {
-      "id": "nl_015",
+      "id": "nl_9cr75n",
       "icon": "🪶",
       "text": "Zacht landen is óók landen.",
       "sentiments": [
@@ -249,7 +373,7 @@
       "weight": 1
     },
     {
-      "id": "nl_016",
+      "id": "nl_67j761",
       "icon": "🧭",
       "text": "Je koers mag rustig draaien.",
       "sentiments": [
@@ -260,7 +384,7 @@
       "weight": 1
     },
     {
-      "id": "nl_017",
+      "id": "nl_hcbbsn",
       "icon": "❤️",
       "text": "Omdat jij belangrijk voor me bent.",
       "sentiments": [
@@ -271,7 +395,7 @@
       "weight": 2
     },
     {
-      "id": "nl_018",
+      "id": "nl_d21coc",
       "icon": "🎆",
       "text": "Op nieuw begin — ik ben bij je.",
       "sentiments": [
@@ -282,7 +406,7 @@
       "weight": 2
     },
     {
-      "id": "nl_019",
+      "id": "nl_y7a6kf",
       "icon": "🐣",
       "text": "Zacht uit de schil; het mag.",
       "sentiments": [
@@ -293,7 +417,7 @@
       "weight": 2
     },
     {
-      "id": "nl_020",
+      "id": "nl_zt8xld",
       "icon": "💌",
       "text": "Voor {{name}}, met aandacht.",
       "sentiments": [
@@ -304,7 +428,7 @@
       "weight": 1
     },
     {
-      "id": "nl_021",
+      "id": "nl_rzbo6y",
       "icon": "❤️",
       "text": "Vandaag een beetje extra liefde voor jou.",
       "sentiments": [
@@ -315,7 +439,7 @@
       "weight": 2
     },
     {
-      "id": "nl_022",
+      "id": "nl_3mz7vp",
       "icon": "😂",
       "text": "Ik wilde sporten, maar mijn koffie zei: ‘blijf jij maar zitten’.",
       "sentiments": [
@@ -325,7 +449,7 @@
       "weight": 1
     },
     {
-      "id": "nl_023",
+      "id": "nl_lfxbsu",
       "icon": "😉",
       "text": "Voor {{name}}: jij bent officieel mijn favoriete notificatie.",
       "sentiments": [
@@ -336,7 +460,7 @@
       "weight": 1
     },
     {
-      "id": "nl_024",
+      "id": "nl_s8hlor",
       "icon": "😜",
       "text": "Ik ben er voor je — zoals wifi: soms traag, maar altijd aanwezig.",
       "sentiments": [
@@ -347,7 +471,7 @@
       "weight": 1
     },
     {
-      "id": "nl_025",
+      "id": "nl_scbkjw",
       "icon": "🤭",
       "text": "Vandaag doen we alsof calorieën gevoelens zijn: we negeren ze.",
       "sentiments": [
@@ -357,7 +481,7 @@
       "weight": 1
     },
     {
-      "id": "nl_026",
+      "id": "nl_5ftuvp",
       "icon": "🤣",
       "text": "Plan van aanpak: 1) adem in 2) lachen 3) herhalen.",
       "sentiments": [
@@ -368,7 +492,7 @@
       "weight": 1
     },
     {
-      "id": "nl_027",
+      "id": "nl_oyotww",
       "icon": "🥐",
       "text": "Als het leven kruimelt, maken we er een croissant van.",
       "sentiments": [
@@ -379,7 +503,7 @@
       "weight": 1
     },
     {
-      "id": "nl_028",
+      "id": "nl_gnh38t",
       "icon": "🦥",
       "text": "Productief? Ik noem het ‘selectief bewegen’.",
       "sentiments": [
@@ -389,7 +513,7 @@
       "weight": 1
     },
     {
-      "id": "nl_029",
+      "id": "nl_lpzi4h",
       "icon": "🫶",
       "text": "Glimlach-check: even je gezicht updaten… klaar ✅",
       "sentiments": [
@@ -400,7 +524,7 @@
       "weight": 1
     },
     {
-      "id": "nl_030",
+      "id": "nl_aigpqq",
       "icon": "🕺",
       "text": "We hebben geen reden nodig — we hebben benen: dans!",
       "sentiments": [
@@ -411,7 +535,7 @@
       "weight": 1
     },
     {
-      "id": "nl_031",
+      "id": "nl_l9nnfs",
       "icon": "☕",
       "text": "Status: koffie geladen, grapjes geactiveerd.",
       "sentiments": [
@@ -421,7 +545,7 @@
       "weight": 1
     },
     {
-      "id": "nl_032",
+      "id": "nl_hnhqud",
       "icon": "🪞",
       "text": "Wie in de spiegel lacht, ziet dubbel geluk.",
       "sentiments": [
@@ -431,7 +555,7 @@
       "weight": 1
     },
     {
-      "id": "nl_033",
+      "id": "nl_3mf0tp",
       "icon": "🚪",
       "text": "Als één deur dichtgaat, doe de ramen open.",
       "sentiments": [
@@ -441,7 +565,7 @@
       "weight": 1
     },
     {
-      "id": "nl_034",
+      "id": "nl_842yf1",
       "icon": "🧱",
       "text": "Ook een omweg is een weg naar huis.",
       "sentiments": [
@@ -451,7 +575,7 @@
       "weight": 1
     },
     {
-      "id": "nl_035",
+      "id": "nl_sc2a1c",
       "icon": "🍪",
       "text": "Geluk kruimelt — verzamel ze allemaal.",
       "sentiments": [
@@ -461,7 +585,7 @@
       "weight": 1
     },
     {
-      "id": "nl_036",
+      "id": "nl_z4xvlv",
       "icon": "📚",
       "text": "Elke fout is een nieuw hoofdstuk.",
       "sentiments": [
@@ -471,7 +595,7 @@
       "weight": 1
     },
     {
-      "id": "nl_037",
+      "id": "nl_aukzjb",
       "icon": "🌧️",
       "text": "Na regen komt… nat gras. En daarna zon.",
       "sentiments": [
@@ -481,7 +605,7 @@
       "weight": 1
     },
     {
-      "id": "nl_038",
+      "id": "nl_a823uf",
       "icon": "🛋️",
       "text": "Luieren is ook een werkwoord.",
       "sentiments": [
@@ -491,7 +615,7 @@
       "weight": 1
     },
     {
-      "id": "nl_039",
+      "id": "nl_9rmrn3",
       "icon": "🥔",
       "text": "Zelfs een bankaardappel kan wortel schieten.",
       "sentiments": [
@@ -501,7 +625,7 @@
       "weight": 1
     },
     {
-      "id": "nl_040",
+      "id": "nl_yd2rny",
       "icon": "🐌",
       "text": "Langzaam komt óók ergens aan.",
       "sentiments": [
@@ -511,7 +635,7 @@
       "weight": 1
     },
     {
-      "id": "nl_041",
+      "id": "nl_sbezsy",
       "icon": "🧩",
       "text": "Het leven is geen puzzel, maar de stukjes passen toch.",
       "sentiments": [
@@ -521,7 +645,7 @@
       "weight": 1
     },
     {
-      "id": "nl_042",
+      "id": "nl_mu3pm6",
       "icon": "💘",
       "text": "Jij bent mijn lievelingsgedachte.",
       "sentiments": [
@@ -531,7 +655,7 @@
       "weight": 1
     },
     {
-      "id": "nl_043",
+      "id": "nl_qy9cf7",
       "icon": "🌹",
       "text": "Elke dag met jou is een bloem in mijn vaas.",
       "sentiments": [
@@ -541,7 +665,7 @@
       "weight": 1
     },
     {
-      "id": "nl_044",
+      "id": "nl_h1xo32",
       "icon": "🌙",
       "text": "Onder dezelfde maan denk ik aan jou.",
       "sentiments": [
@@ -551,7 +675,7 @@
       "weight": 1
     },
     {
-      "id": "nl_045",
+      "id": "nl_6odcje",
       "icon": "🔥",
       "text": "Jij bent de vonk in mijn dag.",
       "sentiments": [
@@ -561,7 +685,7 @@
       "weight": 1
     },
     {
-      "id": "nl_046",
+      "id": "nl_kml40h",
       "icon": "💍",
       "text": "Met jou voelt elke dag als een belofte.",
       "sentiments": [
@@ -571,7 +695,7 @@
       "weight": 1
     },
     {
-      "id": "nl_047",
+      "id": "nl_tbbe9s",
       "icon": "💎",
       "text": "Jij bent zeldzaam en kostbaar.",
       "sentiments": [
@@ -581,7 +705,7 @@
       "weight": 1
     },
     {
-      "id": "nl_048",
+      "id": "nl_i8gqxc",
       "icon": "☀️",
       "text": "Jij bent mijn ochtendzon.",
       "sentiments": [
@@ -591,7 +715,7 @@
       "weight": 1
     },
     {
-      "id": "nl_049",
+      "id": "nl_ab6plc",
       "icon": "🌈",
       "text": "Met jou zijn mijn kleuren helderder.",
       "sentiments": [
@@ -601,7 +725,7 @@
       "weight": 1
     },
     {
-      "id": "nl_050",
+      "id": "nl_ig2yrm",
       "icon": "🎶",
       "text": "Mijn hart kent jouw melodie.",
       "sentiments": [
@@ -611,7 +735,7 @@
       "weight": 1
     },
     {
-      "id": "nl_051",
+      "id": "nl_c1ffoh",
       "icon": "🏡",
       "text": "Waar jij bent, is mijn thuis.",
       "sentiments": [
@@ -621,7 +745,7 @@
       "weight": 1
     },
     {
-      "id": "nl_052",
+      "id": "nl_q0tzvs",
       "icon": "🛤️",
       "text": "Elke stap vooruit is moed waard.",
       "sentiments": [
@@ -632,7 +756,7 @@
       "weight": 1
     },
     {
-      "id": "nl_053",
+      "id": "nl_nfvysj",
       "icon": "🌱",
       "text": "Zelfs het kleinste zaadje groeit naar het licht.",
       "sentiments": [
@@ -643,7 +767,7 @@
       "weight": 1
     },
     {
-      "id": "nl_054",
+      "id": "nl_k8iczv",
       "icon": "⚓",
       "text": "Rust vind je door te ankeren, niet door te rennen.",
       "sentiments": [
@@ -653,7 +777,7 @@
       "weight": 1
     },
     {
-      "id": "nl_055",
+      "id": "nl_f2upyf",
       "icon": "🌄",
       "text": "Elke ochtend is een nieuw canvas.",
       "sentiments": [
@@ -664,7 +788,7 @@
       "weight": 1
     },
     {
-      "id": "nl_056",
+      "id": "nl_uitw1f",
       "icon": "🕊️",
       "text": "Troost vind je in kleine gebaren.",
       "sentiments": [
@@ -674,7 +798,7 @@
       "weight": 1
     },
     {
-      "id": "nl_057",
+      "id": "nl_mkhgna",
       "icon": "🙌",
       "text": "Vier je kleine overwinningen hardop.",
       "sentiments": [
@@ -685,7 +809,7 @@
       "weight": 1
     },
     {
-      "id": "nl_058",
+      "id": "nl_gpll6r",
       "icon": "🌌",
       "text": "Zelfs de nacht draagt stille beloftes.",
       "sentiments": [
@@ -696,7 +820,7 @@
       "weight": 1
     },
     {
-      "id": "nl_059",
+      "id": "nl_l3nsv9",
       "icon": "💪",
       "text": "Doorzetten is sterker dan winnen.",
       "sentiments": [
@@ -706,7 +830,7 @@
       "weight": 1
     },
     {
-      "id": "nl_060",
+      "id": "nl_cfne34",
       "icon": "🙏",
       "text": "Dankbaarheid maakt elk moment rijker.",
       "sentiments": [
@@ -716,7 +840,7 @@
       "weight": 1
     },
     {
-      "id": "nl_061",
+      "id": "nl_7i6x56",
       "icon": "🏔️",
       "text": "Trots is de echo van je eigen bergtop.",
       "sentiments": [
@@ -726,7 +850,7 @@
       "weight": 1
     },
     {
-      "id": "nl_062",
+      "id": "nl_j5kbj9",
       "icon": "🌞",
       "text": "De wereld draait, Copernica ten spijt, niet om de zon maar om {{name}} in deze tijd.",
       "sentiments": [

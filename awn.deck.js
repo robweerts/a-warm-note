@@ -200,22 +200,32 @@
         return this.current();
       },
 
-      // Navigeer naar volgende (als je eerder terug ging)
       next(){
+        // 1) Als we midden in de history zitten → gewoon vooruit in history
         if (this.hasNext()){
           this.state.idx += 1;
           saveHistory(this.lang, this.sentiment, this.state);
           return this.current();
         }
-        // Zoek eerste deck-item dat nog NIET in history zit (op key-niveau)
-        const currKeys = new Set(this.state.stack.map((m,i)=> msgKey(m,i)));
-        let nextMsg = null;
-        for (let i=0; i<this.deck.length; i++){
-          const k = this.deckKeys[i] ?? msgKey(this.deck[i], i);
-          if (!currKeys.has(k)) { nextMsg = this.deck[i]; break; }
+        // 2) CIRCULAIR: bepaal huidige positie in het deck en stap 1 vooruit (met wrap)
+        if (!Array.isArray(this.deck) || this.deck.length === 0) return this.current();
+        const cur = this.current();
+        // Als er nog geen current is, start bij de eerste
+        if (!cur){
+          const first = this.deck[0] || null;
+          if (first) this.push(first, { mark:true, advance:true });
+          return this.current();
         }
-        if (!nextMsg) nextMsg = this.deck[0] || null; // fallback
-        if (nextMsg) this.push(nextMsg, {mark:true, advance:true});
+        // Vind index van huidige in deck (via key), dan +1 modulo
+        const curKey = msgKey(cur, 0);
+        let pos = this.deckKeys.indexOf(curKey);
+        if (pos < 0) {
+          // Safety: als key niet gevonden wordt, val terug op indexOf object of begin
+          pos = Math.max(0, this.deck.indexOf(cur));
+        }
+        const nextIdx = (pos + 1) % this.deck.length;
+        const nextMsg = this.deck[nextIdx] || null;
+        if (nextMsg) this.push(nextMsg, { mark:true, advance:true });
         return this.current();
       },
 

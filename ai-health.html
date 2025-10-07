@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8" />
+  <title>AWN Smart Compose – Health Check</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    :root{--ok:#0a7f50;--bad:#b00020;--muted:#6b7280}
+    body{font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;max-width:900px;margin:40px auto;padding:0 16px}
+    h1{font-size:20px;margin:0 0 16px}
+    .card{border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin:12px 0}
+    label{display:block;margin:8px 0 4px;font-weight:600}
+    input,textarea,select{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:8px;font:inherit}
+    textarea{min-height:80px;resize:vertical}
+    .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+    button{appearance:none;border:1px solid #111827;background:#111827;color:#fff;border-radius:10px;padding:10px 14px;cursor:pointer}
+    code.mono{font-family:ui-monospace, SFMono-Regular, Menlo, monospace}
+    .muted{color:var(--muted)}
+    .ok{color:var(--ok);font-weight:700}
+    .bad{color:var(--bad);font-weight:700}
+    pre{background:#0b1020;color:#cde3ff;border-radius:10px;padding:12px;overflow:auto}
+    .kv{font-family:ui-monospace, SFMono-Regular, Menlo, monospace}
+    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    @media (max-width: 800px){ .grid{grid-template-columns:1fr} }
+  </style>
+</head>
+<body>
+  <h1>AWN Smart Compose – Health Check</h1>
+
+  <div class="card">
+    <div class="grid">
+      <div>
+        <label for="base">API base</label>
+        <input id="base" type="text" value="https://ai.awarmnote.com" />
+      </div>
+      <div>
+        <label for="timeout">Timeout (ms)</label>
+        <input id="timeout" type="number" value="12000" />
+      </div>
+    </div>
+
+    <div class="grid">
+      <div>
+        <label for="to">Ontvanger (to)</label>
+        <input id="to" type="text" value="Ria" />
+      </div>
+      <div>
+        <label for="from">Afzender (from)</label>
+        <input id="from" type="text" value="Rob" />
+      </div>
+    </div>
+
+    <div class="grid">
+      <div>
+        <label for="language">Taal</label>
+        <select id="language">
+          <option value="nl" selected>Nederlands (nl)</option>
+          <option value="en">English (en)</option>
+          <option value="de">Deutsch (de)</option>
+          <option value="fr">Français (fr)</option>
+        </select>
+      </div>
+      <div>
+        <label for="tone">Toon</label>
+        <select id="tone">
+          <option value="warm" selected>warm</option>
+          <option value="encouraging">bemoedigend</option>
+          <option value="playful">speels</option>
+          <option value="grateful">dankbaar</option>
+        </select>
+      </div>
+    </div>
+
+    <label for="occasion">Aanleiding (optioneel)</label>
+    <input id="occasion" type="text" placeholder="verjaardag, sterkte, bedankt, ..." />
+
+    <label for="traits">Kenmerken (komma-gescheiden, optioneel)</label>
+    <input id="traits" type="text" value="attent, vriendelijk" />
+
+    <label for="context">Context (optioneel)</label>
+    <textarea id="context" placeholder="Korte context, max 1-2 zinnen."></textarea>
+
+    <div class="grid">
+      <div>
+        <label for="length">Lengte</label>
+        <select id="length">
+          <option value="short" selected>kort (±35–60 woorden)</option>
+          <option value="medium">middel (±60–90 woorden)</option>
+          <option value="long">lang (±90–140 woorden)</option>
+        </select>
+      </div>
+      <div>
+        <label for="emojis">Emoji's</label>
+        <select id="emojis">
+          <option value="allow" selected>toegestaan (spaarzaam)</option>
+          <option value="forbid">verboden</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:10px">
+      <button id="run">Run checks</button>
+      <span id="status" class="muted">Nog niet gestart</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Resultaten</h3>
+    <div id="out"></div>
+  </div>
+
+  <script>
+    const $ = s => document.querySelector(s);
+    const out = $("#out");
+    const status = $("#status");
+
+    function line(label, value, cls=""){
+      const div = document.createElement('div');
+      div.innerHTML = `<div class="row"><div class="kv" style="min-width:160px">${label}:</div><div class="${cls}">${value}</div></div>`;
+      out.appendChild(div);
+    }
+    function block(title, body){
+      const pre = document.createElement('pre');
+      pre.textContent = body;
+      out.appendChild(document.createTextNode(title));
+      out.appendChild(pre);
+    }
+
+    async function run(){
+      out.innerHTML = ""; status.textContent = "Bezig…";
+
+      const BASE = $("#base").value.trim().replace(/\/+$/,"");
+      const TIMEOUT = parseInt($("#timeout").value || "12000", 10);
+
+      // 0) Health
+      try{
+        const r = await fetch(`${BASE}/ai/health`, { redirect:'manual' });
+        line("Health status", `${r.status} ${r.statusText}`, r.ok ? "ok":"bad");
+        block("Health JSON", await r.text());
+      }catch(e){ line("Health", "FAILED: "+(e.message||e), "bad"); }
+
+      // 1) Compose
+      const traits = $("#traits").value.split(",").map(s => s.trim()).filter(Boolean);
+      const body = {
+        to: $("#to").value.trim(),
+        from: $("#from").value.trim(),
+        language: $("#language").value,
+        tone: $("#tone").value,
+        occasion: $("#occasion").value.trim() || undefined,
+        traits: traits.length ? traits : undefined,
+        context: $("#context").value.trim() || undefined,
+        constraints: {
+          length: $("#length").value,
+          no_emojis: $("#emojis").value === "forbid",
+          include_icon: true
+        }
+      };
+
+      try{
+        const ctrl = new AbortController();
+        const t = setTimeout(() => ctrl.abort(), TIMEOUT);
+        const r = await fetch(`${BASE}/ai/compose`, {
+          method:'POST',
+          headers:{'content-type':'application/json'},
+          body: JSON.stringify(body),
+          signal: ctrl.signal,
+          redirect:'manual'
+        });
+        const txt = await r.text();
+        line("Compose status", `${r.status} ${r.statusText}`, r.ok ? "ok":"bad");
+        block("Compose JSON", txt);
+        try {
+          const j = JSON.parse(txt);
+          if (j?.message) {
+            line("Bericht", j.message, "ok");
+          }
+        } catch {}
+        clearTimeout(t);
+      }catch(e){
+        line("Compose", "FAILED: "+(e.message||e), "bad");
+      }
+
+      status.textContent = "Klaar";
+    }
+
+    $("#run").addEventListener('click', run);
+  </script>
+</body>
+</html>

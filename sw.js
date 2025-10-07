@@ -4,7 +4,7 @@
    - Alles in root: gebruik absolute paden
 */
 
-const SW_VERSION  = 'v2025-10-05-1';         // ← bump dit bij elke release
+const SW_VERSION  = 'v2025-10-05-3';         // ← bump dit bij elke release
 const CACHE_NAME  = 'awn-' + SW_VERSION; 
 
 // Alleen assets die écht bestaan in productie en same-origin zijn:
@@ -12,6 +12,7 @@ const PRECACHE_URLS = [
   '/',                 // voor navigatie fallback
   '/index.html',
   '/styles.css',
+  '/script.js',
   '/download.js',
   '/mail.js',
   '/whatsapp.js',
