@@ -23,16 +23,21 @@
       "messengerCopied": "Link van jouw persoonlijke bericht is gekopieerd. 📋"
     },
     "toast": {
-    "copied": "Link gekopieerd 📋",
-    "whatsappOpened": "WhatsApp geopend 📲",
-    "emailOpened": "E-mail geopend ✉️",
-    "downloadStart": "Afbeelding wordt opgeslagen ⬇️",
-    "downloadUnavailable": "Download niet beschikbaar",
-    "shared": "Gedeeld 💛",
-    "shareCancelled": "Delen geannuleerd",
-    "messengerCopied": "Link van jouw persoonlijke bericht is gekopieerd. 📋",
-    "toRequired": "Vul eerst in voor wie dit is 💛",
-    "newLoaded": "Nieuwe boodschap geladen ✨"
+      "copied": "Link gekopieerd 📋",
+      "whatsappOpened": "WhatsApp geopend 📲",
+      "emailOpened": "E-mail geopend ✉️",
+      "downloadStart": "Afbeelding wordt opgeslagen ⬇️",
+      "downloadUnavailable": "Download niet beschikbaar",
+      "shared": "Gedeeld 💛",
+      "shareCancelled": "Delen geannuleerd",
+      "messengerCopied": "Link van jouw persoonlijke bericht is gekopieerd. 📋",
+      "toRequired": "Vul eerst in voor wie dit is 💛",
+      "newLoaded": "Nieuwe boodschap geladen ✨",
+      "applied": "AI-bericht geplaatst ✨"
+    },
+    "error": {
+      "generic": "Er ging iets mis. Probeer het nog eens.",
+      "offline": "Je bent offline."
     },
     "compose": {
       "to": "Voor",
@@ -41,12 +46,8 @@
       "fromPlaceholder": "Van jou (optioneel)"
     },
     "ui": {
-     "aiNew": "AI-boodschap"
+      "aiNew": "AI-boodschap"
     },
-   	"ai": {
-     "generated": "AI-boodschap gemaakt ✨",
-     "failed": "Kon geen boodschap genereren"
-  },
     "qr": {
       "title": "QR-code",
       "hint": "Scan deze code met je telefoon om de note te openen.",
@@ -61,6 +62,43 @@
         "Verstuur je warme note. 💛"
       ],
       "open": "Open Messenger"
+    },
+    "ai": {
+      "button": "AI-bericht",
+      "status": {
+        "ready": "Klaar",
+        "generating": "Bezig met bedenken…",
+        "loading": "Even geduld…",
+        "added": "Voorstel toegevoegd",
+        "error": "AI niet beschikbaar — typ handmatig"
+      },
+      "generated": "AI-boodschap gemaakt ✨",
+      "failed": "Kon geen boodschap genereren",
+      "sheet": {
+        "title": "AI-boodschap",
+        "promptLabel": "Wat wil je ongeveer zeggen?",
+        "promptPlaceholder": "Schrijf een paar steekwoorden…",
+        "toneLabel": "Stijl",
+        "toneOptions": {
+          "warm": "Warm",
+          "funny": "Grappig",
+          "encouraging": "Bemoedigend",
+          "neutral": "Neutraal"
+        },
+        "lengthLabel": "Lengte",
+        "lengthOptions": {
+          "short": "Kort",
+          "medium": "Normaal",
+          "long": "Lang"
+        },
+        "toLabel": "Voor",
+        "fromLabel": "Van",
+        "generate": "Maak voorstel",
+        "apply": "Plaatsen",
+        "cancel": "Annuleren",
+        "loading": "Even geduld…",
+        "error": "AI niet beschikbaar — typ handmatig"
+      }
     },
     "about": {
       "title": "Over deze App",

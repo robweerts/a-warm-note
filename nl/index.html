@@ -27,11 +27,11 @@
 <meta name="twitter:description" content="Een klein gebaar met grote betekenis. Verstuur in seconden een liefdevolle notitie.">
 <meta name="twitter:image" content="https://awarmnote.com/assets/og/nl/preview-1200x630.jpg">
 
+
 <!-- i18n -->
 <link rel="alternate" hreflang="nl" href="https://awarmnote.com/nl/">
 <link rel="alternate" hreflang="en" href="https://awarmnote.com/en/">
 <link rel="alternate" hreflang="x-default" href="https://awarmnote.com/">
-
 <!-- JSON-LD -->
 <script type="application/ld+json">
 {
@@ -68,13 +68,20 @@
   <link rel="icon" type="image/png" sizes="32x32"  href="/assets/icons/logo_transparent_32px.png">
   <link rel="icon" type="image/png" sizes="64x64"  href="/assets/icons/logo_transparent_64px.png">
   <link rel="icon" type="image/png" sizes="128x128" href="/assets/icons/logo_transparent_128px.png">
-  <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png"> <!-- 180×180 -->
+  <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="192x192" href="/assets/icons/android-chrome-192x192.png">
   <link rel="icon" type="image/png" sizes="512x512" href="/assets/icons/android-chrome-512x512.png">
 
+  <!-- App flags -->
   <meta name="theme-color" content="#000000">
   <meta name="awn:campaign" content="awn_q4_2025">
-  <script>window.AWN_FLAGS = { campaign: 'awn_q4_2025' };</script>
+  <!-- AI endpoint hard to prod, ook lokaal -->
+  <meta name="awn:ai-base" content="https://ai.awarmnote.com/ai">
+  <script>
+    window.AWN_FLAGS = window.AWN_FLAGS || {};
+    window.AWN_FLAGS.campaign = 'awn_q4_2025';
+    window.AWN_FLAGS.ai = { base: 'https://ai.awarmnote.com/ai', timeout: 20000 };
+  </script>
 </head>
 <body class="has-bg">
 
@@ -87,20 +94,18 @@
 
     <nav class="actions" aria-label="Acties">
       <button id="btn-new" class="btn btn-ico" type="button" aria-label="Nieuwe boodschap">
-        <!-- “sticky note” icoon (voor Nieuwe boodschap) -->
         <span class="btn-label">Nieuwe boodschap</span>
       </button>
 
-      <!-- =================== AI Message ===================
-      <button id="btn-ai" class="btn icon" type="button">
-        <span class="icon" aria-hidden="true">✨</span>
-        <span class="btn-label" data-i18n="ui.aiNew">AI</span>
+      <!-- AI in same window (compact in topbar, i18n op de label-span) -->
+      <button id="smart-compose" type="button" class="btn btn-ico" aria-label="AI-bericht">
+        <span class="ico" aria-hidden="true">✨</span>
+        <span class="btn-label" data-i18n="ai.button">AI-bericht</span>
       </button>
-      -->
 
+      <!-- Verstuur -->
       <button id="btn-share" class="btn btn-ico" type="button" aria-label="Verstuur">
-        <!-- “paper plane” icoon -->
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" id="Paper-Plane">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" id="Paper-Plane" aria-hidden="true">
           <path fill="#fff" fill-rule="evenodd" d="M12 23c6.075 0 11 -4.925 11 -11S18.075 1 12 1 1 5.925 1 12s4.925 11 11 11ZM4.982 11.175c0 -0.102 0.067 -0.198 0.162 -0.234l12.324 -4.697a0.254 0.254 0 0 1 0.254 0.046c0.068 0.06 0.1 0.157 0.078 0.246l-2.458 10.338a0.254 0.254 0 0 1 -0.156 0.177 0.253 0.253 0 0 1 -0.234 -0.032l-2.619 -1.895 -0.1 0.066a157.1 157.1 0 0 1 -1.196 0.788 46.23 46.23 0 0 1 -0.943 0.6 9.536 9.536 0 0 1 -0.352 0.207 2.277 2.277 0 0 1 -0.14 0.072 0.93 0.93 0 0 1 -0.078 0.033 0.716 0.716 0 0 1 -0.722 -0.165 0.775 0.775 0  0 1 -0.202 -0.394l-0.001 -0.005 -0.803 -3.949 -2.652 -0.968a0.255 0.255 0 0 1 -0.162 -0.234Zm3.792 0.993 0.727 3.577 0.81 -2.463 4.142 -3.715a0.154 0.154 0 0 0 0.023 -0.196 0.154 0.154 0 0 0 -0.19 -0.05l-5.512 2.847Z" clip-rule="evenodd" stroke-width="1"></path>
         </svg>
         <span class="btn-label">Verstuur</span>
@@ -129,7 +134,7 @@
   </header>
 
   <!-- =================== MOBILE BOOT INTRO =================== -->
-  <div id="intro-boot" class="intro-boot" aria-live="polite" aria-label="App wordt geladen" role="status">
+  <div id="intro-boot" class="intro-boot" aria-live="polite" role="status" aria-label="App wordt geladen">
     <div class="intro-boot__center">
       <div class="intro-boot__logo" aria-hidden="true">
         <img src="/assets/icons/logo_transparent_64px.png"
@@ -166,7 +171,7 @@
         </div>
       </div>
 
-      <!-- Nav chevrons (functioneel onveranderd, alleen CSS overlay) -->
+      <!-- Nav chevrons -->
       <div class="nav-ctl">
         <button type="button" class="nav-btn nav-btn--prev" data-btn-prev aria-label="Vorige">
           <span class="sr-only">Vorige</span>
@@ -183,6 +188,9 @@
         <input id="to-inline" class="compose-to" type="text" placeholder="Voor wie?" aria-required="true" aria-label="Voor wie is dit?">
         <input id="from-inline" class="compose-from" type="text" placeholder="Van jou (optioneel)" aria-label="Van wie is dit?">
       </div>
+
+      <!-- Debug sink voor AI (onzichtbaar, maar aanwezig voor integratie) -->
+      <textarea id="message-textarea" hidden></textarea>
     </section>
 
     <!-- Coach -->
@@ -334,15 +342,68 @@
           <span class="about-tag">Iets kleins, veel betekenis</span>
         </div>
       </div>
-        <!-- =================== FOOTER (alle pagina's) =================== -->
-  <footer class="site-footer">
-    <nav>
-      <a href="/about.html#privacy" rel="noopener">Privacy notice</a>
-    </nav>
-  </footer>
+
+      <!-- =================== FOOTER (alle pagina's) =================== -->
+      <footer class="site-footer">
+        <nav>
+          <a href="/about.html#privacy" rel="noopener">Privacy notice</a>
+        </nav>
+      </footer>
     </section>
   </div>
 
+<!-- =================== AI COMPOSE SHEET =================== -->
+<div id="ai-backdrop" class="sheet-backdrop hidden" aria-hidden="true">
+  <section class="sheet sheet--ai" role="dialog" aria-modal="true" aria-labelledby="ai-title">
+    <header class="sheet-header">
+      <div class="drag-indicator" aria-hidden="true"></div>
+      <h2 id="ai-title" data-i18n="ai.sheet.title">AI — maak een warm bericht</h2>
+      <button class="sheet-close" aria-label="Sluiten" id="ai-close-btn">✕</button>
+    </header>
+
+    <div class="sheet-body">
+      <div class="form-grid">
+        <!-- 1) Sentiment / Toon -->
+        <label class="form-label" for="ai-tone" data-i18n="ai.sheet.tone">Toon</label>
+        <select id="ai-tone" class="form-field">
+          <option value="warm">💛 Warm</option>
+          <option value="funny">😄 Grappig</option>
+          <option value="supportive">🤍 Steunend</option>
+          <option value="proud">🌟 Trots</option>
+          <option value="romantic">❤️ Romantisch</option>
+        </select>
+
+        <!-- 2) Aanleiding / Occasion -->
+        <label class="form-label" for="ai-occasion" data-i18n="ai.sheet.occasion">Aanleiding</label>
+        <select id="ai-occasion" class="form-field">
+          <option value="">—</option>
+          <option value="just_because">Zomaar</option>
+          <option value="thank_you">Bedankt</option>
+          <option value="miss_you">Ik mis je</option>
+          <option value="good_luck">Succes</option>
+          <option value="get_well">Beterschap</option>
+          <option value="congrats">Gefeliciteerd</option>
+        </select>
+
+        <!-- 3) Context (kort) -->
+        <label class="form-label" for="ai-context" data-i18n="ai.sheet.context">Context (optioneel, max 120 tekens)</label>
+        <textarea id="ai-context" class="form-field" rows="3" maxlength="120"
+          placeholder="Bijv.: sollicitatie vandaag, of lange dag gehad…"></textarea>
+
+        <!-- 4) Lengte/striktheid (optioneel) -->
+        <label class="form-label" for="ai-length" data-i18n="ai.sheet.length">Lengte</label>
+        <select id="ai-length" class="form-field">
+          <option value="short" selected>Kort (aanrader)</option>
+          <option value="medium">Iets langer</option>
+        </select>
+      </div>
+    </div>
+
+    <footer class="sheet-actions">
+      <button id="ai-generate" class="btn primary" type="button" data-i18n="ai.sheet.generate">Genereer ✨</button>
+    </footer>
+  </section>
+</div>
   <!-- =================== SPLASH OVERLAY =================== -->
   <div id="splash-note-overlay" aria-hidden="true">
     <div class="splash-note-wrap splash-enter" id="splashNoteWrap"></div>
@@ -357,6 +418,7 @@
 
   <!-- =================== SCRIPTS =================== -->
   <script src="/awn.deck.js"></script>
+  <script defer src="/ai-module.js"></script>
   <script defer src="/script.js"></script>
   <script defer src="/mail.js"></script>
   <script defer src="/whatsapp.js"></script>
@@ -378,33 +440,27 @@
       const isLocal = ['localhost', '127.0.0.1', '::1'].includes(location.hostname);
       if (!('serviceWorker' in navigator) || isLocal || location.protocol !== 'https:') return;
 
-      let newSw; // installing/ waiting worker ref
+      let newSw;
 
       navigator.serviceWorker.register('/sw.js').then(reg => {
-        // 1) Update-detectie
         reg.addEventListener('updatefound', () => {
           newSw = reg.installing;
           if (!newSw) return;
           newSw.addEventListener('statechange', () => {
-            // SW is geïnstalleerd, er is al een controller => nieuwe versie beschikbaar
             if (newSw.state === 'installed' && navigator.serviceWorker.controller) {
-              // Toon jouw UI (banner/toast/knop) – voorbeeld:
               const el = document.querySelector('[data-sw-update]');
               if (el) el.hidden = false;
             }
           });
         });
 
-        // 2) Controller change => pagina ververst automatisch na SKIP_WAITING
         navigator.serviceWorker.addEventListener('controllerchange', () => {
-          // Herlaad 1x om nieuwe assets te krijgen
           if (!sessionStorage.getItem('sw-reloaded')) {
             sessionStorage.setItem('sw-reloaded', '1');
             location.reload();
           }
         });
 
-        // 3) Optioneel: bericht van SW (bijv. "SW_READY")
         navigator.serviceWorker.addEventListener('message', (e) => {
           if (e.data && e.data.type === 'SW_READY') {
             const el = document.querySelector('[data-sw-update]');
@@ -413,10 +469,8 @@
         });
       }).catch(() => { /* stil falen */ });
 
-      // Publieke helper om update meteen te activeren
       window.activateNewVersion = function () {
         if (!navigator.serviceWorker.controller) return;
-        // Stuur SKIP_WAITING naar de nieuwe worker (die in 'waiting' staat)
         navigator.serviceWorker.getRegistration().then(reg => {
           const w = reg && reg.waiting;
           if (w) w.postMessage({ type: 'SKIP_WAITING' });
@@ -426,4 +480,3 @@
   </script>
 </body>
 </html>
-

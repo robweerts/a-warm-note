@@ -187,6 +187,38 @@ function setThemePref(next){           // aanroepen als je later een toggle maak
     }
   } catch {}
 })();
+
+
+// === AI Coach Messages ===
+window.AWN_COACH_AI = {
+  start(lang) {
+    const msgs = (lang === 'en')
+      ? ["Thinking… 💭", "I feel a warm thought coming up…"]
+      : ["Even nadenken… 💭", "Ik voel iets warms opkomen…"];
+    coachShow(msgs[Math.floor(Math.random() * msgs.length)]);
+  },
+  almost(lang) {
+    const msgs = (lang === 'en')
+      ? ["Almost done, just a final touch…"]
+      : ["Bijna klaar, nog één zinnetje…"];
+    coachShow(msgs[Math.floor(Math.random() * msgs.length)]);
+  },
+  success(lang) {
+    const msgs = (lang === 'en')
+      ? ["Look — a warm note, just for you! ✨"]
+      : ["Kijk — een warm bericht, speciaal voor jou! ✨"];
+    coachShow(msgs[Math.floor(Math.random() * msgs.length)]);
+    setTimeout(()=>coachHide(), 2000);
+  },
+  error(lang) {
+    const msgs = (lang === 'en')
+      ? ["Hmm, that didn’t quite work… want to try again?"]
+      : ["Hm, dat lukte niet helemaal… wil je het nog eens proberen?"];
+    coachShow(msgs[Math.floor(Math.random() * msgs.length)]);
+    setTimeout(()=>coachHide(), 3000);
+  }
+};
+
 /* [B] DOM CACHE & HELPERS --------------------------------------------------- */
 const $ = (id) => document.getElementById(id);
 
@@ -278,69 +310,6 @@ function applyInboundToken(){
   window.__AWN_INBOUND_URL__ = url;
 }
 
-function refreshAISheetStrings(){
-  const R = document.getElementById('ai-sheet') || document.querySelector('[data-sheet="ai"]');
-  if (!R) return;
-  const tx = (k,en,nl)=> t(k) || (STATE?.lang==='en'? en : nl);
-
-  // Titel
-  const title = R.querySelector('[data-i18n="ai.sheet.title"], .sheet-title');
-  if (title) title.textContent = tx('ai.sheet.title','AI Message','AI-boodschap');
-
-  // To/From labels + placeholders
-  const toLbl = R.querySelector('.ai-to-label,[data-i18n="ai.sheet.toLabel"]');
-  const fmLbl = R.querySelector('.ai-from-label,[data-i18n="ai.sheet.fromLabel"]');
-  const toInp = R.querySelector('#ai-to, input.ai-to');
-  const fmInp = R.querySelector('#ai-from, input.ai-from');
-  if (toLbl) toLbl.textContent = tx('ai.sheet.toLabel','To','Voor');
-  if (fmLbl) fmLbl.textContent = tx('ai.sheet.fromLabel','From','Van');
-  if (toInp) toInp.placeholder = tx('ai.sheet.promptTo','For whom?','Voor wie?') || tx('placeholders.to','For whom?','Voor wie?');
-  if (fmInp) fmInp.placeholder = tx('placeholders.from','From you (optional)','Van jou (optioneel)');
-
-  // Prompt label + placeholder
-  const pLbl = R.querySelector('.ai-prompt-label,[data-i18n="ai.sheet.promptLabel"]');
-  const pInp = R.querySelector('#ai-prompt,textarea.ai-prompt');
-  if (pLbl) pLbl.textContent = tx('ai.sheet.promptLabel','What do you want to say?','Wat wil je ongeveer zeggen?');
-  if (pInp) pInp.placeholder = tx('ai.sheet.promptPlaceholder','Write a few keywords…','Schrijf een paar steekwoorden…');
-
-  // Tone + options
-  const tLbl = R.querySelector('.ai-tone-label,[data-i18n="ai.sheet.toneLabel"]');
-  const tSel = R.querySelector('#ai-tone,select.ai-tone');
-  if (tLbl) tLbl.textContent = tx('ai.sheet.toneLabel','Tone','Stijl');
-  if (tSel){
-    const map = {
-      warm:        tx('ai.sheet.toneOptions.warm','Warm','Warm'),
-      funny:       tx('ai.sheet.toneOptions.funny','Funny','Grappig'),
-      encouraging: tx('ai.sheet.toneOptions.encouraging','Encouraging','Bemoedigend'),
-      neutral:     tx('ai.sheet.toneOptions.neutral','Neutral','Neutraal')
-    };
-    [...tSel.options].forEach(o=>{ if(map[o.value]) o.textContent = map[o.value]; });
-  }
-
-  // Length + options
-  const lLbl = R.querySelector('.ai-length-label,[data-i18n="ai.sheet.lengthLabel"]');
-  const lSel = R.querySelector('#ai-length,select.ai-length');
-  if (lLbl) lLbl.textContent = tx('ai.sheet.lengthLabel','Length','Lengte');
-  if (lSel){
-    const map = {
-      short:  tx('ai.sheet.lengthOptions.short','Short','Kort'),
-      medium: tx('ai.sheet.lengthOptions.medium','Normal','Normaal'),
-      long:   tx('ai.sheet.lengthOptions.long','Long','Lang')
-    };
-    [...lSel.options].forEach(o=>{ if(map[o.value]) o.textContent = map[o.value]; });
-  }
-
-  // Buttons + status
-  const bGen = R.querySelector('[data-action="ai-generate"],#ai-generate');
-  const bApp = R.querySelector('[data-action="ai-apply"],#ai-apply');
-  const bCan = R.querySelector('[data-action="ai-cancel"],#ai-cancel');
-  const stat = R.querySelector('.ai-status');
-  if (bGen) bGen.textContent = tx('ai.sheet.generate','Generate','Maak voorstel');
-  if (bApp) bApp.textContent = tx('ai.sheet.apply','Apply','Plaatsen');
-  if (bCan) bCan.textContent = tx('ai.sheet.cancel','Cancel','Annuleren');
-  if (stat) stat.textContent = tx('ai.status.ready','Ready','Klaar');
-}
-
 /* [D] INIT (lifecycle) ------------------------------------------------------ */
 
 function init() {
@@ -351,8 +320,6 @@ function init() {
   document.documentElement.setAttribute('lang', STATE.lang);
   recacheEls();
   wireGlobalUI();
-  bindAISheetGlue();
-
   
   if (typeof wireLanguagePicker === 'function') wireLanguagePicker();
   wireLangDropdown?.();
@@ -370,9 +337,7 @@ function init() {
   // 2) Strings → Messages
   ensureStringsLoaded()
     .then(() => {
-      if (typeof refreshUIStrings === 'function') 
-      recacheEls?.();
-      refreshUIStrings();
+      if (typeof refreshUIStrings === 'function') refreshUIStrings();
       return loadMessages();
     })
     .then(() => {
@@ -448,17 +413,20 @@ function init() {
   	 	renderMessage({ newRandom: true, wiggle: false });
 	 }
 
-}	 
-  // 9) Coach-status bijwerken (zonder timeout/hold)
-  if (isReceivedByMid) {
-    if (!STATE._coachReceivedOnce) {
-      updateCoach('received', {}, { hold: 0, force: true });
-      STATE._coachReceivedOnce = true;
-    }
-  } else {
-    // Altijd starten met 'init' als je ZONDER mid binnenkomt
-    updateCoach('init', {}, { hold: 0, force: true });
-  }	
+}
+	 
+
+	  // 9) Coach-status bijwerken
+	  if (isReceivedByMid) {
+  	  // In ontvangen-flow: hou de expliciete CTA (niet overschrijven!)
+  	  if (!STATE._coachReceivedOnce) {
+    	updateCoach('received');
+    	STATE._coachReceivedOnce = true;
+  	  }
+	  } else {
+  	  // In alle andere gevallen mag de algemene coach-update
+  	  updateCoach(currentCoachState());
+	  }		
     })
     .catch((e) => {
       console.error("FOUT in init():", e);
@@ -1196,71 +1164,6 @@ function showWelcomeNote(els) {
   return true;
 }
 
-/* === AI RESULT SINK (centraal) ===========================================
-   Zorgt dat elk AI-resultaat in de app zichtbaar wordt:
-   - Voegt (of vervangt per id) in STATE.allMessages
-   - Zet STATE.currentIdx op die kaart
-   - Rebuild deck (respecteert actief sentiment)
-   - Rendert direct de note
-   - Houdt lastRenderedId bij voor UTM/analytics
-   Let op: verwacht objectvorm { text, icon?, sentiments?, special_day?, id? }
-============================================================================ */
-(function installAIResultSink(){
-  // Dubbel installeren voorkomen
-  if (window.onAIGeneratedText && window.onAIGeneratedText.__awn_ai_sink) return;
-
-  window.onAIGeneratedText = function onAIGeneratedText(msg){
-    try {
-      // 1) Normaliseer inkomend bericht
-      const m = {
-        id:          (msg && msg.id) || ('ai_' + Math.random().toString(36).slice(2,9)),
-        icon:        (msg && msg.icon) || '✨',
-        text:        String((msg && msg.text) || (typeof msg === 'string' ? msg : '') || ''),
-        sentiments:  Array.isArray(msg?.sentiments) ? msg.sentiments : (STATE?.activeSentiment ? [STATE.activeSentiment] : []),
-        special_day: msg?.special_day || null,
-        weight:      1
-      };
-      if (!m.text) { console.warn('[AI SINK] leeg bericht, niets te doen.'); return; }
-
-      // 2) Dataset voorbereiden
-      if (!Array.isArray(STATE.allMessages)) STATE.allMessages = [];
-
-      // 3) Upsert per id (vervang als id bestaat, anders vooraan toevoegen)
-      const ix = STATE.allMessages.findIndex(x => x && x.id === m.id);
-      if (ix >= 0) STATE.allMessages[ix] = m;
-      else STATE.allMessages.unshift(m);
-
-      // 4) Huidige index op dit item zetten
-      STATE.currentIdx = STATE.allMessages.findIndex(x => x && x.id === m.id);
-
-      // 5) Deck opnieuw opbouwen (zodat nav/next klopt met actief sentiment)
-      if (typeof rebuildDeck === 'function') rebuildDeck(/*resetRecent*/ true);
-
-      // 6) Note direct renderen
-      if (typeof renderMessage === 'function') {
-        renderMessage({ requestedIdx: STATE.currentIdx, msg: m, wiggle: true });
-      } else {
-        console.warn('[AI SINK] renderMessage ontbreekt; UI niet geüpdatet.');
-      }
-
-      // 7) Bewaar voor UTM content-tagging
-      STATE.lastRenderedId = m.id;
-
-      // 8) Optioneel: klein confetti / toast
-      try { showToast?.( (STATE?.lang)==='en' ? 'AI note ready ✨' : 'AI-bericht klaar ✨' ); } catch {}
-      try { celebrate?.(); } catch {}
-    } catch (e){
-      console.error('[AI SINK] onAIGeneratedText error:', e);
-    }
-  };
-  window.onAIGeneratedText.__awn_ai_sink = true;
-
-  // Compat: sommige paden roepen nog onUserPickedMessage(m)
-  if (!window.onUserPickedMessage) {
-    window.onUserPickedMessage = (m)=> window.onAIGeneratedText(m);
-  }
-})();
-
 /* [I] COMPOSE (inputs Voor/Van) -------------------------------------------- */
 function autoCapitalizeInput(input) {
   if (!input) return;
@@ -1342,25 +1245,21 @@ function updateCoach(state, vars = {}, opts = {}){
                 : "Zacht begin 🐣 Kies Pasen, blader door de berichtjes en verstuur je note.")
         : null;
 
-const copy = isEn ? {
-  init:     themedInit || "Pick a feeling, select a message and send your note.",
-  toFilled: `Nice! Click <button type="button" class="coach-inline">Send</button> to share your message.`,
-  shared:   "Your 'warm note' has been sent.<br> Make another one?",
-  received: "You’ve received a warm note.<br> Send your own? Tap ‘New message’.",
-  error:    "Add who it’s for first",
-  category: "Now pick 'a warm note' from the feeling {{category}}.",
-  aiThinking: "Thinking… 💭",
-  aiDone:     "AI message ready! ✨"
-} : {
-  init:     themedInit || "Selecteer een gevoel, blader door de berichtjes en verstuur je note.",
-  toFilled: `Mooi! Klik <button type="button" class="coach-inline">Verstuur</button> om je boodschap te delen.`,
-  shared:   "Je boodschap is verstuurd<br>Nog eentje maken?",
-  received: "Je hebt een 'a warm note' ontvangen.<br>Zelf iemand verrassen? Klik ‘Kies bericht’.",
-  error:    "Vul eerst in voor wie dit is.",
-  category: "Kies nu 'a warm note' uit {{categorie}}.",
-  aiThinking: "Even denken… 💭",
-  aiDone:     "AI-bericht gereed! ✨"
-};
+  const copy = isEn ? {
+    init:     themedInit || "Pick a feeling, select a message and send your note.",
+    toFilled: `Nice! Click <button type="button" class="coach-inline">Send</button> to share your message.`,
+    shared:   "Your 'warm note' has been sent.<br> Make another one?",
+    received: "You’ve received a warm note.<br> Send your own? Tap ‘New message’.",
+    error:    "Add who it’s for first",
+    category: "Now pick 'a warm note' from the feeling {{category}}."
+  } : {
+    init:     themedInit || "Selecteer een gevoel, blader door de berichtjes en verstuur je note.",
+    toFilled: `Mooi! Klik <button type="button" class="coach-inline">Verstuur</button> om je boodschap te delen.`,
+    shared:   "Je boodschap is verstuurd<br>Nog eentje maken?",
+    received: "Je hebt een 'a warm note' ontvangen.<br>Zelf iemand verrassen? Klik ‘Kies bericht’.",
+    error:    "Vul eerst in voor wie dit is.",
+    category: "Kies nu 'a warm note' uit {{categorie}}."
+  };
 
   const tpl = (str) => {
     if (!str) return "";
@@ -1375,63 +1274,16 @@ const copy = isEn ? {
   if (els.coachMsg) els.coachMsg.innerHTML = html;
   if (window.StickyAvatar) StickyAvatar.setFromCoach(state);
 
-// --- Hold/Prio: init nooit vasthouden; andere states kort vasthouden ---
-const defaultHold = (state === 'init' || state === 'received') ? 0 : 1200; // ms
-const holdMs = Number.isFinite(opts.hold) ? opts.hold : defaultHold;
-
-STATE.coachPrio = incomingPrio;
-
-// Belangrijk: bij 0 ms altijd expliciet resetten (geen “oude” lock laten hangen)
-if (holdMs > 0) {
-  STATE.coachHoldUntil = now + holdMs;
-} else {
-  STATE.coachHoldUntil = 0;
-}
+  // --- Nieuw: hold zetten voor ‘sterkere’ states, zodat init niet meteen overschrijft ---
+  const defaultHold = (state === 'init') ? 0 : 900; // ms
+  const holdMs = Number.isFinite(opts.hold) ? opts.hold : defaultHold;
+  STATE.coachPrio = incomingPrio;
+  STATE.coachHoldUntil = holdMs > 0 ? (now + holdMs) : 0;
+  if (typeof positionAvatarNearAbout === 'function') {
+  requestAnimationFrame(positionAvatarNearAbout);
+  }	
 }
 
-/* [J+] Timed coach: gebruikt centrale copy en sluit gegarandeerd na ms */
-window.updateCoachTimed = (function(){
-  let tHandle = null;
-
-  return function(state, vars = {}, ms = 1600){
-    // 1) bestaande timer annuleren
-    try { if (tHandle) clearTimeout(tHandle); } catch(_) {}
-    tHandle = null;
-
-    // 2) tonen via centrale functie + hold (zodat zwakkere states niet eroverheen schrijven)
-    try { updateCoach(state, vars, { hold: ms, force: true }); } catch(_) {}
-
-    // 3) gegarandeerd verbergen na ms (native coachHide → DOM fallback) + hold/prio reset
-    const delay = Math.max(400, ms|0);
-    tHandle = setTimeout(() => {
-      try {
-        if (typeof window.coachHide === 'function') {
-          window.coachHide(true);
-        } else {
-          const box = document.getElementById('coach-tip');
-          if (box) box.classList.add('hidden');
-        }
-      } catch(_) {}
-
-      try {
-        if (window.STATE) { STATE.coachHoldUntil = 0; STATE.coachPrio = 0; }
-      } catch(_) {}
-
-      tHandle = null;
-    }, delay);
-  };
-})();
-
-
-/* [J+] COACH helper: timed hint */
-window.coachShowTimed = function coachShowTimed(msg, ms = 1600) {
-  try { if (typeof window.coachShow === 'function') window.coachShow(msg); } catch(_) {}
-  try {
-    if (typeof window.coachHide === 'function') {
-      setTimeout(() => window.coachHide(true), Math.max(400, ms|0));
-    }
-  } catch(_) {}
-};
 /* [K] SHARE-SHEET (WA/E-mail/Download/Kopieer/Native) ---------------------- */
 let __lastFocusEl = null;
 function trapFocusIn(el, e){
@@ -1511,18 +1363,7 @@ function openMessengerSmart(shareUrl, { timeout = 1400 } = {}) {
   }
 }
 
-
 function openShareSheet(){
-  // Centrale korte hint voor share-sheet
-  updateCoachTimed('shareIntro', {}, 1600);
-  // Précompute share links zodra de sheet opent (géén await tijdens klik)
-STATE._shareLinks = STATE._shareLinks || {};
-(async () => {
-  try {
-    STATE._shareLinks.whatsapp = await getShareUrlForChannel('whatsapp');
-  } catch { /* stil falen */ }
-})();
-
   renderShareSheetPairsInline();
   if (!els.sheet) return;
   __lastFocusEl = document.activeElement;
@@ -1581,47 +1422,23 @@ async function onCopyLink(){
   try { await navigator.clipboard.writeText(url); }
   catch { prompt(i18n.prompt, url); }
 
-  closeShareSheet();
-  afterShareSuccess();
   showToast(i18n.toast);
+  closeShareSheet();
 }
 
-function onShareWhatsApp(){
-  const lang   = (STATE?.lang) || resolveLang();
-  const toName = (typeof getTo === 'function') ? getTo() : '';
+async function onShareWhatsApp() {
+  const lang    = (STATE?.lang) || resolveLang();
+  const toName  = (typeof getTo === 'function') ? getTo() : '';
+  const permalink = await getShareUrlForChannel('whatsapp');
 
-  // 0) LOG
-  console.groupCollapsed('[WA] onShareWhatsApp click');
-  console.log('lang:', lang, 'toName:', toName);
-
-  // 1) Gebruik précomputed short link als beschikbaar; anders sync long URL
-  let link = STATE?._shareLinks?.whatsapp;
-  if (!link) {
-    let u = buildSharedURL();
-    u = applyUTM(u, {
-      source: 'whatsapp',
-      medium: 'share',
-      campaign: currentCampaignTag(),
-      content: shareContentTag()
-    });
-    link = u.toString();
-    console.log('[WA] no precomputed link, using long URL');
+  if (typeof window.shareByWhatsApp === 'function') {
+    window.shareByWhatsApp({ lang, toName, permalink });
   } else {
-    console.log('[WA] using precomputed short link');
+    console.warn('[share] shareByWhatsApp() ontbreekt');
   }
-  console.log('link:', link);
 
-  // 2) OPEN WHATSAPP — TOP-LEVEL NAVIGATIE (sync, geen await!)
-  try {
-    window.shareByWhatsApp({ lang, toName, permalink: link });
-    console.log('[WA] navigation attempted');
-  } catch (e) {
-    console.error('[WA] navigation error', e);
-  }
-  console.groupEnd();
-
-  // 3) UX NA opening (mag sync blijven; navigatie neemt het tabblad over)
   showToastI18n('toast.whatsappOpened','WhatsApp geopend 📲');
+  celebrate();
   closeShareSheet();
   afterShareSuccess();
 }
@@ -1642,6 +1459,7 @@ async function onShareEmail() {
     console.warn('[share] shareByEmail() ontbreekt');
   }
   showToastI18n('toast.emailOpened','E-mail geopend ✉️');
+  celebrate();
   closeShareSheet();
   afterShareSuccess();
 }
@@ -1655,10 +1473,11 @@ function onDownload(){
       getTo, getFrom
     );
 	showToastI18n('toast.downloadStart','Afbeelding wordt opgeslagen ⬇️');
-	afterShareSuccess();
+    celebrate();
   } else {
 	showToastI18n('toast.downloadUnavailable','Download niet beschikbaar');  }
 	closeShareSheet();
+	afterShareSuccess();
 }
 
 async function onNativeShare(){
@@ -1667,7 +1486,7 @@ async function onNativeShare(){
     try {
       await navigator.share({ title:"a warm note", text:"Een warm bericht voor jou 💛", url:shareURL });
       showToastI18n('toast.shared','Gedeeld 💛');
-      afterShareSuccess();
+      celebrate();
     } catch {
       showToastI18n('toast.shareCancelled','Delen geannuleerd');
     }
@@ -1969,14 +1788,36 @@ function prefersReducedMotion(){
 
 function capitalize(s){ return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
 
-function shuffleArray(arr) {
-  const a = arr.slice(); // kopie
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
+/* [AI] Bridge — gegarandeerd de AI-tekst in de note plaatsen */
+window.onAIGeneratedText = function onAIGeneratedText(text) {
+  const t = (text == null) ? '' : String(text).trim();
+  if (!t) return;
+
+  window.STATE = window.STATE || {};
+  const list = Array.isArray(STATE.allMessages) ? STATE.allMessages : (STATE.allMessages = []);
+
+  // sentiment: respecteer huidige filter zodat browsen logisch blijft
+  const s = (STATE.activeSentiment && typeof STATE.activeSentiment === 'string') ? STATE.activeSentiment : null;
+
+  const msg = {
+    id: 'ai_' + Date.now(),
+    icon: '✨',
+    text: t,
+    sentiments: s ? [s] : []
+  };
+
+  // Zet AI-bericht vooraan en render direct die index
+  list.unshift(msg);
+
+  try {
+    if (typeof renderMessage === 'function') {
+      renderMessage({ requestedIdx: 0, msg, wiggle: true });
+    }
+  } catch (e) {
+    console.error('[AI] renderMessage failed:', e);
   }
-  return a;
-}
+};
+
 
 /* === [M] UTILITIES ================================ */
 /* Mini i18n: t('path.to.key', {vars}) met NL-fallback */
@@ -2012,7 +1853,6 @@ async function ensureStringsLoaded() {
 /* refreshUIStrings: schrijf labels/aria vanuit strings.{lang}.json (HTML-aware) */
 function refreshUIStrings() {
   // Topbar – Share-knop: alleen zichtbare label-span updaten
-  if (typeof recacheEls === 'function') recacheEls();
   const btnShare = document.getElementById('btn-share');
   if (btnShare) {
     btnShare.setAttribute('aria-label', t('actions.share'));
@@ -2029,23 +1869,24 @@ function refreshUIStrings() {
     const lbl = btnNew.querySelector('.btn-label');
     if (lbl) lbl.textContent = t('actions.new'); // "Nieuwe boodschap" / "New message"
   }
-  // === AI-knop + status (indien aanwezig) ===
-const aiBtn = document.getElementById('smart-compose');
-if (aiBtn) {
-  const lbl = t('ai.button') || ((STATE?.lang)==='en' ? 'AI compose' : 'AI-bericht');
-  aiBtn.setAttribute('aria-label', lbl);
-  const span = aiBtn.querySelector('.btn-label');
-  if (span) span.textContent = lbl;
-  else if (!aiBtn.children.length) aiBtn.textContent = lbl;
-}
-const aiStatus = document.getElementById('smart-compose-status');
-if (aiStatus) {
-  aiStatus.textContent = t('ai.status.ready') || ((STATE?.lang)==='en' ? 'Ready' : 'Klaar');
-}
 
   // Topbar – Installeer (PWA)
   // Mogelijke ids/classes; kies wat bij jouw HTML past
-  
+
+  // === AI-knop + status (indien aanwezig) ===
+  const aiBtn = document.getElementById('smart-compose');
+  if (aiBtn) {
+    const lbl = t('ai.button') || ((STATE?.lang)==='en' ? 'AI compose' : 'AI-bericht');
+    aiBtn.setAttribute('aria-label', lbl);
+    const span = aiBtn.querySelector('.btn-label');
+    if (span) span.textContent = lbl;
+    else if (!aiBtn.children.length) aiBtn.textContent = lbl;
+  }
+  const aiStatus = document.getElementById('smart-compose-status');
+  if (aiStatus) {
+    aiStatus.textContent = t('ai.status.ready') || ((STATE?.lang)==='en' ? 'Ready' : 'Klaar');
+  }
+    
 // === PWA Install button (robust selectors) ===
 (function(){
   const el =
@@ -2521,10 +2362,7 @@ function openAbout(){
   els.about.classList.remove("hidden");
   els.about.setAttribute("aria-hidden","false");
   els.about.onclick = (e)=>{ if (e.target === els.about) closeAbout(); };
-  // zodra about opent:
-  updateCoachTimed('aboutIntro', {}, 1600);
 }
-
 function closeAbout(){
   const backdrop = document.getElementById('about-backdrop');
   if (!backdrop) return;
@@ -2690,15 +2528,11 @@ window.addEventListener("DOMContentLoaded", () => {
 async function setLanguage(nextLang) {
   STATE.lang = (nextLang || resolveLang()).slice(0,2).toLowerCase();
   document.documentElement.setAttribute('lang', STATE.lang);
-   
 
-await ensureStringsLoaded();
-recacheEls?.();               // DOM opnieuw vastpakken (tegen stale refs)
-refreshUIStrings?.();
-refreshAISheetStrings?.();    // AI-sheet labels verversen
-// herteken huidige note
-renderToFrom?.();
-if (els?.msg){ const raw = els.msg.getAttribute('data-raw'); if (raw!=null) els.msg.textContent = personalize(raw); }
+  await ensureStringsLoaded();
+  if (typeof refreshUIStrings === 'function') refreshUIStrings();
+
+  await loadMessages();
 
   // ⬇️ BELANGRIJK: chips heropbouwen op basis van de nieuwe dataset/taal
   if (typeof buildSentimentChips === 'function') buildSentimentChips();
@@ -2707,6 +2541,32 @@ if (els?.msg){ const raw = els.msg.getAttribute('data-raw'); if (raw!=null) els.
   rebuildDeck?.(true);
   updateCoach?.(currentCoachState());
   renderMessage?.({ newRandom: true });
+}
+
+els.btnAI && els.btnAI.addEventListener("click", onNewAIClick);
+
+async function onNewAIClick(){
+  const lang = STATE?.lang || resolveLang();
+  const sentiments = STATE.activeSentiment ? [STATE.activeSentiment] : [];
+  const to   = getTo();
+  const from = getFrom();
+  const day  = getActiveThemeSpecialDay?.() || null; // of haal ‘m uit STATE
+
+  setBusy(true); // optioneel spinner
+  try {
+    const m = await fetchAIGeneratedMessage({ lang, sentiments, to, from, special_day: day });
+    // render als ‘ad-hoc’ message zonder het deck te vervuilen:
+    STATE.currentIdx = null; // forceer losse render
+    applyMessage({ icon: m.icon, text: m.text, sentiments: m.sentiments || sentiments });
+    renderToFrom();
+    renderFromSymbol((m.sentiments && m.sentiments[0]) || STATE.activeSentiment || null);
+    toast('ai.generated', t?.('ai.generated') || (lang==='en'?'AI message generated ✨':'AI-boodschap gemaakt ✨'));
+  } catch(e){
+    console.error(e);
+    showToast(t?.('ai.failed') || (lang==='en'?'Could not generate message':'Kon geen boodschap genereren'));
+  } finally {
+    setBusy(false);
+  }
 }
 
 /* PATCH: language picker koppelen (als aanwezig) 
@@ -3378,79 +3238,21 @@ function buildDeckFromState() {
 let nav = null;
 let NAV = null;
 
-function onSentimentChosen(lang, sentiment) {
-  // — language & sentiment ---------------------------------------------------
-  try {
-    STATE.lang = lang || STATE.lang || (typeof resolveLang === 'function' ? resolveLang() : 'nl');
-  } catch { STATE.lang = STATE.lang || 'nl'; }
+function onSentimentChosen(lang, sentiment){
+  STATE.lang = lang || STATE.lang;
   STATE.activeSentiment = (sentiment == null ? null : sentiment);
 
-  // — deck opbouwen met veilige fallback ------------------------------------
-  let deck = [];
-  try {
-    // jouw bestaande filterfunctie
-    deck = (typeof buildDeckFromState === 'function')
-      ? buildDeckFromState()
-      : (Array.isArray(STATE.allMessages) ? STATE.allMessages.slice() : []);
-  } catch {
-    deck = Array.isArray(STATE.allMessages) ? STATE.allMessages.slice() : [];
-  }
+  // Bouw deck op basis van je huidige filters
+  const deck = buildDeckFromState();
+  NAV = window.AWNDeck.createNavigator({ lang: STATE.lang, sentiment: STATE.activeSentiment || 'all', deck });
 
-  // — lichte variatie: roteer deck 1x zodat de start niet voorspelbaar is ----
-  if (Array.isArray(deck) && deck.length > 1) {
-    const key = String(STATE.activeSentiment ?? 'all') + ':' + String(STATE.lang || 'nl');
-    const hash = Array.from(key).reduce((h, ch) => ((h << 5) - h + ch.charCodeAt(0)) | 0, 0);
-    const base = (Date.now() & 0xffff);
-    const offset = Math.abs(base ^ hash) % deck.length;
-    if (offset) deck = deck.slice(offset).concat(deck.slice(0, offset));
-  }
-
-  // — navigator (AWNDeck of een simpele fallback) ---------------------------
-  const g = (typeof window !== 'undefined') ? window : globalThis;
-  if (!g) return;
-
-  if (g.AWNDeck && typeof g.AWNDeck.createNavigator === 'function') {
-    g.NAV = g.AWNDeck.createNavigator({
-      lang: STATE.lang,
-      sentiment: STATE.activeSentiment || 'all',
-      deck
-    });
-  } else {
-    // minimale navigator zodat next/prev blijft werken
-    (function makeFallbackNav() {
-      let i = -1;
-      const arr = Array.isArray(deck) ? deck : [];
-      g.NAV = {
-        next() { if (!arr.length) return null; i = (i + 1) % arr.length; return arr[i]; },
-        prev() { if (!arr.length) return null; i = (i - 1 + arr.length) % arr.length; return arr[i]; },
-        push(msg) {
-          if (!msg) return null;
-          const j = arr.findIndex(m => m && m.id === msg.id);
-          if (j >= 0) i = j; else { arr.unshift(msg); i = 0; }
-          return arr[i];
-        }
-      };
-    })();
-  }
-
-  // — eerste kaart renderen (met id → index mapping naar allMessages) -------
-  const first = (g.NAV && typeof g.NAV.next === 'function') ? g.NAV.next() : (deck[0] || null);
+  const first = NAV.next(); // kan null zijn
   if (first) {
-    const list = Array.isArray(STATE.allMessages) ? STATE.allMessages : [];
-    const idx = list.findIndex(m => m && m.id === first.id);
+    const idx = STATE.allMessages.findIndex(m => m && m.id === first.id);
     if (idx >= 0) {
-      STATE.currentIdx = idx;
       renderMessage({ requestedIdx: idx, wiggle: false, msg: first });
     } else {
       renderMessage({ msg: first });
-    }
-  } else {
-    // laatste redmiddel: pak een random uit allMessages
-    const list = Array.isArray(STATE.allMessages) ? STATE.allMessages : [];
-    if (list.length) {
-      const ridx = Math.floor(Math.random() * list.length);
-      STATE.currentIdx = ridx;
-      renderMessage({ requestedIdx: ridx, wiggle: false });
     }
   }
 }
@@ -3491,149 +3293,6 @@ AWNDeck.UI.attachNav({
   render: (msg)=> msg && renderMessage({ msg, wiggle:false })
 });
 
-/* [U] AI SHEET GLUE — UI open/close + generate ================================= */
-function bindAISheetGlue(){
-  const els = {
-    backdrop: document.getElementById('ai-backdrop'),
-    panel:    document.querySelector('#ai-backdrop .sheet'),
-    close:    document.getElementById('ai-close-btn'),
-    openBtn:  document.getElementById('smart-compose'), // AI-knop
-    gen:      document.getElementById('ai-generate'),
-    tone:     document.getElementById('ai-tone'),
-    occasion: document.getElementById('ai-occasion'),
-    context:  document.getElementById('ai-context'),
-    length:   document.getElementById('ai-length'),
-    toInput:  document.getElementById('to-inline')
-  };
-
-  if (!els.backdrop || !els.openBtn) return; // geen AI UI → geen glue
-  if (els.backdrop.dataset.aiBound === '1') return; // tegen dubbelbinden
-  els.backdrop.dataset.aiBound = '1';
-
-  let _closingForGenerate = false; // blokkeer her-openen tijdens busy
-
-  // ---------- helpers ----------
-  function openSheet(){
-    els.backdrop.classList.remove('hidden');
-    els.backdrop.setAttribute('aria-hidden','false');
-    try { (els.tone || els.context || els.length || els.panel)?.focus(); } catch(_) {}
-  }
-  function closeSheet(){
-    els.backdrop.classList.add('hidden');
-    els.backdrop.setAttribute('aria-hidden','true');
-  }
-  function trapFocus(e){
-    const root = els.panel || els.backdrop; if (!root) return;
-    const f = root.querySelectorAll('button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])');
-    if (!f.length) return;
-    const first = f[0], last = f[f.length-1];
-    if (e.key !== 'Tab') return;
-    if (e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
-    else if (!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
-  }
-  function shiftFocusToApp(){
-    // verplaats focus uit de sheet vóórdat we aria-hidden zetten (ARIA fix)
-    try { if (document.activeElement?.blur) document.activeElement.blur(); } catch(_){}
-    try {
-      const target = document.getElementById('note') || document.body;
-      if (target?.focus) target.focus();
-    } catch(_){}
-  }
-  function requireTo(){
-    // hergebruik jouw validatie als die bestaat; anders lichte fallback
-    try {
-      if (typeof window.validatePair === 'function')
-        return !!window.validatePair({ requireTo:true, silent:false });
-      if (typeof window.requireToName === 'function')
-        return !!window.requireToName();
-      if (typeof window.validateToField === 'function')
-        return !!window.validateToField();
-    } catch(_){}
-    const ok = !!els.toInput && !!els.toInput.value.trim();
-    if (!ok) {
-      try {
-        els.toInput?.focus();
-        els.toInput?.classList.add('field-error');
-        setTimeout(()=> els.toInput?.classList.remove('field-error'), 1200);
-      } catch(_){}
-    }
-    return ok;
-  }
-  function syncGen(){
-    if (!els.gen) return;
-    const ok = !!els.toInput && !!els.toInput.value.trim();
-    els.gen.disabled = !ok;
-    els.gen.classList.toggle('is-disabled', !ok);
-  }
-
-  // ---------- form-export voor ai-module ----------
-  window.AWN_AI_FORM = function collectAIForm(){
-    return {
-      tone:     (els.tone?.value || '').trim() || null,
-      occasion: (els.occasion?.value || '').trim() || null,
-      context:  (els.context?.value || '').trim() || null,
-      length:   (els.length?.value || '').trim() || 'short'
-    };
-  };
-
-  // ---------- UI binds ----------
-  // Open-knop: eerst 'Voor wie?' check; dan sheet + korte coach-intro
-  els.openBtn.addEventListener('click', () => {
-    const hasTo = !!(els.toInput && els.toInput.value.trim());
-    if (!hasTo) {
-      window.updateCoachTimed?.('error', {}, 1800); // centrale copy (“Vul eerst ‘Voor wie?’ in.”)
-      return requireTo(); // highlight + focus
-    }
-    openSheet();
-    window.updateCoachTimed?.('aiThinking', {}, 900); // subtiel hintje mag hier ook (“Even denken… 💭”)
-  });
-
-  els.close?.addEventListener('click', closeSheet);
-  els.backdrop.addEventListener('click', (ev)=>{ if (ev.target === els.backdrop) closeSheet(); });
-  els.backdrop.addEventListener('keydown', (e)=>{
-    if (e.key === 'Escape') closeSheet();
-    else trapFocus(e);
-  });
-
-  els.toInput?.addEventListener('input', syncGen);
-  syncGen();
-
-  // Genereer: check → focus uit sheet → sheet DIRECT sluiten → compose on next tick
-  els.gen?.addEventListener('click', ()=>{
-    if (!requireTo()) {
-      window.updateCoachTimed?.('error', {}, 1800);
-      return;
-    }
-    try { console.debug('[AI] generate clicked — form:', window.AWN_AI_FORM?.()); } catch(_){}
-    _closingForGenerate = true;
-    shiftFocusToApp();   // ARIA-fix
-    closeSheet();        // UX: meteen zicht op de note
-
-    setTimeout(() => {   // DOM/ARIA stabiliseert → dan pas call
-      if (window.AWN_AI?.composeWithForm) window.AWN_AI.composeWithForm();
-      else if (window.AWN_AI?.composeOnce) window.AWN_AI.composeOnce();
-      else console.warn('[AI] compose method not found');
-    }, 0);
-  });
-
-  // ---------- AI events ----------
-  document.addEventListener('ai:busy',  (e)=>{
-    // subtiele “denken”-hint, centraal via copy (laat sheet dicht als we net bewust gesloten hebben)
-    try { window.updateCoachTimed?.('aiThinking', {}, 900); } catch(_){}
-    if (_closingForGenerate) return;
-    if (e.detail?.busy) openSheet();
-  });
-
-  document.addEventListener('ai:result', (e)=>{
-    _closingForGenerate = false;
-    // afsluitende coach met mini-delay
-    setTimeout(() => { try { window.updateCoachTimed?.('aiDone', {}, 1600); } catch(_){} }, 420);
-  });
-
-  document.addEventListener('ai:error',  ()=>{
-    _closingForGenerate = false;
-  });
-}
 /* ========================================================================
    DEBUG HARNESS — NIET PRODUCTIE, HELPT ZIEN WAT ER WEL/NIET TRIGGERT
    - activeer via ?debug=1

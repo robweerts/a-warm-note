@@ -1,0 +1,364 @@
+/*!
+ * a warm note — AI Smart Compose (standalone)
+ * Minimal adapter op basis van ai-health.html (werkt zonder meta/flags).
+ * Auteur: Rob + (senior assist)
+ *
+ * UI-verwachtingen:
+ * - Button:  #smart-compose           (verplicht)
+ * - Status:  #smart-compose-status    (optioneel)
+ * - Inputs:  #to-inline, #from-inline (optioneel; anders uit URL ?to/&?from)
+ * - Lang:    STATE.lang || <html lang> || 'nl'
+ * - Tone:    STATE.activeSentiment || 'warm'
+ * - Textarea (optioneel debug): #message-textarea
+ *
+ * Integratie van het resultaat:
+ * - Heeft prioriteit: window.onUserPickedMessage(msg)
+ * - Anders: voegt msg in STATE.allMessages en roept window.renderMessage(...)
+ *
+ * Endpointkeuze (in volgorde):
+ * 1) <meta name="awn:ai-base" content="https://.../ai">   ← makkelijk te zetten in head.nl/en
+ * 2) window.AWN_FLAGS.ai.base
+ * 3) hardcoded fallback: https://ai.awarmnote.com/ai
+ */
+
+(function () {
+  const els = {};
+  let busy = false;
+
+  // --- selectors (no hard fails als iets ontbreekt; we degraderen gracieus) ---
+  function q(id) { return document.getElementById(id); }
+  function lang() {
+    return (window.STATE && window.STATE.lang)
+        || document.documentElement.getAttribute('lang')
+        || 'nl';
+  }
+  function tone() {
+    return (window.STATE && window.STATE.activeSentiment) || 'warm';
+  }
+  function getTo() {
+    const v = q('to-inline') && q('to-inline').value.trim();
+    if (v) return v;
+    const qp = new URLSearchParams(location.search);
+    return qp.get('to') || '';
+  }
+  function getFrom() {
+    const v = q('from-inline') && q('from-inline').value.trim();
+    if (v) return v;
+    const qp = new URLSearchParams(location.search);
+    return qp.get('from') || '';
+  }
+
+function getAIFormData(){
+  // Haal uit globale helper die we in script.js hebben geplaatst
+  if (typeof window.AWN_AI_FORM === 'function') {
+    const o = window.AWN_AI_FORM() || {};
+    // sanity trims:
+    o.tone = (o.tone || '').trim();
+    o.occasion = (o.occasion || '').trim();
+    o.context = (o.context || '').trim();
+    o.length = (o.length || '').trim();
+    return o;
+  }
+  return { tone:'', occasion:'', context:'', length:'short' };
+}
+
+// Optioneel publieke entry, aangeroepen door de 'Genereer ✨'-knop
+if (!window.AWN_AI) window.AWN_AI = {};
+window.AWN_AI.composeWithForm = function(){
+  // hergebruik composeOnce(); eventuele formdata wordt daarin gelezen
+  composeOnce();
+};
+  // --- endpoint base ---
+  function aiBase() {
+    // 1) meta (bron van waarheid per taal/omgeving)
+    const m = document.querySelector('meta[name="awn:ai-base"]');
+    if (m && m.content) return m.content.replace(/\/+$/, '');
+    // 2) flag
+    if (window.AWN_FLAGS && window.AWN_FLAGS.ai && window.AWN_FLAGS.ai.base) {
+      return String(window.AWN_FLAGS.ai.base).replace(/\/+$/, '');
+    }
+    // 3) fallback (productie)
+    return 'https://ai.awarmnote.com/ai';
+  }
+
+  function setStatus(text) {
+    // menu-status niet meer gebruiken; alle feedback gaat via coach
+    if (text) coachShow(text);
+  }
+
+  function setBusy(on) {
+    busy = !!on;
+    if (els.btn) els.btn.disabled = !!on;
+
+    const msgOn  = (lang()==='en' ? 'Composing…' : 'Bezig met bedenken…');
+
+    if (on) {
+      coachShow(msgOn);
+    } else {
+      // korte bevestiging en daarna weg
+      coachShow(msgOff);
+    }
+  }
+
+  // --- Coach helpers (AI gebruikt coach als statusbalk) ---
+  // VERVANGEN BLOK — leuk & mobiel-vriendelijk met fases en auto-hide
+  const _coach = { timer: null, phase: 'idle' };
+  function _clearCoachTimer() { if (_coach.timer) { clearTimeout(_coach.timer); _coach.timer = null; } }
+  function _coachBox() {
+    const box  = document.getElementById('coach-tip');
+    const text = box?.querySelector('.coach-text');
+    return { box, text };
+  }
+  function _pick(arr){ return arr[Math.floor(Math.random()*arr.length)] || ''; }
+
+  function coachShow(msg){
+    const { box, text } = _coachBox();
+    if (!box || !text) return;
+
+    // Detecteer “fase” op basis van bestaande setBusy()-teksten zodat we elders niets hoeven te wijzigen.
+    // - Start:  "Bezig met bedenken…" / "Composing…"
+    // - Stop:   "Klaar" / "Ready"  => toon “gelukt”-boodschap + auto-hide
+    // - Anders: behandel als custom tekst (fouten of hints)
+    const L = lang();
+    const isStart = /Composing|Bezig met bedenken/gi.test(String(msg));
+    const isStop  = /Ready|Klaar/gi.test(String(msg));
+
+    _clearCoachTimer();
+
+    if (isStart) {
+      _coach.phase = 'thinking';
+      const startMsgs = (L==='en')
+        ? ["Thinking… 💭", "I feel a warm thought coming up…"]
+        : ["Even nadenken… 💭", "Ik voel iets warms opkomen…"];
+      text.textContent = _pick(startMsgs);
+      box.classList.remove('hidden');
+      box.setAttribute('aria-live','polite');
+      box.dataset.owner = 'ai';
+
+      // Na ~1.5s, als we nog denken, geef extra menselijk signaal.
+      _coach.timer = setTimeout(() => {
+        if (_coach.phase !== 'thinking') return;
+        const almost = (L==='en')
+          ? ["Almost done, just a final touch…"]
+          : ["Bijna klaar, nog één zinnetje…"];
+        text.textContent = _pick(almost);
+      }, 1500);
+      return;
+    }
+
+    if (isStop) {
+      _coach.phase = 'done';
+      const okMsgs = (L==='en')
+        ? ["Look — a warm note, just for you! ✨", "Got it — something kind and warm. ✨"]
+        : ["Kijk — een warm bericht, speciaal voor jou! ✨", "Gelukt — iets liefs en warms. ✨"];
+      text.textContent = _pick(okMsgs);
+      box.classList.remove('hidden');
+      box.setAttribute('aria-live','polite');
+      box.dataset.owner = 'ai';
+
+      // vriendelijk kort tonen en dan weg
+      _coach.timer = setTimeout(() => { coachHide(); }, 1600);
+      return;
+    }
+
+    // Custom tekst (bijv. fout): direct tonen en na 2–3s weer verbergen
+    _coach.phase = 'custom';
+    text.textContent = String(msg || '').trim();
+    box.classList.remove('hidden');
+    box.setAttribute('aria-live','polite');
+    box.dataset.owner = 'ai';
+    _coach.timer = setTimeout(() => { coachHide(); }, 2400);
+  }
+
+  function coachHide(force=false){
+    const { box } = _coachBox();
+    if (!box) return;
+    if (!force && box.dataset.owner && box.dataset.owner !== 'ai') return;
+    _clearCoachTimer();
+    _coach.phase = 'idle';
+    box.classList.add('hidden');
+    delete box.dataset.owner;
+  }
+  // --- einde vervangen blok ---
+
+  function showToast(msg) {
+    if (typeof window.showToastI18n === 'function') { window.showToastI18n('ai.toast', msg); return; }
+    if (typeof window.showToast === 'function') { window.showToast(msg); return; }
+    // laatste redmiddel
+    console.log('[AI]', msg);
+  }
+
+  function applyResult(text) {
+    const clean = String(text || '').trim();
+    if (!clean) return false;
+
+    // 1) Altijd eerst zelf in de UI zetten (bridge garandeert render)
+    if (typeof window.onAIGeneratedText === 'function') {
+      try {
+        window.onAIGeneratedText(clean);
+      } catch (e) {
+        console.warn('[AI] onAIGeneratedText error:', e);
+        // ultime fallback: direct muteren + renderen
+        try {
+          window.STATE = window.STATE || {};
+          const list = Array.isArray(window.STATE.allMessages)
+            ? window.STATE.allMessages
+            : (window.STATE.allMessages = []);
+          const msg = { id: `ai_${Date.now()}`, icon:'✨', text: clean, sentiments: [] };
+          list.unshift(msg);
+          if (typeof window.renderMessage === 'function') {
+            window.renderMessage({ requestedIdx: 0, msg, wiggle: true });
+          }
+        } catch (err) {
+          console.error('[AI] Fallback render failed:', err);
+          return false;
+        }
+      }
+    } else {
+      // geen bridge aanwezig → eigen fallback
+      try {
+        window.STATE = window.STATE || {};
+        const list = Array.isArray(window.STATE.allMessages)
+          ? window.STATE.allMessages
+          : (window.STATE.allMessages = []);
+        const msg = { id: `ai_${Date.now()}`, icon:'✨', text: clean, sentiments: [] };
+        list.unshift(msg);
+        if (typeof window.renderMessage === 'function') {
+          window.renderMessage({ requestedIdx: 0, msg, wiggle: true });
+        }
+      } catch (err) {
+        console.error('[AI] Fallback render failed:', err);
+        return false;
+      }
+    }
+
+    // 2) Daarna pas jouw app-hook (optioneel side-effects/analytics)
+    if (typeof window.onUserPickedMessage === 'function') {
+      try {
+        const msg = { id: `ai_${Date.now()}`, icon:'✨', text: clean, sentiments: [] };
+        window.onUserPickedMessage(msg);
+      } catch (e) {
+        console.warn('[AI] onUserPickedMessage error (ignored):', e);
+      }
+    }
+
+    // 3) UI feedback (coach/toast blijft zoals je eerder hebt staan)
+    return true;
+  }
+
+  async function composeOnce() {
+    const base = aiBase();
+    const url  = `${base}/compose`; // health.html gebruikte /ai/compose; base eindigt op /ai
+	const form = getAIFormData();
+	const payload = {
+	  to:   getTo(),
+	  from: getFrom(),
+      language: lang(),
+  // Voorrang aan gekozen toon in sheet; anders bestaande STATE/activeSentiment → tone()
+  	  tone: (form.tone || tone()),
+      constraints: {
+      length: form.length || 'short',
+      no_emojis: false,
+      include_icon: true
+  },
+  // extra context & aanleiding → naar prompt_meta voor Worker
+  prompt_meta: {
+    context: form.context ? `User-provided context: ${form.context}` : undefined,
+    style:   form.occasion ? `Occasion: ${form.occasion}` : undefined,
+    examples: [] // optioneel later
+  }
+};
+
+    const timeout = (window.AWN_FLAGS && window.AWN_FLAGS.ai && window.AWN_FLAGS.ai.timeout) || 12000;
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), timeout);
+
+    setBusy(true);
+    try {
+      // debug (laat staan tijdens integratie; kan later weg)
+      console.log('[AI] POST =>', url, payload);
+
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: ctl.signal,
+        redirect: 'manual'
+      });
+
+      const text = await res.text();
+      if (!res.ok) {
+        console.warn('[AI] Bad status', res.status, text);
+        showToast(lang()==='en' ? 'Something went wrong. Please try again.' : 'Er ging iets mis. Probeer het nog eens.');
+        return;
+      }
+
+      let json = null;
+      try { json = JSON.parse(text); } catch {}
+      const message = json && (json.message || json.result || json.text);
+      if (!message) {
+        showToast(lang()==='en' ? 'No message received.' : 'Geen bericht ontvangen.');
+        return;
+      }
+
+      applyResult(message);
+    } catch (err) {
+      const aborted = (err && (err.name === 'AbortError' || String(err).includes('abort')));
+      const m = aborted
+        ? (lang()==='en' ? 'AI took too long.' : 'AI deed er te lang over.')
+        : (lang()==='en' ? 'Network error.'   : 'Netwerkfout.');
+      showToast(m);
+    } finally {
+      clearTimeout(timer);
+      setBusy(false);
+    }
+  }
+
+// --- Public bootstrap  ---
+function initSmartCompose(btnOrSelector) {
+  els.btn    = typeof btnOrSelector === 'string' ? document.querySelector(btnOrSelector) : btnOrSelector || document.getElementById('smart-compose');
+  els.status = document.getElementById('smart-compose-status');
+
+  if (!els.btn) return; // opt-in: als er geen knop is, doen we niets.
+
+  // init label/status (zonder i18n afhankelijkheid)
+  const L = (window.STATE && window.STATE.lang) || document.documentElement.getAttribute('lang') || 'nl';
+  if (!els.btn.getAttribute('aria-label')) {
+    els.btn.setAttribute('aria-label', L==='en' ? 'AI compose' : 'AI-bericht');
+  }
+  if (els.btn && !els.btn.querySelector('.btn-label') && !els.btn.textContent.trim()) {
+    els.btn.textContent = (L==='en' ? 'AI compose' : 'AI-bericht');
+  }
+
+  // ⬇︎ Belangrijk: als de AI Sheet bestaat, NIET binden aan compose.
+  // De sheet-glue opent het paneel en "Genereer ✨" triggert composeWithForm().
+  const hasAISheet = !!document.getElementById('ai-backdrop');
+
+  if (!hasAISheet) {
+    // Legacy gedrag (zonder sheet): klik = direct compose
+    els.btn.addEventListener('click', () => {
+      if (busy) return;
+      composeOnce();
+    });
+  }
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => initSmartCompose());
+} else {
+  initSmartCompose();
+}
+
+// exporteer naar window voor eventueel handmatige init
+window.initSmartCompose = initSmartCompose;
+
+  // auto-init: koppel zodra DOM klaar is als de knop bestaat
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => initSmartCompose());
+  } else {
+    initSmartCompose();
+  }
+
+  // exporteer naar window voor eventueel handmatige init
+  window.initSmartCompose = initSmartCompose;
+})();

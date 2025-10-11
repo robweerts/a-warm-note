@@ -3,10 +3,10 @@
   "version": 1,
   "strings": {
     "actions": {
-      "new": "New message",
+      "new": "Choose Message",
       "install": "Install",
-      "share": "Send",
-      "email": "Email",
+      "share": "Share",
+      "email": "E-mail",
       "whatsapp": "WhatsApp",
       "copy": "Copy link",
       "download": "Download",
@@ -20,19 +20,24 @@
       "copyPrompt": "Copy link",
       "copiedToast": "Link copied 📋",
       "messengerPrompt": "Copy this link and paste it in Messenger:",
-      "messengerCopied": "Link to your personal note has been copied. 📋"
+      "messengerCopied": "Link to your personal message was copied. 📋"
     },
     "toast": {
-    "copied": "Link copied 📋",
-    "whatsappOpened": "WhatsApp opened 📲",
-    "emailOpened": "Email opened ✉️",
-    "downloadStart": "Saving image ⬇️",
-    "downloadUnavailable": "Download unavailable",
-    "shared": "Shared 💛",
-    "shareCancelled": "Share cancelled",
-    "messengerCopied": "Link to your personal note has been copied. 📋",
-    "toRequired": "Fill in who this is for first 💛",
-    "newLoaded": "New message loaded ✨"
+      "copied": "Link copied 📋",
+      "whatsappOpened": "WhatsApp opened 📲",
+      "emailOpened": "E-mail opened ✉️",
+      "downloadStart": "Saving image ⬇️",
+      "downloadUnavailable": "Download unavailable",
+      "shared": "Shared 💛",
+      "shareCancelled": "Share cancelled",
+      "messengerCopied": "Link to your personal message was copied. 📋",
+      "toRequired": "Please fill in who this is for 💛",
+      "newLoaded": "New message loaded ✨",
+      "applied": "AI message applied ✨"
+    },
+    "error": {
+      "generic": "Something went wrong. Please try again.",
+      "offline": "You are offline."
     },
     "compose": {
       "to": "To",
@@ -41,12 +46,8 @@
       "fromPlaceholder": "From you (optional)"
     },
     "ui": {
-     "aiNew": "AI message"
-  	},
-  	"ai": {
-     "generated": "AI message generated ✨",
-     "failed": "Could not generate message"
-  	},
+      "aiNew": "AI message"
+    },
     "qr": {
       "title": "QR code",
       "hint": "Scan this code with your phone to open the note.",
@@ -54,18 +55,59 @@
     },
     "messenger": {
       "title": "Messenger",
-      "notice": "Link to your personal note has been copied. 📋",
+      "notice": "Link to your personal message was copied. 📋",
       "steps": [
         "Choose a contact in Messenger.",
-        "Paste the link into the message field.",
+        "Paste the link in the message field.",
         "Send your warm note. 💛"
       ],
       "open": "Open Messenger"
     },
+    "ai": {
+      "button": "AI compose",
+
+      "ai.status.loading": "One moment…",
+      "ai.status.added": "Suggestion added",
+      "ai.status.error": "AI unavailable — type manually",
+
+      "status": {
+        "ready": "Ready",
+        "generating": "Thinking…"
+      },
+
+      "generated": "AI message created ✨",
+      "failed": "Couldn't generate a message",
+
+      "sheet": {
+        "title": "AI Message",
+        "promptLabel": "What do you want to say?",
+        "promptPlaceholder": "Write a few keywords…",
+        "toneLabel": "Tone",
+        "toneOptions": {
+          "warm": "Warm",
+          "funny": "Funny",
+          "encouraging": "Encouraging",
+          "neutral": "Neutral"
+        },
+        "lengthLabel": "Length",
+        "lengthOptions": {
+          "short": "Short",
+          "medium": "Normal",
+          "long": "Long"
+        },
+        "toLabel": "To",
+        "fromLabel": "From",
+        "generate": "Generate",
+        "apply": "Apply",
+        "cancel": "Cancel",
+        "loading": "One moment…",
+        "error": "AI unavailable — type manually"
+      }
+    },
     "about": {
       "title": "About this App",
       "p1_strong": "a warm note — to someone you care about",
-      "p2": "Small notes with big meaning. Send loving, funny or encouraging messages. A quick way to let someone know you’re thinking of them.",
+      "p2": "Small notes with big meaning. An app to send loving, funny or encouraging notes. A quick way to let someone know you’re thinking of them.",
       "tag": "Something small, lots of meaning",
       "fabLabel": "About this site"
     },
