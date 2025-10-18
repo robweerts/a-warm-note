@@ -96,19 +96,16 @@ button.btn,
   box-sizing: border-box;
 }
 
-/* de container moet boven je topbar/overlays uitkomen */
-#lang-dd { position: relative; z-index: 999; }
+.lang-switch { position: relative; }
+.lang-btn { display:flex; align-items:center; gap:.4rem; padding:.45rem .7rem; border-radius:10px; }
+.lang-ico { font-size:1.1rem; line-height:1; }
+.lang-cur { font-size:.9rem; letter-spacing:.02em; }
 
-/* menu zelf mag niet afgeknipt worden door parent */
-#lang-dd .lang-menu{
-  position: absolute;
-  top: 110%; right: 0;
-  min-width: 12rem;
-  background: rgba(0,0,0,.85);
-  color: #fff;
-  border-radius: .9rem;
-  padding: .6rem;
-  box-shadow: 0 8px 20px rgba(0,0,0,.25);
+.lang-menu {
+  position:absolute; right:0; top:calc(100% + 6px);
+  background:#fff; border:1px solid #eee; border-radius:10px;
+  box-shadow:0 10px 30px rgba(0,0,0,.08);
+  padding:.35rem; min-width:160px; z-index:40;
 }
 
 /* als je topbar/header overflow:hidden heeft → zichtbaar houden */
@@ -1492,6 +1489,23 @@ html[lang="en"] .seo-snippet--nl { display: none; }
   pointer-events: auto;
 }
 
+/* Coach: zachte fade + mini slide */
+.coach {
+  transition: opacity .18s ease, transform .18s ease;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Tijdens verbergen */
+.coach.is-fading {
+  opacity: 0;
+  transform: translateY(4px);
+  pointer-events: none;
+}
+
+/* Hard hidden blijft als back-up (geen animatie mogelijk op display:none) */
+.coach.hidden { display: none !important; }
+
 /* Sheets altijd boven coach */
 .sheet-backdrop,
 #sheet-backdrop,
@@ -1501,3 +1515,221 @@ html[lang="en"] .seo-snippet--nl { display: none; }
 #msgr-help-backdrop {
   z-index: 8000 !important;
 }
+
+/* Leo FAB op plek van About */
+.leo-fab{
+  position:fixed; right:12px; bottom:max(14px, env(safe-area-inset-bottom));
+  z-index:58; display:grid; place-items:center; cursor:pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.leo-fab:focus-visible{ outline:2px solid #ffe866; outline-offset:3px; border-radius:50%; }
+
+.leo-fab__ava{
+  width:48px; height:48px; border-radius:50%;
+  background:#333 center/cover no-repeat;
+  border:2px solid #ffe866; box-shadow:0 8px 24px rgba(0,0,0,.25);
+  transition: transform .15s ease;
+}
+.leo-fab:active .leo-fab__ava{ transform: scale(.98); }
+
+.leo-fab__bubble{
+  position:absolute; right:56px; bottom:6px;
+  background:#111; color:#fff; border-radius:12px;
+  padding:.55rem .7rem; max-width:70vw; box-shadow:0 14px 40px rgba(0,0,0,.35);
+  font-size:.95rem; line-height:1.35; opacity:0; transform:translateY(4px);
+  transition: opacity .18s ease, transform .18s ease;
+}
+.leo-fab__bubble.show{ opacity:1; transform:translateY(0); }
+.leo-fab__bubble p{ margin:0; }
+.leo-fab__tail{
+  position:absolute; right:-8px; bottom:10px; width:0; height:0;
+  border-left:8px solid #111; border-top:8px solid transparent; border-bottom:8px solid transparent;
+}
+.leo-fab__bubble p{ 
+  margin:0;
+  font-size:.80rem; /* overschrijft de bubble-size alleen voor tekst */
+}
+@media (max-width:360px){
+  .leo-fab__bubble{ bottom:auto; top:-4px; transform:translateY(-4px); }
+  .leo-fab__bubble.show{ transform:translateY(0); }
+}
+
+/* ===== AI Sheet – layout ================================================== */
+.sheet--ai .form-grid{
+  display:grid;
+  grid-template-columns: 1fr;
+  gap: .9rem;
+}
+
+/* Label */
+.sheet--ai .form-label{
+  font-size:.95rem;
+  font-weight:600;
+  color:#fff;              /* wordt netjes leesbaar op je donkere sheet */
+  letter-spacing:.01em;
+}
+
+/* ===== Fields (select/textarea) ========================================== */
+.sheet--ai .form-field{
+  -webkit-appearance:none;
+  appearance:none;
+  width:100%;
+  padding:.78rem .9rem;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,.16);
+  background: rgba(255,255,255,.06);
+  color:#fff;
+  font-size:1rem;
+  line-height:1.2;
+  transition:border-color .18s ease, box-shadow .18s ease, background .18s ease;
+  min-height:48px;          /* goede tap target */
+}
+
+/* Placeholder kleur net wat zachter */
+.sheet--ai .form-field::placeholder{ color:rgba(255,255,255,.55); }
+
+/* Focus state: warm glow + duidelijke focusring (a11y) */
+.sheet--ai .form-field:focus{
+  outline:none;
+  border-color:#FFE66D;
+  box-shadow:0 0 0 3px rgba(255,230,109,.28);
+  background: rgba(255,255,255,.08);
+}
+
+/* Disabled (voor tijdens genereren) */
+.sheet--ai .form-field:disabled{
+  opacity:.6;
+  cursor:not-allowed;
+}
+
+/* ===== Select: nette caret (iOS/Android/desktop) ========================= */
+.sheet--ai select.form-field{
+  background-image:
+    linear-gradient(transparent,transparent), /* fix for Safari */
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23FFE66D' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+  background-repeat:no-repeat;
+  background-position: right .75rem center;
+  background-size:18px;
+  padding-right:2.4rem;     /* ruimte voor caret */
+}
+
+/* ===== Textarea ========================================================== */
+.sheet--ai textarea.form-field{
+  resize: vertical;
+  min-height: 96px;
+}
+
+/* ===== Primary button ==================================================== */
+.sheet--ai .sheet-actions .btn.primary{
+  width:100%;
+  min-height:50px;
+  padding:.9rem 1rem;
+  border-radius:14px;
+  border:0;
+  font-size:.95rem;
+  font-weight:700;
+  background:linear-gradient(180deg, #FFE66D 0%, #FFD84D 100%);
+  color:#111;
+  box-shadow:0 10px 28px rgba(255,216,77,.35);
+  transition:transform .08s ease, box-shadow .18s ease, filter .18s ease;
+}
+
+/* hover/active */
+.sheet--ai .sheet-actions .btn.primary:active{
+  transform: translateY(1px);
+  box-shadow:0 6px 18px rgba(255,216,77,.28);
+}
+
+/* focus-visible ring */
+.sheet--ai .sheet-actions .btn.primary:focus-visible{
+  outline:2px solid #111;
+  box-shadow:0 0 0 3px rgba(255,230,109,.4), 0 10px 28px rgba(255,216,77,.35);
+}
+
+/* ===== Micro typography =================================================== */
+.sheet--ai #ai-title{
+  font-size:1rem;
+  font-weight:800;
+  letter-spacing:.01em;
+}
+
+/* 1) Center de actions en maak de knop auto-breed */
+.sheet--ai .sheet-actions{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  padding-top:.25rem;
+}
+.sheet--ai .sheet-actions .btn.primary{
+  width:auto;                /* niet full width */
+  min-width: 240px;          /* voelt premium */
+  padding:.9rem 1.15rem;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:.55rem;                /* ruimte tussen icoon & tekst */
+}
+
+/* 2) Icoon vóór de tekst (pen + sparkle) */
+#ai-generate::before{
+  content:"";
+  display:inline-block;
+  width:1.15em; height:1.15em;
+  background-repeat:no-repeat;
+  background-position:center;
+  background-size:100% 100%;
+  /* Warm pen-sparkle icoon (data-URI SVG, geen extra asset nodig) */
+  background-image: url("data:image/svg+xml;utf8,\
+  <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23111' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'>\
+    <path d='M12 3l1.8 3.6L18 8.4l-3.6 1.8L12 14.4 10.2 10.2 6.6 8.4l3.6-1.8L12 3z' fill='%23FFE66D' stroke='none'/>\
+    <path d='M3 21l3.5-.9 9.9-9.9a2.5 2.5 0 0 0-3.5-3.5L3.9 16.6 3 21z' fill='none' stroke='%23111'/>\
+  </svg>");
+}
+
+/* 3) Kleinere variant op héél kleine schermen */
+@media (max-width: 360px){
+  .sheet--ai .sheet-actions .btn.primary{ min-width: 210px; padding:.85rem 1rem; }
+  #ai-generate::before{ width:1.05em; height:1.05em; }
+}
+
+/* 4) Als je animatie wilt uitschakelen voor reduce-motion users */
+@media (prefers-reduced-motion: reduce){
+  #ai-generate{ transition:none; }
+}
+/* ===== Small screens polish ============================================== */
+@media (max-width:380px){
+  .sheet--ai .form-field{ font-size:.98rem; padding:.74rem .85rem; }
+  .sheet--ai .sheet-actions .btn.primary{ font-size:1rem; padding:.85rem .9rem; }
+}
+@media (prefers-reduced-motion: reduce){
+  .sheet--ai .form-field,
+  .sheet--ai .sheet-actions .btn.primary{ transition:none; }
+}
+/* Night mode detect: gebruik wat jij hebt + fallback op prefers-color-scheme */
+:root.dark .leo-fab__bubble,
+.theme-dark .leo-fab__bubble,
+[data-theme="dark"] .leo-fab__bubble,
+@media (prefers-color-scheme: dark) {
+  /* transparant paneeltje dat boven dark BG nog zichtbaar is */
+}
+:root.dark .leo-fab__bubble,
+.theme-dark .leo-fab__bubble,
+[data-theme="dark"] .leo-fab__bubble {
+  background: rgba(255,255,255,.10);
+  color:#fff;
+  border:1px solid rgba(255,255,255,.18);
+  box-shadow: 0 16px 40px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.04);
+  backdrop-filter: blur(6px);
+}
+:root.dark .leo-fab__tail,
+.theme-dark .leo-fab__tail,
+[data-theme="dark"] .leo-fab__tail {
+  border-left-color: rgba(255,255,255,.10);
+}
+
+/* Zorg dat-ie niet “wegvalt” achter donkere layers */
+#leo-fab { z-index: 59; }           /* sheets zitten hoger (60+), coach-tip 58 */
+.leo-fab__bubble { z-index: 1; }    /* binnen de fab altijd boven de avatar */
+
+/* Extra: iets kleinere tekst in bubble in dark (kan optisch groot ogen) */
+:root.dark .leo-fab__bubble { font-size: .8rem; }

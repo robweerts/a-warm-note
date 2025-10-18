@@ -14,7 +14,51 @@
   ],
   "messages": [
     {
-      "id": "en_x0thiy",
+      "id": "en_0lmuqc",
+      "icon": "🤟🏽",
+      "text": "You are loved and importent. You bring to this world things that no one else can.",
+      "sentiments": [
+        "love",
+        "friendship",
+        "gratitude",
+        "comfort"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_qbgil8",
+      "icon": "🤗",
+      "text": "Nothing beats kindness. Be kind!",
+      "sentiments": [],
+      "special_day": null,
+      "weight": 2
+    },
+    {
+      "id": "en_7pce7l",
+      "icon": "🦋",
+      "text": "Whats your best discovery? .. That you are enough as you are.",
+      "sentiments": [
+        "proud",
+        "gratitude",
+        "perseverance"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_rb1z2w",
+      "icon": "🕹️",
+      "text": "When things fell out of control... focus on whats right under your nose.",
+      "sentiments": [
+        "encouraging",
+        "perseverance"
+      ],
+      "special_day": null,
+      "weight": 1
+    },
+    {
+      "id": "en_s7rwww",
       "icon": "☀️",
       "text": "Some days you just have tot create your own sunshine. Keep on shinning. ",
       "sentiments": [
@@ -26,7 +70,7 @@
       "weight": 1
     },
     {
-      "id": "en_m8zv84",
+      "id": "en_ucxpd6",
       "icon": "💕",
       "text": "You were created to be loved",
       "sentiments": [
@@ -38,7 +82,7 @@
       "weight": 2
     },
     {
-      "id": "en_dq206w",
+      "id": "en_6qwjwb",
       "icon": "❤️",
       "text": "Life can be tough.... But you are tougher!",
       "sentiments": [
@@ -51,7 +95,7 @@
       "weight": 2
     },
     {
-      "id": "en_mp5qje",
+      "id": "en_tewpva",
       "icon": "🤟🏽",
       "text": "Love this version of yourself. It won't be here forever.",
       "sentiments": [
@@ -63,7 +107,7 @@
       "weight": 1
     },
     {
-      "id": "en_gnyb3z",
+      "id": "en_8wpucq",
       "icon": "🧿",
       "text": "You didn't go through all of that for no reason.",
       "sentiments": [
@@ -74,7 +118,7 @@
       "weight": 1
     },
     {
-      "id": "en_k9dqew",
+      "id": "en_n8vnqy",
       "icon": "🌥️",
       "text": "Never doubt yourself. Even when things get difficult. ",
       "sentiments": [
@@ -86,7 +130,7 @@
       "weight": 1
     },
     {
-      "id": "en_g80161",
+      "id": "en_u47xp1",
       "icon": "😊",
       "text": "You are an inspiration to those around you!",
       "sentiments": [
@@ -100,7 +144,7 @@
       "weight": 1
     },
     {
-      "id": "en_s5kp06",
+      "id": "en_zht8q5",
       "icon": "🙏🏼",
       "text": "Stop counting your problems, start counting your blessings. ",
       "sentiments": [
@@ -111,7 +155,7 @@
       "weight": 1
     },
     {
-      "id": "en_mt43v5",
+      "id": "en_xe6pfb",
       "icon": "🎣",
       "text": "When was the last time you took a moment just for you? Do it.",
       "sentiments": [
@@ -123,7 +167,7 @@
       "weight": 1
     },
     {
-      "id": "en_2he3rh",
+      "id": "en_87kc2i",
       "icon": "🩵",
       "text": "A bad day does not mean a bad life.",
       "sentiments": [],
@@ -131,7 +175,7 @@
       "weight": 1
     },
     {
-      "id": "en_p1z5g1",
+      "id": "en_npzy7p",
       "icon": "👊🏼",
       "text": "Thank you for never giving up. You're exactly what this world needs!",
       "sentiments": [
@@ -143,7 +187,7 @@
       "weight": 1
     },
     {
-      "id": "en_p2mutj",
+      "id": "en_yy60dq",
       "icon": "😍",
       "text": "I hope your day is as beautiful as you are.",
       "sentiments": [
@@ -154,7 +198,7 @@
       "weight": 1
     },
     {
-      "id": "en_dg9wjx",
+      "id": "en_jw88pd",
       "icon": "✨",
       "text": "You are enough, exactly as you are.",
       "sentiments": [
@@ -165,7 +209,7 @@
       "weight": 1
     },
     {
-      "id": "en_bvp0io",
+      "id": "en_klmvum",
       "icon": "🌿",
       "text": "A small step forward is still progress.",
       "sentiments": [
@@ -176,7 +220,7 @@
       "weight": 1
     },
     {
-      "id": "en_r1mqqs",
+      "id": "en_4viczv",
       "icon": "💛",
       "text": "Something small can mean a lot today.",
       "sentiments": [
@@ -187,7 +231,7 @@
       "weight": 1
     },
     {
-      "id": "en_j6shyz",
+      "id": "en_osm95y",
       "icon": "🌊",
       "text": "Breathe in. Breathe out. You are here.",
       "sentiments": [
@@ -197,7 +241,7 @@
       "weight": 1
     },
     {
-      "id": "en_o4vc8a",
+      "id": "en_3voe2t",
       "icon": "🌅",
       "text": "New day, new chances — take it gently.",
       "sentiments": [
@@ -208,7 +252,7 @@
       "weight": 1
     },
     {
-      "id": "en_o41ey0",
+      "id": "en_uu0su7",
       "icon": "🌻",
       "text": "You matter, more than you think.",
       "sentiments": [
@@ -219,7 +263,7 @@
       "weight": 1
     },
     {
-      "id": "en_tnq0a8",
+      "id": "en_1sunjy",
       "icon": "🎈",
       "text": "Light and soft: one kind gesture.",
       "sentiments": [
@@ -230,7 +274,7 @@
       "weight": 1
     },
     {
-      "id": "en_6tq8n9",
+      "id": "en_egbux2",
       "icon": "☕",
       "text": "Take your time. It’s okay to start slow.",
       "sentiments": [
@@ -240,7 +284,7 @@
       "weight": 1
     },
     {
-      "id": "en_nqk46v",
+      "id": "en_y6k82e",
       "icon": "🌸",
       "text": "Being gentle with yourself is also strength.",
       "sentiments": [
@@ -251,7 +295,7 @@
       "weight": 1
     },
     {
-      "id": "en_pry08m",
+      "id": "en_cljhih",
       "icon": "🏁",
       "text": "A small win is a real win.",
       "sentiments": [
@@ -262,7 +306,7 @@
       "weight": 1
     },
     {
-      "id": "en_atvwde",
+      "id": "en_g4tayl",
       "icon": "🤝",
       "text": "I stand beside you — not in front or behind.",
       "sentiments": [
@@ -273,7 +317,7 @@
       "weight": 1
     },
     {
-      "id": "en_jlvdoi",
+      "id": "en_miayjx",
       "icon": "📯",
       "text": "Proud of what you’re (already) doing.",
       "sentiments": [
@@ -284,7 +328,7 @@
       "weight": 1
     },
     {
-      "id": "en_hyop0v",
+      "id": "en_jmhdcs",
       "icon": "🎉",
       "text": "You may celebrate this — no matter how small.",
       "sentiments": [
@@ -295,7 +339,7 @@
       "weight": 1
     },
     {
-      "id": "en_onn35t",
+      "id": "en_g5qft2",
       "icon": "🧩",
       "text": "Not everything has to fit right now.",
       "sentiments": [
@@ -306,7 +350,7 @@
       "weight": 1
     },
     {
-      "id": "en_hou8f7",
+      "id": "en_stsley",
       "icon": "🪶",
       "text": "A soft landing is still a landing.",
       "sentiments": [
@@ -317,7 +361,7 @@
       "weight": 1
     },
     {
-      "id": "en_nmxail",
+      "id": "en_6j2sby",
       "icon": "🧭",
       "text": "Your course may turn gently.",
       "sentiments": [
@@ -328,7 +372,7 @@
       "weight": 1
     },
     {
-      "id": "en_sj8irk",
+      "id": "en_4cqm3v",
       "icon": "❤️",
       "text": "Because you are important to me.",
       "sentiments": [
@@ -339,7 +383,7 @@
       "weight": 2
     },
     {
-      "id": "en_kppi0f",
+      "id": "en_5b9wt4",
       "icon": "🎆",
       "text": "To new beginnings — I’m with you.",
       "sentiments": [
@@ -350,7 +394,7 @@
       "weight": 2
     },
     {
-      "id": "en_azrbid",
+      "id": "en_9mugal",
       "icon": "🐣",
       "text": "Gently out of the shell; it’s allowed.",
       "sentiments": [
@@ -361,7 +405,7 @@
       "weight": 2
     },
     {
-      "id": "en_0n45cw",
+      "id": "en_6yaoxf",
       "icon": "💌",
       "text": "For {{name}}, with care.",
       "sentiments": [
@@ -372,7 +416,7 @@
       "weight": 1
     },
     {
-      "id": "en_i8viby",
+      "id": "en_nap947",
       "icon": "❤️",
       "text": "A little extra love for you today.",
       "sentiments": [
@@ -383,7 +427,7 @@
       "weight": 2
     },
     {
-      "id": "en_ebcnog",
+      "id": "en_mtonit",
       "icon": "😂",
       "text": "I planned to work out, but my coffee said: ‘better stay seated’.",
       "sentiments": [
@@ -393,7 +437,7 @@
       "weight": 1
     },
     {
-      "id": "en_8sf5ox",
+      "id": "en_vqn8tf",
       "icon": "😉",
       "text": "For {{name}}: you’re officially my favorite notification.",
       "sentiments": [
@@ -404,7 +448,7 @@
       "weight": 1
     },
     {
-      "id": "en_qkk9m6",
+      "id": "en_ld8ez5",
       "icon": "😜",
       "text": "I’m here for you — like Wi-Fi: sometimes slow, always there.",
       "sentiments": [
@@ -415,7 +459,7 @@
       "weight": 1
     },
     {
-      "id": "en_ayuibl",
+      "id": "en_13xpgq",
       "icon": "🤭",
       "text": "Today we treat calories like feelings: we ignore them.",
       "sentiments": [
@@ -425,7 +469,7 @@
       "weight": 1
     },
     {
-      "id": "en_vrnvql",
+      "id": "en_pnl8v8",
       "icon": "🤣",
       "text": "Plan of action: 1) breathe in 2) laugh 3) repeat.",
       "sentiments": [
@@ -436,7 +480,7 @@
       "weight": 1
     },
     {
-      "id": "en_b9mf3u",
+      "id": "en_wlo2nh",
       "icon": "🥐",
       "text": "If life crumbles, we’ll make a croissant.",
       "sentiments": [
@@ -447,7 +491,7 @@
       "weight": 1
     },
     {
-      "id": "en_hssrmw",
+      "id": "en_mlyerr",
       "icon": "🦥",
       "text": "Productive? I call it ‘selective motion’.",
       "sentiments": [
@@ -457,7 +501,7 @@
       "weight": 1
     },
     {
-      "id": "en_vwk6fy",
+      "id": "en_8d3imb",
       "icon": "🫶",
       "text": "Smile check: updating your face… done ✅",
       "sentiments": [
@@ -468,7 +512,7 @@
       "weight": 1
     },
     {
-      "id": "en_sbiwc2",
+      "id": "en_juph4j",
       "icon": "🕺",
       "text": "We don’t need a reason — we have legs: dance!",
       "sentiments": [
@@ -479,7 +523,7 @@
       "weight": 1
     },
     {
-      "id": "en_nglz3n",
+      "id": "en_zaiiem",
       "icon": "☕",
       "text": "Status: coffee loaded, jokes enabled.",
       "sentiments": [
@@ -489,7 +533,7 @@
       "weight": 1
     },
     {
-      "id": "en_bek46a",
+      "id": "en_50juze",
       "icon": "🪞",
       "text": "Who laughs in the mirror sees double joy.",
       "sentiments": [
@@ -499,7 +543,7 @@
       "weight": 1
     },
     {
-      "id": "en_aim3z8",
+      "id": "en_r140n7",
       "icon": "🚪",
       "text": "When one door closes, open the windows.",
       "sentiments": [
@@ -509,7 +553,7 @@
       "weight": 1
     },
     {
-      "id": "en_obfulk",
+      "id": "en_w8d2qo",
       "icon": "🧱",
       "text": "A detour is still a road home.",
       "sentiments": [
@@ -519,7 +563,7 @@
       "weight": 1
     },
     {
-      "id": "en_8x5ntb",
+      "id": "en_nru7ww",
       "icon": "🍪",
       "text": "Happiness crumbles — collect every crumb.",
       "sentiments": [
@@ -529,7 +573,7 @@
       "weight": 1
     },
     {
-      "id": "en_tu6400",
+      "id": "en_wgbnwm",
       "icon": "📚",
       "text": "Every mistake is a new chapter.",
       "sentiments": [
@@ -539,7 +583,7 @@
       "weight": 1
     },
     {
-      "id": "en_vwvbcc",
+      "id": "en_gksnec",
       "icon": "🌧️",
       "text": "After rain comes… wet grass. And then sun.",
       "sentiments": [
@@ -549,7 +593,7 @@
       "weight": 1
     },
     {
-      "id": "en_s2sspb",
+      "id": "en_n56440",
       "icon": "🛋️",
       "text": "Lounging is also a verb.",
       "sentiments": [
@@ -559,7 +603,7 @@
       "weight": 1
     },
     {
-      "id": "en_yolb2f",
+      "id": "en_7cyvah",
       "icon": "🥔",
       "text": "Even a couch potato can take root.",
       "sentiments": [
@@ -569,7 +613,7 @@
       "weight": 1
     },
     {
-      "id": "en_3lcg3l",
+      "id": "en_mgjwao",
       "icon": "🐌",
       "text": "Slow also gets somewhere.",
       "sentiments": [
@@ -579,7 +623,7 @@
       "weight": 1
     },
     {
-      "id": "en_zvp3bm",
+      "id": "en_k64y1l",
       "icon": "🧩",
       "text": "Life isn’t a puzzle, yet the pieces still fit.",
       "sentiments": [
@@ -589,7 +633,7 @@
       "weight": 1
     },
     {
-      "id": "en_x7xnxv",
+      "id": "en_6bxvu4",
       "icon": "💘",
       "text": "You’re my favorite thought.",
       "sentiments": [
@@ -599,7 +643,7 @@
       "weight": 1
     },
     {
-      "id": "en_jdtwcy",
+      "id": "en_phai8z",
       "icon": "🌹",
       "text": "Every day with you is a flower in my vase.",
       "sentiments": [
@@ -609,7 +653,7 @@
       "weight": 1
     },
     {
-      "id": "en_wv4hbd",
+      "id": "en_9xr3iy",
       "icon": "🌙",
       "text": "Under the same moon, I’m thinking of you.",
       "sentiments": [
@@ -619,7 +663,7 @@
       "weight": 1
     },
     {
-      "id": "en_gzlj0c",
+      "id": "en_bl63lu",
       "icon": "🔥",
       "text": "You are the spark in my day.",
       "sentiments": [
@@ -629,7 +673,7 @@
       "weight": 1
     },
     {
-      "id": "en_rzgtb6",
+      "id": "en_y59tuc",
       "icon": "💍",
       "text": "With you, every day feels like a promise.",
       "sentiments": [
@@ -639,7 +683,7 @@
       "weight": 1
     },
     {
-      "id": "en_0k955h",
+      "id": "en_ms0t91",
       "icon": "💎",
       "text": "You are rare and precious.",
       "sentiments": [
@@ -649,7 +693,7 @@
       "weight": 1
     },
     {
-      "id": "en_1oqhja",
+      "id": "en_uuru5l",
       "icon": "☀️",
       "text": "You are my morning sun.",
       "sentiments": [
@@ -659,7 +703,7 @@
       "weight": 1
     },
     {
-      "id": "en_e3zk0v",
+      "id": "en_22xz8l",
       "icon": "🌈",
       "text": "With you, my colors shine brighter.",
       "sentiments": [
@@ -669,7 +713,7 @@
       "weight": 1
     },
     {
-      "id": "en_q2xa7x",
+      "id": "en_i3qiq8",
       "icon": "🎶",
       "text": "My heart knows your melody.",
       "sentiments": [
@@ -679,7 +723,7 @@
       "weight": 1
     },
     {
-      "id": "en_sjklne",
+      "id": "en_nuqpvn",
       "icon": "🏡",
       "text": "Where you are, I’m home.",
       "sentiments": [
@@ -689,7 +733,7 @@
       "weight": 1
     },
     {
-      "id": "en_67sezs",
+      "id": "en_ux53p8",
       "icon": "🛤️",
       "text": "Every step forward is an act of courage.",
       "sentiments": [
@@ -700,7 +744,7 @@
       "weight": 1
     },
     {
-      "id": "en_qn97q0",
+      "id": "en_4sszuv",
       "icon": "🌱",
       "text": "Even the smallest seed grows toward the light.",
       "sentiments": [
@@ -711,7 +755,7 @@
       "weight": 1
     },
     {
-      "id": "en_pokw7s",
+      "id": "en_zob2pn",
       "icon": "⚓",
       "text": "You find rest by anchoring, not by running.",
       "sentiments": [
@@ -721,7 +765,7 @@
       "weight": 1
     },
     {
-      "id": "en_18wln4",
+      "id": "en_jzqbbc",
       "icon": "🌄",
       "text": "Every morning is a new canvas.",
       "sentiments": [
@@ -732,7 +776,7 @@
       "weight": 1
     },
     {
-      "id": "en_hce7ul",
+      "id": "en_s82wkv",
       "icon": "🕊️",
       "text": "Comfort lives in small gestures.",
       "sentiments": [
@@ -742,7 +786,7 @@
       "weight": 1
     },
     {
-      "id": "en_i4n3z4",
+      "id": "en_w8ve7h",
       "icon": "🙌",
       "text": "Celebrate your small victories out loud.",
       "sentiments": [
@@ -753,7 +797,7 @@
       "weight": 1
     },
     {
-      "id": "en_ytqe86",
+      "id": "en_rrqh4f",
       "icon": "🌌",
       "text": "Even the night carries quiet promises.",
       "sentiments": [
@@ -764,7 +808,7 @@
       "weight": 1
     },
     {
-      "id": "en_gyfpwk",
+      "id": "en_zky3ki",
       "icon": "💪",
       "text": "Perseverance is stronger than winning.",
       "sentiments": [
@@ -774,7 +818,7 @@
       "weight": 1
     },
     {
-      "id": "en_n3tgiy",
+      "id": "en_nezica",
       "icon": "🙏",
       "text": "Gratitude makes every moment richer.",
       "sentiments": [
@@ -784,7 +828,7 @@
       "weight": 1
     },
     {
-      "id": "en_cdi0ay",
+      "id": "en_zyoezv",
       "icon": "🏔️",
       "text": "Pride is the echo from your own summit.",
       "sentiments": [

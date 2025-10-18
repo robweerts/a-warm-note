@@ -42,8 +42,8 @@
     "compose": {
       "to": "To",
       "from": "From",
-      "toPlaceholder": "For whom?",
-      "fromPlaceholder": "From you (optional)"
+      "toPlaceholder": "Who is your message for?",
+      "fromPlaceholder": "From you (name)"
     },
     "ui": {
       "aiNew": "AI message"
@@ -57,59 +57,59 @@
       "title": "Messenger",
       "notice": "Link to your personal message was copied. 📋",
       "steps": [
-        "Choose a contact in Messenger.",
-        "Paste the link in the message field.",
-        "Send your warm note. 💛"
+        "1️⃣ Choose a contact in Messenger.",
+        "2️⃣ Paste the link in the message field.",
+        "3️⃣ Send your warm note. 💛"
       ],
       "open": "Open Messenger"
     },
-    "ai": {
-      "button": "AI compose",
-
-      "ai.status.loading": "One moment…",
-      "ai.status.added": "Suggestion added",
-      "ai.status.error": "AI unavailable — type manually",
-
-      "status": {
-        "ready": "Ready",
-        "generating": "Thinking…"
-      },
-
-      "generated": "AI message created ✨",
-      "failed": "Couldn't generate a message",
-
-      "sheet": {
-        "title": "AI Message",
-        "promptLabel": "What do you want to say?",
-        "promptPlaceholder": "Write a few keywords…",
-        "toneLabel": "Tone",
-        "toneOptions": {
-          "warm": "Warm",
-          "funny": "Funny",
-          "encouraging": "Encouraging",
-          "neutral": "Neutral"
-        },
-        "lengthLabel": "Length",
-        "lengthOptions": {
-          "short": "Short",
-          "medium": "Normal",
-          "long": "Long"
-        },
-        "toLabel": "To",
-        "fromLabel": "From",
-        "generate": "Generate",
-        "apply": "Apply",
-        "cancel": "Cancel",
-        "loading": "One moment…",
-        "error": "AI unavailable — type manually"
-      }
+"ai": {
+  "button": "AI compose",
+  "status": {
+    "ready": "Ready",
+    "generating": "Thinking…",
+    "loading": "One moment…",
+    "added": "Suggestion added",
+    "error": "AI unavailable — type manually"
+  },
+  "generated": "AI message created ✨",
+  "failed": "Couldn't generate a message",
+  "sheet": {
+    "title": "AI — write a warm note",
+    "tone": "Tone",
+    "toneOptions": {
+      "warm": "Warm",
+      "funny": "Funny",
+      "supportive": "Supportive",
+      "proud": "Proud",
+      "romantic": "Romantic"
     },
+    "occasion": "Occasion",
+    "occasionOptions": {
+      "": "—",
+      "just_because": "Just because",
+      "thank_you": "Thank you",
+      "miss_you": "Miss you",
+      "good_luck": "Good luck",
+      "get_well": "Get well",
+      "congrats": "Congrats"
+    },
+    "context": "Context (optional, max 120 chars)",
+    "contextPlaceholder": "E.g., job interview today, or long day…",
+    "length": "Length",
+    "lengthOptions": {
+      "short": "Short (recommended)",
+      "medium": "A bit longer"
+    },
+    "generate": "Generate ✨"
+  }
+},
     "about": {
       "title": "About this App",
       "p1_strong": "a warm note — to someone you care about",
       "p2": "Small notes with big meaning. An app to send loving, funny or encouraging notes. A quick way to let someone know you’re thinking of them.",
       "tag": "Something small, lots of meaning",
-      "fabLabel": "About this site"
+      "fabLabel": "About this App"
     },
     "intro": {
       "hint": "Tip: swipe through Feelings & Message →"

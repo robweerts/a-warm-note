@@ -42,7 +42,7 @@
     "compose": {
       "to": "Voor",
       "from": "Van",
-      "toPlaceholder": "Voor wie?",
+      "toPlaceholder": "Voor wie is je berichtje?",
       "fromPlaceholder": "Van jou (optioneel)"
     },
     "ui": {
@@ -57,55 +57,59 @@
       "title": "Messenger",
       "notice": "Link van jouw persoonlijke bericht is gekopieerd. 📋",
       "steps": [
-        "Kies een contact in Messenger.",
-        "Plak de link in het berichtveld.",
-        "Verstuur je warme note. 💛"
+        "1️⃣ Kies een contact in Messenger.",
+        "2️⃣ Plak de link in het berichtveld.",
+        "3️⃣ Verstuur je warme note. 💛"
       ],
       "open": "Open Messenger"
     },
-    "ai": {
-      "button": "AI-bericht",
-      "status": {
-        "ready": "Klaar",
-        "generating": "Bezig met bedenken…",
-        "loading": "Even geduld…",
-        "added": "Voorstel toegevoegd",
-        "error": "AI niet beschikbaar — typ handmatig"
-      },
-      "generated": "AI-boodschap gemaakt ✨",
-      "failed": "Kon geen boodschap genereren",
-      "sheet": {
-        "title": "AI-boodschap",
-        "promptLabel": "Wat wil je ongeveer zeggen?",
-        "promptPlaceholder": "Schrijf een paar steekwoorden…",
-        "toneLabel": "Stijl",
-        "toneOptions": {
-          "warm": "Warm",
-          "funny": "Grappig",
-          "encouraging": "Bemoedigend",
-          "neutral": "Neutraal"
-        },
-        "lengthLabel": "Lengte",
-        "lengthOptions": {
-          "short": "Kort",
-          "medium": "Normaal",
-          "long": "Lang"
-        },
-        "toLabel": "Voor",
-        "fromLabel": "Van",
-        "generate": "Maak voorstel",
-        "apply": "Plaatsen",
-        "cancel": "Annuleren",
-        "loading": "Even geduld…",
-        "error": "AI niet beschikbaar — typ handmatig"
-      }
-    },
+	"ai": {
+  		"button": "AI-bericht",
+  		"status": {
+    	"ready": "Klaar",
+    	"generating": "Bezig met bedenken…",
+    	"loading": "Even geduld…",
+    	"added": "Voorstel toegevoegd",
+    	"error": "AI niet beschikbaar — typ handmatig"
+  		},
+  		"generated": "AI-boodschap gemaakt ✨",
+  		"failed": "Kon geen boodschap genereren",
+  		"sheet": {
+    	"title": "AI — maak een warm bericht",
+    	"tone": "Toon",
+    	"toneOptions": {
+      	"warm": "Warm",
+      	"funny": "Grappig",
+      	"supportive": "Steunend",
+      	"proud": "Trots",
+      	"romantic": "Romantisch"
+    	},
+    	"occasion": "Aanleiding",
+    	"occasionOptions": {
+      	"": "—",
+      	"just_because": "Zomaar",
+      	"thank_you": "Bedankt",
+      	"miss_you": "Ik mis je",
+      	"good_luck": "Succes",
+      	"get_well": "Beterschap",
+      	"congrats": "Gefeliciteerd"
+    	},
+    	"context": "Context (optioneel, max 120 tekens)",
+    	"contextPlaceholder": "Bijv.: sollicitatie vandaag, of lange dag gehad…",
+    	"length": "Lengte",
+    	"lengthOptions": {
+      	"short": "Kort (aanrader)",
+      	"medium": "Iets langer"
+    	},
+    	"generate": "Genereer ✨"
+  		}
+	},
     "about": {
       "title": "Over deze App",
       "p1_strong": "a warm note — to someone you care about",
       "p2": "Kleine berichtje met grote betekenis. Een app waar je liefdevolle, grappige of bemoedigende notities kunt sturen. Even, al is het maar kort, laten weten dat je aan iemand denkt.",
       "tag": "Iets kleins, veel betekenis",
-      "fabLabel": "Over deze site"
+      "fabLabel": "Over deze App"
     },
     "intro": {
       "hint": "Tip: swipe door de Gevoelens & Boodschap →"

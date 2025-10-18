@@ -31,25 +31,120 @@ const IS_FILE            = (location.protocol === "file:");
 const RECENT_LIMIT       = 5;
 const PAPER_COLORS       = ["#FFE66D","#FFD3B6","#C5FAD5","#CDE7FF","#FFECB3","#E1F5FE"];
 const MOTION = (new URLSearchParams(location.search).get('motion') || 'subtle').toLowerCase(); // 'subtle' | 'normal'
-document.documentElement.setAttribute("lang","nl");
-
-/* [A] resolveLang met prioriteit: URL > localStorage > browser > default */
 const DEFAULT_LANG = 'nl';
+// html[lang] zetten ná resolveLang()
 
+/* [A] resolveLang met prioriteit: URL-pad > ?lang > localStorage > browser > default */
 function resolveLang() {
   try {
+    // 1) pad: /en/, /nl/ (of /en, /nl)
+    const m = (location.pathname || "").match(/^\/(en|nl)(?:\/|$)/i);
+    if (m) return m[1].toLowerCase();
+
+    // 2) queryparam
     const urlLang = new URL(location.href).searchParams.get('lang');
     if (urlLang) return urlLang.trim().toLowerCase();
 
+    // 3) localStorage
     const stored = localStorage.getItem('prefLang');
     if (stored) return stored.trim().toLowerCase();
 
+    // 4) browser
     const nav = (navigator.language || navigator.userLanguage || 'nl').slice(0,2).toLowerCase();
     return nav || DEFAULT_LANG;
   } catch {
     return DEFAULT_LANG;
   }
 }
+
+(function initTextLangSwitcher(){
+  const root = document;
+  const wrap = root.getElementById('lang-switch');
+  if (!wrap) return;
+  const btn  = root.getElementById('lang-btn');
+  const menu = root.getElementById('lang-menu');
+  const cur  = root.getElementById('lang-cur');
+  const m = (location.pathname || "").match(/^\/(en|nl)(?:\/|$)/i);
+  const pathLang = m ? m[1].toLowerCase() : (resolveLang() || 'nl');
+  cur.textContent = pathLang.toUpperCase();
+  [...menu.querySelectorAll('.lang-item')].forEach(el => {
+    el.setAttribute('aria-checked', String(el.dataset.lang === pathLang));
+  });
+
+  function openMenu(){ menu.hidden = false; btn.setAttribute('aria-expanded','true'); }
+  function closeMenu(){ menu.hidden = true;  btn.setAttribute('aria-expanded','false'); }
+  function toggle(){ (menu.hidden ? openMenu : closeMenu)(); }
+
+  btn.addEventListener('click', toggle);
+  btn.addEventListener('keydown', (e) => { if (e.key === 'ArrowDown') { e.preventDefault(); openMenu(); menu.querySelector('.lang-item')?.focus(); }});
+
+  menu.addEventListener('keydown', (e) => {
+    const items = [...menu.querySelectorAll('.lang-item')];
+    const i = items.indexOf(document.activeElement);
+    if (e.key === 'Escape') { closeMenu(); btn.focus(); }
+    if (e.key === 'ArrowDown') { e.preventDefault(); items[(i+1) % items.length]?.focus(); }
+    if (e.key === 'ArrowUp')   { e.preventDefault(); items[(i-1+items.length) % items.length]?.focus(); }
+  });
+
+  menu.addEventListener('click', (e) => {
+    const item = e.target.closest('.lang-item');
+    if (!item) return;
+    const target = item.getAttribute('data-lang');
+    localStorage.setItem('prefLang', target);
+    closeMenu();
+    // Navigeer pad-gedreven (behoud query/hash, strip ?lang=)
+    goToLang(target);
+  });
+
+  // klik buiten menu sluit ‘m
+  document.addEventListener('click', (e) => {
+    if (!wrap.contains(e.target)) closeMenu();
+  });
+})();
+
+function stripLangParam(url) {
+  const u = new URL(url, location.origin);
+  u.searchParams.delete('lang'); // we gebruiken route i.p.v. ?lang=
+  return u;
+}
+
+function getMid() {
+  try { return new URL(location.href).searchParams.get('mid'); }
+  catch { return null; }
+}
+
+async function renderRoute() {
+  const mid = getMid();
+  if (!mid) {
+    renderWelcome();                    // default
+    return;
+  }
+  try {
+    await renderNoteById(mid);          // jouw bestaande loader
+    // succes: note staat in beeld
+  } catch (e) {
+    console.warn('[note] invalid or failed mid:', mid, e);
+    renderWelcome();                    // fallback
+  }
+}
+
+function goToLang(targetLang) {
+  const lang = (targetLang || 'nl').toLowerCase();
+  const base = lang === 'en' ? '/en/' : '/nl/';
+  const u = stripLangParam(location.href);
+  u.pathname = base;
+  // echte routewissel (belangrijk voor meta/hreflang/OG)
+  location.assign(u.toString());
+}
+
+// Optioneel: als er al ?lang= staat, haal 'm stil uit de URL
+(function cleanLangParamInPlace(){
+  const u = new URL(location.href);
+  if (u.searchParams.has('lang')) {
+    u.searchParams.delete('lang');
+    history.replaceState(null, '', u.toString());
+  }
+})();
 
 /* === MESSAGES CONFIG ================================================== */
 function messagesPathFor(lang) {
@@ -366,6 +461,7 @@ function init() {
       if (typeof refreshUIStrings === 'function') 
       recacheEls?.();
       refreshUIStrings();
+      refreshAISheetStrings();
       return loadMessages();
   	})
 	.then(() => {
@@ -379,6 +475,8 @@ function init() {
     const fromVal   = qp.get('from');
     const sharedMid = qp.get('mid');
     const sharedId  = qp.get('id');
+    const lang  = currentLang();
+	const hasMid = new URL(location.href).searchParams.has('mid');
       
     // Bewaar ontvangen namen, maar vul géén inputs in bij mid
 	STATE.shared = STATE.shared || { to: '', from: '' };
@@ -391,7 +489,7 @@ function init() {
   	if (els.toInput) {
     	els.toInput.value = '';
     	els.toInput.placeholder = (typeof i18n === 'function' ? i18n('to_placeholder')
-      	  : 'Voor wie?');
+      	  : 'Voor wie is je bericht?');
   	}
   	if (els.fromInput) {
     	els.fromInput.value = '';
@@ -423,6 +521,13 @@ function init() {
         const n = Number(sharedId);
         if (!Number.isNaN(n)) msgIdx = n;
     }	 
+    
+    // ⬇︎ mid bestaat niet in deze taal → FORCE welcome en stop
+	if (sharedMid && (msgIdx == null || msgIdx < 0 || msgIdx >= STATE.allMessages.length)) {
+  		showWelcomeNote(els, { force: true });   // <— belangrijk
+  		updateCoach?.('init', {}, { hold: 0, force: true });
+  		return;
+	}
 	 // ... binnen init() na het bepalen van msgIdx
 	 if (msgIdx != null && msgIdx >= 0 && msgIdx < STATE.allMessages.length) {
   	 renderMessage({ requestedIdx: msgIdx, wiggle: false });
@@ -459,6 +564,7 @@ function init() {
 
 // Start pas wanneer DOM klaar is
 	window.addEventListener("DOMContentLoaded", init);
+	
 
 /* === PWA INSTALL BUTTON ================================================== */
 let __deferredPrompt = null;
@@ -488,6 +594,12 @@ window.addEventListener('beforeinstallprompt', (e)=>{
     btn.remove();
   });
 });
+
+const isMobile = window.matchMedia('(max-width: 768px)').matches;
+if (isMobile) {
+  const btnNew = document.getElementById('btn-new');
+  if (btnNew) btnNew.style.display = 'none';
+}
 
 // Eénmalige sentiment-hint nudge (alleen bij eerste load)
 if (!localStorage.getItem("awarm_sentiment_hint")) {
@@ -600,6 +712,7 @@ async function loadMessages(){
         STATE.allMessages = STATE.allMessages.concat(normalized);
       }
     } catch {}
+
 /* ================================================================ */
 
     // Sentiments afleiden (op de samengevoegde set)
@@ -1146,11 +1259,13 @@ if (nextMsg) {
  * - Anders       → wel welcome (return true), elke keer (geen sessionStorage/force)
  * Meertalig (NL/EN) op basis van <html lang> of STATE.lang.
  */
- 
-function showWelcomeNote(els) {
+
+
+function showWelcomeNote(els, opts = {}) {
+  const force = !!opts.force;
   const qp = new URLSearchParams(location.search);
-  const isReceivedByMid = qp.has('mid');   // alleen 'mid' bepaalt received
-  if (isReceivedByMid) return false;
+  const isReceivedByMid = qp.has('mid');
+  if (isReceivedByMid && !force) return false; // alleen blokkeren als we niet forceren
 
   // Taal bepalen
   const docLang = (document.documentElement.getAttribute('lang') || '').toLowerCase();
@@ -1239,6 +1354,7 @@ function showWelcomeNote(els) {
     window.onUserPickedMessage = (m)=> window.onAIGeneratedText(m);
   }
 })();
+
 
 /* [I] === COMPOSE (inputs Voor/Van) ================================================== */
 function autoCapitalizeInput(input) {
@@ -1406,6 +1522,76 @@ window.coachShowTimed = function coachShowTimed(msg, ms = 1600) {
     }
   } catch(_) {}
 };
+
+// --- Coach overlay bridge ----------------------------------------------------
+
+function isVisible(el){
+  if (!el) return false;
+  // je sheets gebruiken class "hidden" + soms aria-hidden
+  if (el.classList?.contains('hidden')) return false;
+  if (el.getAttribute && el.getAttribute('aria-hidden') === 'true') return false;
+  return true;
+}
+
+function updateCoachVisibilityForOverlays(){
+  const ids = ['sheet-backdrop','ai-backdrop','msgr-help-backdrop','qr-backdrop','about-backdrop'];
+  const anySheetOpen = ids.some(id => isVisible(document.getElementById(id)));
+  const leoOpen = !!document.getElementById('coach-leo')?.classList.contains('show');
+  hideCoach(anySheetOpen || leoOpen);
+}
+
+function installCoachOverlayBridge(){
+  const ids = ['sheet-backdrop','ai-backdrop','msgr-help-backdrop','qr-backdrop','about-backdrop'];
+
+  // Observe class / aria-hidden changes op alle sheets
+  const mo = new MutationObserver(updateCoachVisibilityForOverlays);
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) mo.observe(el, { attributes: true, attributeFilter: ['class','aria-hidden'] });
+  });
+
+  // Sheet-close knoppen veranderen vaak classes asynchroon—vang klik ook op
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('.sheet-close')) {
+      // even laten updaten, dan her-evalueren
+      setTimeout(updateCoachVisibilityForOverlays, 0);
+    }
+  });
+
+  // Hook in op CoachLeo.show/hide als hij bestaat
+  if (window.CoachLeo) {
+    const _show = CoachLeo.show.bind(CoachLeo);
+    const _hide = CoachLeo.hide.bind(CoachLeo);
+    CoachLeo.show = function(){ hideCoach(true); return _show(); };
+    CoachLeo.hide = function(){ const r = _hide(); updateCoachVisibilityForOverlays(); return r; };
+  }
+
+  // Initial state
+  updateCoachVisibilityForOverlays();
+}
+
+function hideCoach(hide = true){
+  const c = document.getElementById('coach-tip');
+  if (!c) return;
+
+  if (hide) {
+    // start fade-out
+    c.classList.add('is-fading');
+    // na de fade, echt verstoppen (back-up voor toegankelijkheid/lay-out)
+    clearTimeout(c._hideT);
+    c._hideT = setTimeout(() => c.classList.add('hidden'), 200);
+  } else {
+    // hard hidden eraf, dan in de volgende frame de fade-klasse verwijderen
+    c.classList.remove('hidden');
+    requestAnimationFrame(() => {
+      // kleine extra frame om overgang zeker te laten starten
+      requestAnimationFrame(() => c.classList.remove('is-fading'));
+    });
+  }
+}
+
+// Starten na DOM ready (naast je bestaande init)
+document.addEventListener('DOMContentLoaded', installCoachOverlayBridge);
 
 /* [K] === SHARE-SHEET (WA/E-mail/Download/Kopieer/Native) ============================== */
 let __lastFocusEl = null;
@@ -1850,6 +2036,167 @@ function afterShareSuccess(){
   updateCoach('shared');
 }
 
+/* ===== LEO: single-source-of-truth (mount + welcome/received + AI-nudge) === */
+(function(){
+  // Idempotent guard
+  if (window.__LEO_SINGLE_BLOCK__) return;
+  window.__LEO_SINGLE_BLOCK__ = true;
+
+  // --- Config --------------------------------------------------------------
+  const AI_NUDGE_KEY   = 'ai_compose_announce_q4_2025'; // wijzig om opnieuw te tonen
+  const WELCOME_DELAY  = 2200;  // ms (geen mid)
+  const RECEIVED_DELAY = 900;   // ms (wel mid)
+  const AI_DELAY       = 6000;  // ms (eerste nudge zonder interactie)
+  const RETRIES        = 5;     // zachte retries als overlay open is
+  const RETRY_MS       = 900;
+
+  // --- Helpers -------------------------------------------------------------
+  const isEN = () => (document.documentElement.lang || 'nl').toLowerCase().startsWith('en');
+  const hasMid = () => new URL(location.href).searchParams.has('mid');
+
+  const anyOverlayOpen = () => {
+    const ids = ['sheet-backdrop','ai-backdrop','msgr-help-backdrop','qr-backdrop','about-backdrop'];
+    const overlay = ids.some(id=>{
+      const el = document.getElementById(id);
+      return el && !el.classList.contains('hidden') && el.getAttribute('aria-hidden') !== 'true';
+    });
+    const leoOpen   = document.getElementById('coach-leo')?.classList.contains('show');
+    const bubbleVis = document.getElementById('leo-fab-bubble')?.classList.contains('show');
+    return overlay || leoOpen || bubbleVis;
+  };
+
+  // Vind compose inputs (robust)
+  function getInputs(){
+    const toEl   = (window.els && els.toInput)   || document.getElementById('to-inline')   || document.querySelector('#to,[name="to"]');
+    const fromEl = (window.els && els.fromInput) || document.getElementById('from-inline') || document.querySelector('#from,[name="from"]');
+    return { toEl, fromEl };
+  }
+
+  // --- LeoFab (kleine API) -------------------------------------------------
+  const LeoFab = window.LeoFab || {
+    root:   null,
+    bubble: null,
+    textEl: null,
+    ava:    null,
+    mounted:false,
+    mount(){
+      if (this.mounted) return;
+      this.root   = document.getElementById('leo-fab');
+      this.bubble = document.getElementById('leo-fab-bubble');
+      this.textEl = document.getElementById('leo-fab-text');
+      this.ava    = this.root?.querySelector?.('.leo-fab__ava');
+      if (!this.root || !this.bubble || !this.textEl) return;
+
+      const toggle = () => {
+        if (this.bubble.hidden) this._show(); else this.clear();
+      };
+      this.root.addEventListener('click', toggle);
+      this.root.addEventListener('keydown', (e)=>{
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
+      });
+
+      // Sluit bubble wanneer overlay open gaat
+      const mo = new MutationObserver(() => { if (anyOverlayOpen()) this.clear(); });
+      ['sheet-backdrop','ai-backdrop','msgr-help-backdrop','qr-backdrop','about-backdrop'].forEach(id=>{
+        const el = document.getElementById(id);
+        if (el) mo.observe(el, { attributes:true, attributeFilter:['class','aria-hidden'] });
+      });
+
+      this.mounted = true;
+    },
+    say(txt){
+      if (!txt || !this.textEl || !this.bubble) return;
+      this.textEl.textContent = txt;
+      this._show();
+    },
+    _show(){
+      this.bubble.hidden = false;
+      requestAnimationFrame(()=> this.bubble.classList.add('show'));
+    },
+    clear(){
+      if (!this.bubble) return;
+      this.bubble.classList.remove('show');
+      setTimeout(()=>{ this.bubble.hidden = true; }, 180);
+    },
+    setAvatar(url){ if (this.ava && url) this.ava.style.backgroundImage = `url('${url}')`; }
+  };
+  window.LeoFab = LeoFab; // export
+
+  // --- Safe speak (met zachte retry & campaign-flag) -----------------------
+  function sayOnceWithRetry(text, { setFlag=false, max=RETRIES, delay=RETRY_MS } = {}){
+    let left = max;
+    const step = ()=>{
+      if (!anyOverlayOpen()) {
+        LeoFab.say(text);
+        if (setFlag) { try { localStorage.setItem(AI_NUDGE_KEY,'1'); } catch {} }
+      } else if (left-- > 0) {
+        setTimeout(step, delay);
+      }
+    };
+    step();
+  }
+
+  // --- Campaign: AI Compose nudge ------------------------------------------
+  function scheduleAINudge(){
+    if (hasMid()) return; // niet in received-flow
+    try { if (localStorage.getItem(AI_NUDGE_KEY) === '1') return; } catch {}
+
+    const textWelcome = isEN()
+      ? "✨ New: AI Compose helps you find just the right words."
+      : "✨ Nieuw: AI Compose helpt je om precies de juiste woorden te vinden.";
+
+    const textIntent = isEN()
+      ? "✨ Try AI Compose to draft your note."
+      : "✨ Probeer AI Compose voor een eerste versie.";
+
+    // (1) passieve nudge na kleine delay
+    const tIdle = setTimeout(()=>{
+      try { if (localStorage.getItem(AI_NUDGE_KEY) === '1') return; } catch {}
+      sayOnceWithRetry(textWelcome, { setFlag:true });
+    }, AI_DELAY);
+
+    // (2) eerste focus in compose → intent nudge
+    const { toEl, fromEl } = getInputs();
+    const fireIntent = ()=>{
+      try { if (localStorage.getItem(AI_NUDGE_KEY) === '1') return; } catch {}
+      clearTimeout(tIdle);
+      sayOnceWithRetry(textIntent, { setFlag:true, delay:700 });
+    };
+    const once = (el, ev, fn) => el && el.addEventListener(ev, function h(e){ el.removeEventListener(ev, h); fn(e); }, { passive:true });
+
+    once(toEl,   'focus', fireIntent);
+    once(fromEl, 'focus', fireIntent);
+
+    // Extra: eerste chip-klik telt ook als intent
+    const chipRow = document.getElementById('chip-row');
+    if (chipRow) {
+      const chipHandler = () => { chipRow.removeEventListener('click', chipHandler, true); fireIntent(); };
+      chipRow.addEventListener('click', chipHandler, true);
+    }
+  }
+
+  // --- Boot ---------------------------------------------------------------
+  document.addEventListener('DOMContentLoaded', ()=>{
+    LeoFab.mount();
+
+    // Welkom/Received
+    if (!hasMid()) {
+      const welcomeTxt = isEN()
+        ? "Welcome! ✨ Send a small note that can brighten someone’s day."
+        : "Welkom! ✨ Stuur vandaag een klein berichtje dat iemand blij maakt.";
+      setTimeout(()=> sayOnceWithRetry(welcomeTxt), WELCOME_DELAY);
+    } else {
+      const receivedTxt = isEN()
+        ? "💛 You’ve just received a warm note. Want to send one back?"
+        : "💛 Je hebt een warm note ontvangen. Stuur er zelf ook eentje terug?";
+      setTimeout(()=> sayOnceWithRetry(receivedTxt), RECEIVED_DELAY);
+    }
+
+    // AI-campagne nudge (alleen als geen mid)
+    scheduleAINudge();
+  });
+})();
+
 /* [L] === CONFETTI & TOASTS ================================================== */
 function celebrate(){
   const qp = new URLSearchParams(location.search);
@@ -1976,6 +2323,105 @@ async function ensureStringsLoaded() {
   catch { STRINGS = await loadStrings('nl'); }
   // Fallbackbuffer (nl), tenzij we al nl zijn
   STRINGS_FALLBACK = (lang === 'nl') ? STRINGS : await loadStrings('nl').catch(()=>STRINGS);
+}
+
+function refreshAISheetStrings() {
+  try {
+    const $ = (sel) => document.querySelector(sel);
+    const curLang = (document.documentElement.lang || 'nl').toLowerCase().startsWith('en') ? 'en' : 'nl';
+
+    // ✅ Gebruik t() als bron, i.p.v. i18n() — met fallback
+    const tr = (k, fb = '') => {
+      let v = (typeof window.t === 'function') ? window.t(k) : undefined;
+      if (!v && typeof window.i18n === 'function') v = window.i18n(k); // safety net
+      return (v && v !== k) ? v : fb;
+    };
+
+    // ---- Titel & labels ----------------------------------------------------
+    const titleFallback = (curLang === 'en') ? 'AI — write a warm note' : 'AI — maak een warm bericht';
+    const toneFallback  = (curLang === 'en') ? 'Tone'     : 'Toon';
+    const occFallback   = (curLang === 'en') ? 'Occasion' : 'Aanleiding';
+    const ctxFallback   = (curLang === 'en') ? 'Context'  : 'Context';
+    const lenFallback   = (curLang === 'en') ? 'Length'   : 'Lengte';
+
+    const titleEl = $('#ai-title');
+    if (titleEl) titleEl.textContent = tr('ai.sheet.title', titleFallback);
+
+    const lblTone = document.querySelector('label[for="ai-tone"]');
+    const lblOcc  = document.querySelector('label[for="ai-occasion"]');
+    const lblCtx  = document.querySelector('label[for="ai-context"]');
+    const lblLen  = document.querySelector('label[for="ai-length"]');
+
+    if (lblTone) lblTone.textContent = tr('ai.sheet.tone', toneFallback);
+    if (lblOcc)  lblOcc.textContent  = tr('ai.sheet.occasion', occFallback);
+    if (lblCtx)  lblCtx.textContent  = tr('ai.sheet.context', ctxFallback);
+    if (lblLen)  lblLen.textContent  = tr('ai.sheet.length', lenFallback);
+
+    // ---- Placeholder -------------------------------------------------------
+    const ctx = $('#ai-context');
+    if (ctx) {
+      const phFallback = (curLang === 'en')
+        ? 'Write a few keywords…'
+        : 'Schrijf een paar steekwoorden…';
+      ctx.setAttribute('placeholder', tr('ai.sheet.contextPlaceholder', phFallback));
+    }
+
+    // ---- Knop --------------------------------------------------------------
+    const genBtn = $('#ai-generate');
+    if (genBtn) genBtn.textContent = tr('ai.sheet.generate',
+      (curLang === 'en') ? 'Generate ✨' : 'Genereer ✨'
+    );
+
+    // ---- Select options: per key vertalen ----------------------------------
+    const toneSel = $('#ai-tone');
+    const lenSel  = $('#ai-length');
+    const occSel  = $('#ai-occasion');
+
+    const build = (sel, baseKey, keys, fbMap) => {
+      if (!sel) return;
+      const prev = sel.value;
+      sel.innerHTML = '';
+      keys.forEach(key => {
+        const opt = document.createElement('option');
+        opt.value = key;
+        opt.textContent = tr(`${baseKey}.${key}`, fbMap[key] || key);
+        sel.appendChild(opt);
+      });
+      if (prev && keys.includes(prev)) sel.value = prev;
+    };
+
+    const toneKeys = ['warm','funny','supportive','proud','romantic'];
+    const lenKeys  = ['short','medium'];
+    const occKeys  = ['', 'just_because','thank_you','miss_you','good_luck','get_well','congrats'];
+
+    const FBT = (en, nl) => (curLang === 'en' ? en : nl);
+
+    build(toneSel, 'ai.sheet.toneOptions', toneKeys, {
+      warm: 'Warm',
+      funny:      FBT('Funny','Grappig'),
+      supportive: FBT('Supportive','Steunend'),
+      proud:      FBT('Proud','Trots'),
+      romantic:   FBT('Romantic','Romantisch')
+    });
+
+    build(lenSel, 'ai.sheet.lengthOptions', lenKeys, {
+      short:  FBT('Short (recommended)', 'Kort (aanrader)'),
+      medium: FBT('A bit longer',        'Iets langer')
+    });
+
+    build(occSel, 'ai.sheet.occasionOptions', occKeys, {
+      '':            '—',
+      just_because:  FBT('Just because','Zomaar'),
+      thank_you:     FBT('Thank you','Bedankt'),
+      miss_you:      FBT('Miss you','Ik mis je'),
+      good_luck:     FBT('Good luck','Succes'),
+      get_well:      FBT('Get well','Beterschap'),
+      congrats:      FBT('Congrats','Gefeliciteerd')
+    });
+
+  } catch (e) {
+    console.warn('refreshAISheetStrings() failed', e);
+  }
 }
 /* refreshUIStrings: schrijf labels/aria vanuit strings.{lang}.json (HTML-aware) */
 function refreshUIStrings() {
@@ -2356,24 +2802,6 @@ function decodeShareToken(token){
     return null;
   }
 }
-function pickWeightedIndex(list){
-  const arr = Array.isArray(list) ? list : [];
-  let total = 0;
-  for (const m of arr){
-    const w = Number.isFinite(m?.weight) ? m.weight : 1;
-    if (w > 0) total += w;
-  }
-  if (total <= 0) return null;
-
-  let r = Math.random() * total;
-  for (let i = 0; i < arr.length; i++){
-    const w = Number.isFinite(arr[i]?.weight) ? arr[i].weight : 1;
-    if (w <= 0) continue;
-    r -= w;
-    if (r < 0) return i;
-  }
-  return null;
-}
 
 function throttle(fn, wait){
   let t=0, lastArgs=null;
@@ -2652,7 +3080,7 @@ async function setLanguage(nextLang) {
 await ensureStringsLoaded();
 recacheEls?.();               // DOM opnieuw vastpakken (tegen stale refs)
 refreshUIStrings?.();
-refreshAISheetStrings?.();    // AI-sheet labels verversen
+refreshAISheetStrings?.();
 // herteken huidige note
 renderToFrom?.();
 if (els?.msg){ const raw = els.msg.getAttribute('data-raw'); if (raw!=null) els.msg.textContent = personalize(raw); }
@@ -2691,12 +3119,32 @@ function wireLangDropdown(){
   const menu = document.getElementById('lang-dd-menu');
   if (!wrap || !btn || !menu) return;
 
-  const open  = ()=>{
+  const getPathLang = () => {
+    const m = (location.pathname || '').match(/^\/(en|nl)(?:\/|$)/i);
+    return m ? m[1].toLowerCase() : 'nl';
+  };
+
+  const updateChecked = () => {
+    const cur = getPathLang();
+    menu.querySelectorAll('.lang-item').forEach(el => {
+      el.setAttribute('aria-checked', String(el.dataset.lang === cur));
+    });
+    // optioneel: label in knop bijwerken (als je een #lang-cur gebruikt)
+    const curEl = document.getElementById('lang-cur');
+    if (curEl) curEl.textContent = (cur === 'en' ? 'EN' : 'NL');
+  };
+
+  const open  = () => {
     wrap.classList.add('open');
     btn.setAttribute('aria-expanded','true');
     menu.hidden = false;           // << belangrijk op iOS
+    updateChecked();
+    // focus het eerste item voor a11y
+    const first = menu.querySelector('.lang-item');
+    if (first) first.focus();
   };
-  const close = ()=>{
+
+  const close = () => {
     wrap.classList.remove('open');
     btn.setAttribute('aria-expanded','false');
     menu.hidden = true;
@@ -2706,31 +3154,45 @@ function wireLangDropdown(){
     e.preventDefault();            // << voorkomt form/scroll-quirks
     e.stopPropagation();           // << voorkomt dat doc-handler 'm meteen sluit
     if (wrap.classList.contains('open')) { close(); return; }
-    renderLangDropdownUI(); open();
+    renderLangDropdownUI?.();      // jouw bestaande render, indien aanwezig
+    open();
   });
 
-  // kies taal
-  menu.addEventListener('click', async (e)=>{
-    e.stopPropagation();
-    const item = e.target.closest('.lang-item'); if (!item) return;
-    const next = item.dataset.lang; if (!next) return;
-
-    const u = new URL(location.href); u.searchParams.set('lang', next);
-    history.replaceState({}, '', u.toString());
+  // ⬇️ PATCH 4: klik in het menu navigeert naar taal-ROUTE (geen ?lang=)
+  menu.addEventListener('click', (e) => {
+    const item = e.target.closest('.lang-item');
+    if (!item) return;
+    const next = item.getAttribute('data-lang');
+    if (!next) return;
     localStorage.setItem('prefLang', next);
-
-    if (typeof setLanguage === 'function') await setLanguage(next);
-    renderLangDropdownUI(); close();
+    close();
+    // harde nav naar /en/ of /nl/ (behoudt query/hash; zie goToLang helper)
+    goToLang(next);
   });
 
-  // klik buiten + ESC (sluiten)
-  document.addEventListener('click', (e)=>{
+  // a11y: pijltjes + escape
+  menu.addEventListener('keydown', (e) => {
+    const items = [...menu.querySelectorAll('.lang-item')];
+    const i = items.indexOf(document.activeElement);
+    if (e.key === 'Escape') { e.preventDefault(); close(); btn.focus(); }
+    if (e.key === 'ArrowDown') { e.preventDefault(); items[(i+1) % items.length]?.focus(); }
+    if (e.key === 'ArrowUp')   { e.preventDefault(); items[(i-1+items.length) % items.length]?.focus(); }
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      document.activeElement?.click();
+    }
+  });
+
+  // klik buiten menu sluit ‘m
+  document.addEventListener('click', (e) => {
     if (!wrap.contains(e.target)) close();
-  }, { passive: true });
-
-  document.addEventListener('keydown', (e)=>{
-    if (e.key === 'Escape') close();
   });
+
+  // initial UI state
+  updateChecked();
+  
+
+
 
   renderLangDropdownUI();
 }
@@ -3592,6 +4054,137 @@ function bindAISheetGlue(){
     _closingForGenerate = false;
   });
 }
+
+// === i18n teksten ============================================================
+const AWN_I18N = {
+  nl: {
+    ctxText: "Iemand stuurde je een warm note",
+    ctxCTA: "Stuur er ook één",
+    inviteTitle: "a warm note",
+    inviteText: "Wil jij er ook één sturen?",
+    inviteYes: "Ja graag",
+    inviteLater: "Later",
+    howTitle: "💛 Hoe werkt het?",
+    how1: "💭 Kies een gevoel",
+    how2: "✍️ Kies of schrijf een warm note",
+    how3: "💌 Deel met één klik"
+  },
+  en: {
+    ctxText: "Someone sent you a warm note",
+    ctxCTA: "Send one back",
+    inviteTitle: "a warm note",
+    inviteText: "Want to send your own?",
+    inviteYes: "Yes",
+    inviteLater: "Later",
+    howTitle: "💛 How it works",
+    how1: "💭 Choose a feeling",
+    how2: "✍️ Pick or write a warm note",
+    how3: "💌 Share with one tap"
+  }
+};
+
+function currentLang() {
+  const l = (document.documentElement.lang || "en").toLowerCase();
+  return l.startsWith("nl") ? "nl" : "en";
+}
+function tMaybe(key){
+  if (typeof t !== 'function') return null;
+  const v = t(key);
+  return (v && v !== key) ? v : null;
+}
+// === helpers ================================================================
+function openComposer() {
+  // Gebruik je bestaande “Nieuwe boodschap”-knop
+  document.getElementById("btn-new")?.click();
+  // Fallback: focus naar inputs
+  const to = document.getElementById("to-inline");
+  if (to) {
+    to.focus({ preventScroll: false });
+    to.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+}
+function show(el){ if (el) el.hidden = false; }
+function hide(el){ if (el) el.hidden = true; }
+function hasNoteOnScreen() {
+  const msg = document.getElementById("message");
+  return !!(msg && (msg.textContent || "").trim().length > 0);
+}
+
+// === 1) Context boven de note ===============================================
+(function initContextBar(){
+  const l = AWN_I18N[currentLang()];
+  const ctx = document.getElementById("note-context");
+  if (!ctx) return;
+
+  const textEl = ctx.querySelector(".ctx-text");
+  const btnEl  = ctx.querySelector("#ctx-reply-btn");
+  if (textEl) textEl.textContent = l.ctxText;
+  if (btnEl)  btnEl.textContent  = l.ctxCTA;
+
+  if (hasNoteOnScreen() && !sessionStorage.getItem("ctxSeen")) {
+    show(ctx);
+    sessionStorage.setItem("ctxSeen", "1");
+  }
+  btnEl?.addEventListener("click", openComposer);
+})();
+
+// === 2) Nudge card (push-achtig) ============================================
+(function initInviteCard(){
+  const l = AWN_I18N[currentLang()];
+  const card = document.getElementById("invite-card");
+  if (!card) return;
+
+  const tEl = card.querySelector(".invite-title");
+  const pEl = card.querySelector(".invite-text");
+  const yes = card.querySelector("#invite-yes");
+  const later = card.querySelector("#invite-later");
+  if (tEl) tEl.textContent = l.inviteTitle;
+  if (pEl) pEl.textContent = l.inviteText;
+  if (yes) yes.textContent = l.inviteYes;
+  if (later) later.textContent = l.inviteLater;
+
+  const already = sessionStorage.getItem("inviteShown") === "1";
+  const audit   = /[?&]audit=1\b/.test(location.search);
+  if (hasNoteOnScreen() && !already && !audit) {
+    setTimeout(() => {
+      show(card);
+      requestAnimationFrame(() => card.classList.add("show"));
+    }, 3500);
+  }
+
+  yes?.addEventListener("click", () => {
+    sessionStorage.setItem("inviteShown", "1");
+    hide(card);
+    openComposer();
+  });
+  later?.addEventListener("click", () => {
+    sessionStorage.setItem("inviteShown", "1");
+    hide(card);
+  });
+})();
+
+// === 3) 3-stappen blok teksten dynamisch ====================================
+(function i18nHowTo(){
+  const l = AWN_I18N[currentLang()];
+  const sec = document.querySelector(".howto");
+  if (!sec) return;
+
+  // <h2> titel
+  const h2 = sec.querySelector("h2");
+  if (h2) h2.textContent = l.howTitle;
+
+  // De drie <li>'s (of maak ze aan als ze ontbreken)
+  let items = sec.querySelectorAll("ol > li");
+  if (items.length < 3) {
+    const ol = sec.querySelector("ol") || sec.appendChild(document.createElement("ol"));
+    ol.innerHTML = "";
+    for (let i=0; i<3; i++) ol.appendChild(document.createElement("li"));
+    items = sec.querySelectorAll("ol > li");
+  }
+  items[0].textContent = l.how1;
+  items[1].textContent = l.how2;
+  items[2].textContent = l.how3;
+})();
 /* ========================================================================
    DEBUG HARNESS — NIET PRODUCTIE, HELPT ZIEN WAT ER WEL/NIET TRIGGERT
    - activeer via ?debug=1

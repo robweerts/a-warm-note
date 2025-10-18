@@ -54,10 +54,11 @@
       <button id="btn-new" class="btn btn-ico" type="button" aria-label="Nieuwe boodschap">
         <span class="btn-label">Nieuwe boodschap</span>
       </button>
-
-      <!-- AI in same window (compact in topbar, i18n op de label-span) -->
-      <button id="btn-ai" data-action="ai">
-		<span class="btn-label" data-i18n-key="ai.button">AI-bericht</span>
+	  
+	  <!-- AI Button -->
+	  <button id="smart-compose" class="btn btn--ai" type="button" aria-haspopup="dialog" aria-controls="ai-backdrop">
+  		<span class="btn-ico" aria-hidden="true">✨</span>
+  		<span class="btn-label">AI</span>
 	  </button>
 
       <!-- Verstuur -->
@@ -68,24 +69,21 @@
         <span class="btn-label">Verstuur</span>
       </button>
 
-      <!-- Language dropdown -->
-      <div id="lang-dd" class="lang-dd">
-        <button id="lang-dd-btn" class="lang-btn btn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Language">
-          <span class="flag" aria-hidden="true">🇳🇱</span>
-          <span class="code">NL</span>
-        </button>
-        <div id="lang-dd-menu" class="lang-menu" role="menu" hidden>
-          <button class="lang-item" role="menuitemradio" aria-checked="false" data-lang="en">
-            <span class="flag" aria-hidden="true">🇬🇧</span>
-            <span class="label">English</span>
-          </button>
-          <button class="lang-item" role="menuitemradio" aria-checked="false" data-lang="nl">
-            <span class="flag" aria-hidden="true">🇳🇱</span>
-            <span class="label">Nederlands</span>
-          </button>
-        </div>
-      </div>
-
+		<!-- Language switcher (tekst-only) -->
+  <div class="lang-switch" id="lang-switch">
+  	<button id="lang-btn" class="btn lang-btn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Change language">
+    	<span class="lang-ico" aria-hidden="true">🌐</span>
+    	<span class="lang-cur" id="lang-cur">EN</span>
+  	</button>
+  <div id="lang-menu" class="lang-menu" role="menu" hidden>
+    <!-- tekst-only items; geen vlaggen -->
+    <button class="lang-item" role="menuitemradio" aria-checked="false" data-lang="en">English</button>
+    <button class="lang-item" role="menuitemradio" aria-checked="false" data-lang="nl">Nederlands</button>
+  </div>
+  	<noscript>
+    	<a href="/en/">English</a> · <a href="/nl/">Nederlands</a>
+  	</noscript>
+	</div>
       <button data-action="expand-note" id="btn-expand" class="btn" type="button" aria-label="Vergroot">⤢</button>
     </nav>
   </header>
@@ -244,9 +242,9 @@
       <div class="sheet-body">
         <p class="msgr-notice">Link van jouw persoonlijke bericht is gekopieerd. 📋</p>
         <ol class="msgr-steps">
-          <li>Kies een contact in Messenger.</li>
-          <li>Plak de link in het berichtveld.</li>
-          <li>Verstuur je 'warm note'. 💛</li>
+          <li>1️⃣ Kies een contact in Messenger.</li>
+          <li>2️⃣ Plak de link in het berichtveld.</li>
+          <li>3️⃣ Verstuur je 'warm note'. 💛</li>
         </ol>
 
         <div class="sheet-actions">
@@ -309,7 +307,7 @@
     </section>
   </div>
 
-<!-- =================== AI COMPOSE SHEET =================== -->
+<!-- AI COMPOSE SHEET -->
 <div id="ai-backdrop" class="sheet-backdrop hidden" aria-hidden="true">
   <section class="sheet sheet--ai" role="dialog" aria-modal="true" aria-labelledby="ai-title">
     <header class="sheet-header">
@@ -320,39 +318,19 @@
 
     <div class="sheet-body">
       <div class="form-grid">
-        <!-- 1) Sentiment / Toon -->
         <label class="form-label" for="ai-tone" data-i18n="ai.sheet.tone">Toon</label>
-        <select id="ai-tone" class="form-field">
-          <option value="warm">💛 Warm</option>
-          <option value="funny">😄 Grappig</option>
-          <option value="supportive">🤍 Steunend</option>
-          <option value="proud">🌟 Trots</option>
-          <option value="romantic">❤️ Romantisch</option>
-        </select>
+        <select id="ai-tone" class="form-field"></select>
 
-        <!-- 2) Aanleiding / Occasion -->
         <label class="form-label" for="ai-occasion" data-i18n="ai.sheet.occasion">Aanleiding</label>
-        <select id="ai-occasion" class="form-field">
-          <option value="">—</option>
-          <option value="just_because">Zomaar</option>
-          <option value="thank_you">Bedankt</option>
-          <option value="miss_you">Ik mis je</option>
-          <option value="good_luck">Succes</option>
-          <option value="get_well">Beterschap</option>
-          <option value="congrats">Gefeliciteerd</option>
-        </select>
+        <select id="ai-occasion" class="form-field"></select>
 
-        <!-- 3) Context (kort) -->
-        <label class="form-label" for="ai-context" data-i18n="ai.sheet.context">Context (optioneel, max 120 tekens)</label>
+        <label class="form-label" for="ai-context" data-i18n="ai.sheet.context">Context…</label>
         <textarea id="ai-context" class="form-field" rows="3" maxlength="120"
+          data-i18n-ph="ai.sheet.contextPlaceholder"
           placeholder="Bijv.: sollicitatie vandaag, of lange dag gehad…"></textarea>
 
-        <!-- 4) Lengte/striktheid (optioneel) -->
         <label class="form-label" for="ai-length" data-i18n="ai.sheet.length">Lengte</label>
-        <select id="ai-length" class="form-field">
-          <option value="short" selected>Kort (aanrader)</option>
-          <option value="medium">Iets langer</option>
-        </select>
+        <select id="ai-length" class="form-field"></select>
       </div>
     </div>
 
@@ -361,14 +339,23 @@
     </footer>
   </section>
 </div>
+
   <!-- =================== SPLASH OVERLAY =================== -->
   <div id="splash-note-overlay" aria-hidden="true">
     <div class="splash-note-wrap splash-enter" id="splashNoteWrap"></div>
   </div>
 
-  <!-- =================== PERSISTENTE ABOUT FAB =================== -->
+  <!-- =================== PERSISTENTE ABOUT FAB =================== 
   <button id="about-fab-fixed" class="btn about-fab" type="button" aria-label="Over deze App" title="Over deze App">ℹ︎</button>
-
+  -->
+<!-- Leo FAB (neemt plek van About-FAB over) -->
+<div id="leo-fab" class="leo-fab" role="button" tabindex="0" aria-label="Coach">
+  <div class="leo-fab__ava" style="background-image:url('/assets/leo/leo-placeholder.jpg')"></div>
+  <div class="leo-fab__bubble" id="leo-fab-bubble" hidden>
+    <p id="leo-fab-text"></p>
+    <span class="leo-fab__tail" aria-hidden="true"></span>
+  </div>
+</div>
   <!-- =================== DIVERSE LAYERS =================== -->
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
   <div id="confetti-layer" class="vh" aria-live="polite">Viering: berichtje verstuurd.</div>
