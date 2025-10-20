@@ -428,6 +428,45 @@ button.btn .icon svg { width: 100% !important; height: 100% !important; }
   padding:10px 14px; border-radius:12px; background:rgba(0,0,0,.72); color:#fff; text-align:center; font-size:14px;
   backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); box-shadow:0 6px 18px rgba(0,0,0,.25)
 }
+/* Toast: always on top, bottom-center, subtle fade */
+#toast {
+  position: fixed;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%) translateY(6px);
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: .95rem;
+  line-height: 1.2;
+  background: var(--toast-bg, rgba(20,20,20,.92));
+  color: var(--toast-fg, #fff);
+  box-shadow: 0 6px 24px rgba(0,0,0,.25);
+  z-index: 99999;                 /* hoger dan sheets/backdrops */
+  opacity: 0;
+  pointer-events: none;           /* nooit focus/scroll blokkeren */
+  transition: opacity .18s ease, transform .18s ease;
+}
+#toast:not(.hidden) {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+#toast{
+  position:fixed; left:50%; bottom:16px; transform:translateX(-50%) translateY(6px);
+  padding:10px 14px; border-radius:10px; font-weight:600; font-size:.95rem; line-height:1.2;
+  background:rgba(20,20,20,.92); color:#fff; box-shadow:0 6px 24px rgba(0,0,0,.25);
+  z-index:99999; opacity:0; pointer-events:none;
+  transition:opacity .18s ease, transform .18s ease;
+}
+#toast:not(.hidden){ opacity:1; transform:translateX(-50%) translateY(0); }
+/* dark/light vriendelijk */
+@media (prefers-color-scheme: light) {
+  #toast { --toast-bg: rgba(0,0,0,.9); --toast-fg:#fff; }
+}
+@media (prefers-color-scheme: dark) {
+  #toast { --toast-bg: rgba(255,255,255,.08); --toast-fg:#fff; }
+}
 @keyframes confetti{0%{transform:translateY(-20vh) rotate(0); opacity:0}10%{opacity:1}100%{transform:translateY(100vh) rotate(720deg); opacity:0}}
 .confetti{position:fixed; top:-20vh; left:0; width:8px; height:12px; z-index:1400; pointer-events:none; animation:confetti 1.2s linear forwards}
 
@@ -797,7 +836,38 @@ button[data-action="expand-note"].is-hot::after{
 .splash-overlay.is-live [data-compose]{
   display: none !important;
 }
+/* Compacte, nette breedte voor To/From (desktop) */
+:root {
+  --compose-max: 420px;  /* draai hieraan voor smaller/breder */
+}
 
+/* Vang zowel jouw ids als eventuele name-attributen op */
+input#to-inline,
+input#from-inline,
+input[name="to"],
+input[name="from"] {
+  display: block;
+  width: min(100%, var(--compose-max));
+  max-width: var(--compose-max);
+  margin-inline: auto;          /* center op desktop */
+}
+
+/* Zorg dat het geheel niet buiten sheets “lekt” op brede schermen */
+@media (min-width: 900px) {
+  .compose-wrap,
+  .compose,
+  .compose-section {
+    max-width: calc(var(--compose-max) + 32px); /* ruimte voor padding */
+    margin-inline: auto;
+  }
+}
+
+/* Optioneel: optische balans met de Generate-knop */
+#ai-generate {
+  max-width: var(--compose-max);
+  width: min(100%, var(--compose-max));
+  margin-inline: auto;
+}
 /* Zorg dat body & icon in splash altijd zichtbaar zijn en niet animeren */
 .splash-overlay .note #message,
 .splash-overlay .note .message,
@@ -1733,3 +1803,36 @@ html[lang="en"] .seo-snippet--nl { display: none; }
 
 /* Extra: iets kleinere tekst in bubble in dark (kan optisch groot ogen) */
 :root.dark .leo-fab__bubble { font-size: .8rem; }
+/* Leo bubble: zachte fade + lift-in */
+#leo-fab-bubble {
+  opacity: 0;
+  transform: translateY(6px) scale(0.98);
+  transition:
+    opacity .22s ease-out,
+    transform .28s cubic-bezier(.2,.8,.2,1);
+  will-change: opacity, transform;
+  pointer-events: none;         /* niet klikbaar zolang onzichtbaar */
+  filter: drop-shadow(0 6px 14px rgba(0,0,0,.15));
+  z-index: 60;                  /* boven content, onder sheets */
+}
+
+#leo-fab-bubble.show {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;         /* pas klikbaar zodra zichtbaar */
+}
+
+/* (Optioneel) lichte fade-out finesse */
+#leo-fab-bubble:not(.show) {
+  transition:
+    opacity .18s ease-in,
+    transform .20s ease-in;
+}
+
+/* Respecteer ‘reduce motion’ */
+@media (prefers-reduced-motion: reduce) {
+  #leo-fab-bubble {
+    transition: none !important;
+    transform: none !important;
+  }
+}

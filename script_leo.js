@@ -30,7 +30,7 @@ const CONFETTI_ENABLED   = true;
 const IS_FILE            = (location.protocol === "file:");
 const RECENT_LIMIT       = 5;
 const PAPER_COLORS       = ["#FFE66D","#FFD3B6","#C5FAD5","#CDE7FF","#FFECB3","#E1F5FE"];
-const MOTION = (getAppURL().searchParams.get('motion') || 'subtle').toLowerCase(); // 'subtle' | 'normal'
+const MOTION = (new URLSearchParams(location.search).get('motion') || 'subtle').toLowerCase(); // 'subtle' | 'normal'
 const DEFAULT_LANG = 'nl';
 // html[lang] zetten ná resolveLang()
 
@@ -42,7 +42,7 @@ function resolveLang() {
     if (m) return m[1].toLowerCase();
 
     // 2) queryparam
-    const urlLang = getAppURL().searchParams.get('lang');
+    const urlLang = new URL(location.href).searchParams.get('lang');
     if (urlLang) return urlLang.trim().toLowerCase();
 
     // 3) localStorage
@@ -109,7 +109,7 @@ function stripLangParam(url) {
 }
 
 function getMid() {
-  try { return getAppURL().searchParams.get('mid'); }
+  try { return new URL(location.href).searchParams.get('mid'); }
   catch { return null; }
 }
 
@@ -128,20 +128,6 @@ async function renderRoute() {
   }
 }
 
-function getAppURL(){
-  // Pak de virtuele URL als die bestaat
-  const u = window.__AWN_INBOUND_URL__;
-
-  // Gebruik duck-typing i.p.v. `instanceof URL` (voorkomt Symbol.hasInstance gedoe)
-  if (u && typeof u === 'object' && typeof u.searchParams === 'object' && typeof u.toString === 'function') {
-    return u;
-  }
-
-  // ⚠️ BELANGRIJK: hier absoluut GEEN getAppURL() aanroepen (geen recursie)!
-  // Zet dit expliciet terug naar de native constructor:
-  return new URL(window.location.href);
-}
-
 function goToLang(targetLang) {
   const lang = (targetLang || 'nl').toLowerCase();
   const base = lang === 'en' ? '/en/' : '/nl/';
@@ -153,7 +139,7 @@ function goToLang(targetLang) {
 
 // Optioneel: als er al ?lang= staat, haal 'm stil uit de URL
 (function cleanLangParamInPlace(){
-  const u = getAppURL();
+  const u = new URL(location.href);
   if (u.searchParams.has('lang')) {
     u.searchParams.delete('lang');
     history.replaceState(null, '', u.toString());
@@ -170,7 +156,7 @@ function messagesPathFor(lang) {
 const THEME = { NONE:'none', VALENTINE:'valentine', NEWYEAR:'newyear', EASTER:'easter' };
 
 function getActiveTheme(now = new Date()){
-  const qp = getAppURL().searchParams;
+  const qp = new URLSearchParams(location.search);
   const t = (qp.get('theme')||'').toLowerCase();
   if (t === 'valentine') return THEME.VALENTINE;
   if (t === 'newyear')   return THEME.NEWYEAR;
@@ -370,7 +356,7 @@ const STATE = {
 };
 
 function applyInboundToken(){
-  const url = getAppURL();
+  const url = new URL(location.href);
   const tok = url.searchParams.get('t');
   if (!tok) return;
 
@@ -454,152 +440,132 @@ function refreshAISheetStrings(){
 
 /* [D] === INIT (lifecycle) ================================================== */
 
-// --- SCHONE INIT ------------------------------------------------------------
 function init() {
-  try { applyInboundToken?.(); } catch {}
-  try { setThemePref?.('auto'); } catch {}
-
+  applyInboundToken();
+  setThemePref('auto')
   // 1) Taal & basis
   STATE.lang = resolveLang();
   document.documentElement.setAttribute('lang', STATE.lang);
-
-  recacheEls?.();
-  wireGlobalUI?.();
-  refreshAISheetStrings?.();
-  bindAISheetGlue?.();
+  recacheEls();
+  wireGlobalUI();
+  bindAISheetGlue();  
+  if (typeof wireLanguagePicker === 'function') wireLanguagePicker();
   wireLangDropdown?.();
-  renderLangDropdownUI?.();
-  try { if (window.AWN_AI?.init) AWN_AI.init(); } catch {}
-  bindArrowPreviewBridge?.();
+  renderLangDropdownUI?.(); 
 
+  bindArrowPreviewBridge();
+  
   // 2) Strings → Messages
   ensureStringsLoaded()
     .then(() => {
+      if (typeof refreshUIStrings === 'function') 
       recacheEls?.();
-      refreshUIStrings?.();
+      refreshUIStrings();
+      refreshAISheetStrings();
       return loadMessages();
-    })
-    .then(() => {
-      // 3) Inputs netjes maken
-      autoCapitalizeInput?.(els.toInput);
-      autoCapitalizeInput?.(els.fromInput);
+  	})
+	.then(() => {
+  // 3) Inputs netjes maken
+    autoCapitalizeInput(els.toInput);
+    autoCapitalizeInput(els.fromInput);
 
-      // 4) URL-params (ALTIJD via getAppURL)
-      const qp        = getAppURL().searchParams;
-      const toVal     = qp.get('to');
-      const fromVal   = qp.get('from');
-      const sharedMid = qp.get('mid');
-      const sharedId  = qp.get('id');
-      const aitxt     = qp.get('aitxt');   // AI payload (tekst)
-      const aii       = qp.get('aii');     // AI payload (icon)
-      const isReceivedByMid = !!sharedMid;
+  // 4) URL-params
+    const qp = new URLSearchParams(location.search);
+    const toVal     = qp.get('to');
+    const fromVal   = qp.get('from');
+    const sharedMid = qp.get('mid');
+    const sharedId  = qp.get('id');
+    const lang  = currentLang();
+	const hasMid = new URL(location.href).searchParams.has('mid');
+      
+    // Bewaar ontvangen namen, maar vul géén inputs in bij mid
+	STATE.shared = STATE.shared || { to: '', from: '' };
+	STATE.shared.to   = toVal;
+	STATE.shared.from = fromVal;  
+	const isReceivedByMid = !!sharedMid;
+	STATE.useSharedNames = isReceivedByMid; 
 
-      // Deelbare namen bewaren, maar bij ontvangen (mid) niet invullen
-      STATE.shared = STATE.shared || { to: '', from: '' };
-      STATE.shared.to   = toVal || '';
-      STATE.shared.from = fromVal || '';
-      STATE.useSharedNames = isReceivedByMid;
+	if (isReceivedByMid) {
+  	if (els.toInput) {
+    	els.toInput.value = '';
+    	els.toInput.placeholder = (typeof i18n === 'function' ? i18n('to_placeholder')
+      	  : 'Voor wie is je bericht?');
+  	}
+  	if (els.fromInput) {
+    	els.fromInput.value = '';
+  	}
+	} else {
+  	if (toVal && els.toInput)     els.toInput.value   = toVal;
+  	if (fromVal && els.fromInput) els.fromInput.value = fromVal;
+	}
 
-      if (isReceivedByMid) {
-        if (els.toInput) {
-          els.toInput.value = '';
-          els.toInput.placeholder = (typeof t === 'function' ? t('compose.toPlaceholder') : 'Voor wie is je bericht?');
-        }
-        if (els.fromInput) { els.fromInput.value = ''; }
-      } else {
-        if (toVal && els.toInput)     els.toInput.value   = toVal;
-        if (fromVal && els.fromInput) els.fromInput.value = fromVal;
-      }
+  // 5) Welkom eerst laten beslissen
+    const didShowWelcome = showWelcomeNote(els);
 
-      // 5) Welkom eerst laten beslissen (showWelcomeNote blokkeert zelf bij mid)
-      const didShowWelcome = showWelcomeNote?.(els);
+  // 6) Daarna pas chips bouwen (die intern vertraagd een render triggert)
+    buildSentimentChips();
 
-      // 6) Chips bouwen (triggert interne render-delay)
-      buildSentimentChips?.();
+  // 7) Als we welcome toonden: 120ms later nogmaals forceren (chips render overruled)
+    if (didShowWelcome) {
+    	setTimeout(() => {
+        	showWelcomeNote(els);   // zet welcome-tekst + styling opnieuw
+        }, 90);                  	// > 90ms (interne renderMessage-delay)
+        return;                   	// géén directe message-render in scenario 1
+    }
 
-      // 7) Als welcome toonde, heel kort later nogmaals forceren en STOP
-      if (didShowWelcome) {
-        setTimeout(() => { try { showWelcomeNote?.(els); } catch {} }, 90);
-        // geen directe message-render in dit scenario
-        // Coach-status bijwerken
-        if (isReceivedByMid) {
-          if (!STATE._coachReceivedOnce) {
-            updateCoach?.('received', {}, { hold: 0, force: true });
-            STATE._coachReceivedOnce = true;
-          }
-        } else {
-          updateCoach?.('init', {}, { hold: 0, force: true });
-        }
-        return;
-      }
-
-      // 8) DATA READY → eerst AI uit sessie bijmengen (zodat mid=ai_… gevonden kan worden)
-      mergeStoredAIMessagesIntoState();
-
-      // 9) Route via mid/id (met reconstructie uit aitxt/aii vóór welcome)
-      let msgIdx = null;
-
-      if (sharedMid) {
-        // 9a. zoeken in dataset
-        msgIdx = STATE.allMessages.findIndex(m => m && m.id === sharedMid);
-
-        // 9b. niet gevonden → reconstructie uit URL-payload (device-onafhankelijk)
-        if ((msgIdx == null || msgIdx < 0) && aitxt) {
-          const text = fromB64Url(aitxt);
-          const icon = aii ? fromB64Url(aii) : '✨';
-          if (text) {
-            const m = { id: sharedMid, text, icon, sentiments: [], special_day: null, weight: 1 };
-            STATE.allMessages = Array.isArray(STATE.allMessages) ? STATE.allMessages : [];
-            STATE.allMessages.unshift(m);
-            msgIdx = 0;
-          }
-        }
-
-      } else if (sharedId) {
+  // 8) Geen welcome → direct renderen via mid/id of anders random
+    let msgIdx = null;
+    if (sharedMid) {
+    	msgIdx = STATE.allMessages.findIndex(m => m.id === sharedMid);
+    } else if (sharedId) {
         const n = Number(sharedId);
         if (!Number.isNaN(n)) msgIdx = n;
-      }
-
-      // 9c. Nog steeds niet? → Welcome en STOP (alleen als er echt een mid was)
-      if (sharedMid && (msgIdx == null || msgIdx < 0 || msgIdx >= STATE.allMessages.length)) {
-        showWelcomeNote?.(els, { force: true });
-        updateCoach?.('init', {}, { hold: 0, force: true });
-        return;
-      }
-
-      // 10) Renderen
-      if (msgIdx != null && msgIdx >= 0 && msgIdx < STATE.allMessages.length) {
-        renderMessage?.({ requestedIdx: msgIdx, wiggle: false });
-        if (sharedMid) {
-          setTimeout(() => { try { openNoteSplashSimple?.({ holdMs: 4800, force: false }); } catch {} }, 140);
-        }
-      } else {
-        // Geen route-params → normale eerste render
-        renderMessage?.({ newRandom: true, wiggle: false });
-      }
-
-      // 11) Coach-status bijwerken
-      if (isReceivedByMid) {
-        if (!STATE._coachReceivedOnce) {
-          updateCoach?.('received', {}, { hold: 0, force: true });
-          STATE._coachReceivedOnce = true;
-        }
-      } else {
-        updateCoach?.('init', {}, { hold: 0, force: true });
-      }
+    }	 
+    
+    // ⬇︎ mid bestaat niet in deze taal → FORCE welcome en stop
+	if (sharedMid && (msgIdx == null || msgIdx < 0 || msgIdx >= STATE.allMessages.length)) {
+  		showWelcomeNote(els, { force: true });   // <— belangrijk
+  		updateCoach?.('init', {}, { hold: 0, force: true });
+  		return;
+	}
+	 // ... binnen init() na het bepalen van msgIdx
+	 if (msgIdx != null && msgIdx >= 0 && msgIdx < STATE.allMessages.length) {
+  	 renderMessage({ requestedIdx: msgIdx, wiggle: false });
+  	 // ⬇︎ Toon de splash uitsluitend in de ontvangen-flow
+  	 if (sharedMid) {
+  	 // open de splash heel kort ná de render, zodat de DOM/body klaar is
+	  	setTimeout(() => {
+    	openNoteSplashSimple({ holdMs: 4800, force: false });
+  		}, 140);
+	 } else {
+  	 	renderMessage({ newRandom: true, wiggle: false });
+	 }
+	}		 
+  // 9) Coach-status bijwerken (zonder timeout/hold)
+    if (isReceivedByMid) {
+    if (!STATE._coachReceivedOnce) {
+      updateCoach('received', {}, { hold: 0, force: true });
+      STATE._coachReceivedOnce = true;
+    }
+  	} else {
+    // Altijd starten met 'init' als je ZONDER mid binnenkomt
+    updateCoach('init', {}, { hold: 0, force: true });
+  	}	
     })
     .catch((e) => {
-      console.error('FOUT in init():', e);
+      console.error("FOUT in init():", e);
     });
 
-  // 12) Compose auto-localizer (zoals je had)
-  if (typeof installComposeAutoLocalizer === 'function') {
-    try { installComposeAutoLocalizer(); } catch {}
-  }
+  // 10) Compose auto-localizer (zoals je had)
+  	if (typeof installComposeAutoLocalizer === 'function') {
+    	installComposeAutoLocalizer();
+  	}
 }
 
-// Starten zodra DOM klaar is (laatste regel onderin je file heb je al)
-window.addEventListener("DOMContentLoaded", init);
+// Start pas wanneer DOM klaar is
+	window.addEventListener("DOMContentLoaded", init);
+	
+
 /* === PWA INSTALL BUTTON ================================================== */
 let __deferredPrompt = null;
 window.addEventListener('beforeinstallprompt', (e)=>{
@@ -790,39 +756,31 @@ function buildSentimentChips(){
   const row = els.chipRow;
   if (!row) return;
   row.innerHTML = "";
-
   const isEn = (STATE?.lang === 'en');
   const hasBirthday = Array.isArray(STATE?.allMessages) &&
   STATE.allMessages.some(m => Array.isArray(m.sentiments) && m.sentiments.includes('birthday'));
-
 if (hasBirthday) {
   row.appendChild(
     makeChip('birthday', isEn ? 'Birthday 🎂' : 'Verjaardag 🎂')
   );
 }
   // --- Leo: korte coach bij eerste chip-klik (3x per sessie) ---------------
-  // --- Leo CTA: chip-klik → CTA (1x per sessie, debug-bypass) -------------
   try {
-    const SESSION_KEY = 'awn_cta_chip_once';
-    const isDebug = getAppURL().searchParams.get('debug_leo') === '1' || window.AWN_FLAGS?.debugLeo;
-
-    const handler = (e) => {
-      const chip = e.target?.closest?.('.chip');
-      if (!chip) return;
-
-      if (!window.LeoCTA) return;                 // safety
-      if (!isDebug && sessionStorage.getItem(SESSION_KEY) === '1') return;
-
-      // laat de CTA-engine praten
-      window.LeoCTA.fire('chip');
-
-      if (!isDebug) sessionStorage.setItem(SESSION_KEY, '1');
-      // ontkoppelen na 1x (in debug laten we 'm zitten)
-      if (!isDebug) try { row.removeEventListener('click', handler, true); } catch {}
-    };
-
-    // capture=true voorkomt botsen met bestaande onclicks op .chip
-    row.addEventListener('click', handler, true);
+    if (sessionStorage.getItem('awn_chip_nudge_shown') !== '3') {
+      const onChipNudge = (e) => {
+        const chip = e.target && e.target.closest && e.target.closest('.chip');
+        if (!chip) return; // klik was geen chip
+        const txt = isEn
+          ? "Nice choice 💛 See what message fits your mood!"
+          : "Mooie keuze 💛 Kijk welk bericht erbij past!";
+        window.LeoFab?.say?.(txt);
+        // markeer & ontkoppel, we willen 'm maar 1x per sessie tonen
+        sessionStorage.setItem('awn_chip_nudge_shown', '1');
+        try { row.removeEventListener('click', onChipNudge, true); } catch {}
+      };
+      // capture=true zodat we niet botsen met bestaande onclick op de chip
+      row.addEventListener('click', onChipNudge, true);
+    }
   } catch {}
 
   const activeTheme = getActiveTheme();
@@ -1179,20 +1137,6 @@ function renderMessage({ newRandom = false, requestedIdx = null, wiggle = false,
   }
 }
 
-// --- sessie-AI merge (éénmalig, buiten init zodat we het ook elders kunnen hergebruiken) ---
-function mergeStoredAIMessagesIntoState(){
-  try {
-    const key   = 'awn_ai_msgs';
-    const store = JSON.parse(sessionStorage.getItem(key) || '[]');
-    if (!Array.isArray(store) || !store.length) return;
-    const have = new Set((STATE.allMessages || []).map(m => m && m.id));
-    const add  = store.filter(x => x && x.id && !have.has(x.id));
-    if (!add.length) return;
-    STATE.allMessages = Array.isArray(STATE.allMessages) ? STATE.allMessages : [];
-    STATE.allMessages.unshift(...add);
-  } catch {}
-}
-
 // --- Filtering op basis van jouw STATE (app-specifiek) ---
 function buildDeckFromState() {
   const all = Array.isArray(STATE.allMessages) ? STATE.allMessages : [];
@@ -1335,7 +1279,7 @@ if (nextMsg) {
 
 function showWelcomeNote(els, opts = {}) {
   const force = !!opts.force;
-  const qp = getAppURL().searchParams;
+  const qp = new URLSearchParams(location.search);
   const isReceivedByMid = qp.has('mid');
   if (isReceivedByMid && !force) return false; // alleen blokkeren als we niet forceren
 
@@ -1375,28 +1319,17 @@ function showWelcomeNote(els, opts = {}) {
   // Dubbel installeren voorkomen
   if (window.onAIGeneratedText && window.onAIGeneratedText.__awn_ai_sink) return;
 
-window.onAIGeneratedText = function onAIGeneratedText(msg){
-  try {
-    // 1) Normaliseer inkomend bericht
-    const m = {
-      id:          (msg && msg.id) || ('ai_' + Math.random().toString(36).slice(2,9)),
-      icon:        (msg && msg.icon) || '✨',
-      text:        String((msg && msg.text) || (typeof msg === 'string' ? msg : '') || ''),
-      sentiments:  Array.isArray(msg?.sentiments) ? msg.sentiments : (STATE?.activeSentiment ? [STATE.activeSentiment] : []),
-      special_day: msg?.special_day || null,
-      weight:      1
-    };
-
-    // [A] Bewaar compacte kopie in sessionStorage (max 20)
+  window.onAIGeneratedText = function onAIGeneratedText(msg){
     try {
-      const key  = 'awn_ai_msgs';
-      const cur  = JSON.parse(sessionStorage.getItem(key) || '[]');
-      const slim = { id: m.id, text: m.text, icon: m.icon, sentiments: m.sentiments || [], special_day: m.special_day ?? null };
-      const ix   = cur.findIndex(x => x && x.id === slim.id);
-      if (ix >= 0) cur[ix] = slim; else cur.unshift(slim);
-      sessionStorage.setItem(key, JSON.stringify(cur.slice(0,20)));
-    } catch {}
-
+      // 1) Normaliseer inkomend bericht
+      const m = {
+        id:          (msg && msg.id) || ('ai_' + Math.random().toString(36).slice(2,9)),
+        icon:        (msg && msg.icon) || '✨',
+        text:        String((msg && msg.text) || (typeof msg === 'string' ? msg : '') || ''),
+        sentiments:  Array.isArray(msg?.sentiments) ? msg.sentiments : (STATE?.activeSentiment ? [STATE.activeSentiment] : []),
+        special_day: msg?.special_day || null,
+        weight:      1
+      };
       if (!m.text) { console.warn('[AI SINK] leeg bericht, niets te doen.'); return; }
 
       // 2) Dataset voorbereiden
@@ -1423,68 +1356,14 @@ window.onAIGeneratedText = function onAIGeneratedText(msg){
       // 7) Bewaar voor UTM content-tagging
       STATE.lastRenderedId = m.id;
 
-      // 8) Succes: confetti / coach / events / CTA
+      // 8) Optioneel: klein confetti / toast
+      try { showToast?.( (STATE?.lang)==='en' ? 'AI note ready ✨' : 'AI-bericht klaar ✨' ); } catch {}
       try { celebrate?.(); } catch {}
-
-      // Coach + event-broadcast (success)
-      try { updateCoachTimed?.('aiDone', {}, 1600); } catch(_){}
-      try { document.dispatchEvent(new CustomEvent('ai:result', { detail: { message: m } })); } catch(_){}
-      try {
-        const s = document.getElementById('smart-compose-status');
-        if (s) s.textContent = (STATE?.lang)==='en' ? 'Ready' : 'Klaar';
-      } catch(_){}
-
-      // 🔔 Leo CTA (success)
-      try { window.LeoCTA?.fire('aiResult'); } catch(_){}
-
     } catch (e){
       console.error('[AI SINK] onAIGeneratedText error:', e);
-
-      // ❗ Error-UI herstelt "denken…"
-      try { updateCoachTimed?.('error', {}, 1600); } catch(_){}
-      try {
-        const s = document.getElementById('smart-compose-status');
-        if (s) s.textContent = (STATE?.lang)==='en' ? 'Something went wrong' : 'Er ging iets mis';
-      } catch(_){}
-
-      // 🔔 Leo CTA (error)
-      try { window.LeoCTA?.fire('aiError'); } catch(_){}
     }
   };
   window.onAIGeneratedText.__awn_ai_sink = true;
-  // === AI ↔ Coach/CTA bridge (uniform gedrag) ===============================
-(function(){
-  const setStatus = (txtNL, txtEN) => {
-    try {
-      const s = document.getElementById('smart-compose-status');
-      if (s) s.textContent = ((STATE?.lang)==='en') ? (txtEN||'') : (txtNL||'');
-    } catch(_){}
-  };
-
-  document.addEventListener('ai:started', () => {
-    try { updateCoach('aiThinking', {}, { hold: 0, force: true }); } catch(_){}
-    try { window.LeoCTA?.fire('aiStarted'); } catch(_){}
-    setStatus('Denken…', 'Thinking…');
-  });
-
-  document.addEventListener('ai:result', () => {
-    try { updateCoachTimed('aiDone', {}, 1600); } catch(_){}
-    try { window.LeoCTA?.fire('aiResult'); } catch(_){}
-    setStatus('Klaar', 'Ready');
-  });
-
-  document.addEventListener('ai:error', () => {
-    try { updateCoachTimed('error', {}, 1600); } catch(_){}
-    try { window.LeoCTA?.fire('aiError'); } catch(_){}
-    setStatus('Er ging iets mis', 'Something went wrong');
-  });
-
-  document.addEventListener('ai:cancel', () => {
-    try { updateCoach('init', {}, { hold: 0, force: true }); } catch(_){}
-    setStatus('Klaar', 'Ready');
-    try { window.LeoFab?.clear?.(); } catch(_){}
-  });
-})();
 
   // Compat: sommige paden roepen nog onUserPickedMessage(m)
   if (!window.onUserPickedMessage) {
@@ -1729,80 +1608,6 @@ function hideCoach(hide = true){
 
 // Starten na DOM ready (naast je bestaande init)
 document.addEventListener('DOMContentLoaded', installCoachOverlayBridge);
-/* [J-CTA] === LEO CTA ENGINE (centraal, met queue & boot) =================== */
-(function(){
-  // 1) Interne queue zodat fires vóór boot niet verloren gaan
-  const _queue = [];
-  let _ready = false;
-
-  // 2) Standaard handlers (kun je later overschrijven met LeoCTA.use({...}))
-  const handlers = {
-    idle(){
-      const isEN = (document.documentElement.lang||'nl').toLowerCase().startsWith('en');
-      const txt  = isEN
-        ? "Need a nudge? Try AI Compose to draft your note ✨"
-        : "Een zetje nodig? Probeer AI Compose voor een eerste versie ✨";
-      try { window.LeoFab?.say?.(txt); } catch(_){}
-    },
-    chip(){
-      const isEN = (document.documentElement.lang||'nl').toLowerCase().startsWith('en');
-      const txt  = isEN
-        ? "Nice choice 💛 See what message fits your mood!"
-        : "Mooie keuze 💛 Kijk welk bericht erbij past!";
-      try { window.LeoFab?.say?.(txt); } catch(_){}
-    },
-    aiStarted(){
-      const isEN = (document.documentElement.lang||'nl').toLowerCase().startsWith('en');
-      try { window.LeoFab?.say?.(isEN ? "Thinking… 💭" : "Even denken… 💭"); } catch(_){}
-    },
-    aiResult(){
-      const isEN = (document.documentElement.lang||'nl').toLowerCase().startsWith('en');
-      try { window.LeoFab?.say?.(isEN ? "AI draft ready ✨" : "AI-voorstel klaar ✨"); } catch(_){}
-    },
-    aiError(){
-      const isEN = (document.documentElement.lang||'nl').toLowerCase().startsWith('en');
-      try { window.LeoFab?.say?.(isEN ? "Hmm, something went wrong." : "Hmm, er ging iets mis."); } catch(_){}
-    }
-  };
-
-  function _deliver(type, payload){
-    try {
-      const fn = handlers[type];
-      if (typeof fn === 'function') fn(payload);
-    } catch(e){ console.warn('[LeoCTA] handler error', e); }
-  }
-
-  // 3) Publieke API (centraal & stabiel)
-  window.LeoCTA = {
-    fire(type, payload){
-      if (!_ready) { _queue.push([type,payload]); return; }
-      _deliver(type, payload);
-    },
-    use(map){ if (map && typeof map === 'object') Object.assign(handlers, map); },
-    _isReady(){ return _ready; }
-  };
-
-  // 4) Boot: mount Leo + flush queue + eerste bubble (welcome/received)
-  document.addEventListener('DOMContentLoaded', ()=>{
-    try { window.LeoFab?.mount?.(); } catch(_){}
-
-    _ready = true;
-    // flush events die vóór boot zijn afgevuurd
-    while(_queue.length){ const [t,p] = _queue.shift(); _deliver(t,p); }
-
-    // zachte intro-bubble, zodat engine zichtbaar actief is
-    try {
-      const isEN  = (document.documentElement.lang||'nl').toLowerCase().startsWith('en');
-      const hasMid= !!(window.getAppURL?.().searchParams.get('mid'));
-      const txt   = hasMid
-        ? (isEN ? "💛 You’ve received a warm note. Send one back?" :
-                  "💛 Je hebt een warm note ontvangen. Stuur er ook één terug?")
-        : (isEN ? "✨ Pick a feeling and try AI Compose to get started." :
-                  "✨ Kies een gevoel en probeer AI Compose om te beginnen.");
-      setTimeout(()=> { try { window.LeoFab?.say?.(txt); } catch(_){ } }, 2200);
-    } catch(_){}
-  });
-})();
 
 /* [K] === SHARE-SHEET (WA/E-mail/Download/Kopieer/Native) ============================== */
 let __lastFocusEl = null;
@@ -1936,11 +1741,8 @@ function closeMessengerHelp(){
 }
 
 function renderShareSheetPairsInline(){
-  const nameTo   = (typeof getTo   === 'function' ? getTo()   : '').trim();
-  const nameFrom = (typeof getFrom === 'function' ? getFrom() : '').trim();
-
-  if (els.pairToVal)   els.pairToVal.textContent   = nameTo   || "—";
-  if (els.pairFromVal) els.pairFromVal.textContent = nameFrom || "—";
+  els.pairToVal  && (els.pairToVal.textContent   = toLabel(getTo())     || "—");
+  els.pairFromVal&& (els.pairFromVal.textContent = fromLabel(getFrom()) || "—");
 }
 
 async function onCopyLink(){
@@ -2200,45 +2002,24 @@ async function onShareQR(){
     }
   }
 
-// 4) Download-knop (canvas → png, of img/blob → download)
-const dlOld = document.getElementById('qr-download');
-if (dlOld){
-  const dl = dlOld.cloneNode(true);
-  dlOld.replaceWith(dl);
-dl.addEventListener('click', ()=>{
-  const cv  = document.getElementById('qr-canvas');
-  const img = document.getElementById('qr-img');
-
-	// a) Canvas → PNG
-	if (cv && cv.style.display !== 'none' && typeof cv.toDataURL === 'function') {
-  	const a = document.createElement('a');
-  	a.href = cv.toDataURL('image/png');
-  	a.download = 'a-warm-note-qr.png';
-  	document.body.appendChild(a); a.click(); a.remove();
-
-  	const msg = (typeof t==='function' && t('qr.savedToast')) || ((STATE?.lang)==='en' ? 'QR saved ⬇️' : 'QR opgeslagen ⬇️');
-  	showToast?.(msg);
-  	return;
-}
-
-	// b) Fallback image/blob
-	if (img && img.src) {
-  	const a = document.createElement('a');
-  	a.href = img.src;
-  	a.download = 'a-warm-note-qr.png';
-  	document.body.appendChild(a); a.click(); a.remove();
-
-  	const msg = (typeof t==='function' && t('qr.savedToast')) || ((STATE?.lang)==='en' ? 'QR saved ⬇️' : 'QR opgeslagen ⬇️');
-  	showToast?.(msg);
-
-  	try { if (img.dataset.objUrl) { URL.revokeObjectURL(img.dataset.objUrl); delete img.dataset.objUrl; } } catch {}
-  	return;
-}
-
-    // c) Geen bron beschikbaar
-    try { showToast?.('Download niet beschikbaar'); } catch {}
-  }, { once: true });
-}
+  // 4) Download-knop (canvas → png, of open image in nieuw tab)
+  const dlOld = document.getElementById('qr-download');
+  if (dlOld){
+    const dl = dlOld.cloneNode(true);
+    dlOld.replaceWith(dl);
+    dl.addEventListener('click', ()=>{
+      const cv  = document.getElementById('qr-canvas');
+      const img = document.getElementById('qr-img');
+      if (cv && cv.style.display !== 'none' && typeof cv.toDataURL === 'function') {
+        const a = document.createElement('a');
+        a.href = cv.toDataURL('image/png');
+        a.download = 'a-warm-note-qr.png';
+        document.body.appendChild(a); a.click(); a.remove();
+      } else if (img && img.src) {
+        window.open(img.src, '_blank', 'noopener');
+      }
+    }, { once: true });
+  }
 
   // 5) Copy-knop (kopieer dezelfde short link)
   const cpOld = document.getElementById('qr-copy');
@@ -2287,7 +2068,7 @@ function afterShareSuccess(){
 
   // --- Helpers -------------------------------------------------------------
   const isEN = () => (document.documentElement.lang || 'nl').toLowerCase().startsWith('en');
-  const hasMid = () => getAppURL().searchParams.has('mid');
+  const hasMid = () => new URL(location.href).searchParams.has('mid');
 
   const anyOverlayOpen = () => {
     const ids = ['sheet-backdrop','ai-backdrop','msgr-help-backdrop','qr-backdrop','about-backdrop'];
@@ -2299,175 +2080,213 @@ function afterShareSuccess(){
     const bubbleVis = document.getElementById('leo-fab-bubble')?.classList.contains('show');
     return overlay || leoOpen || bubbleVis;
   };
-
-// --- Idle CTA (ultra light): triggert LeoCTA.fire('idle') na X sec. stilte ---
+  
+// --- Idle CTA (inactivity nudge) — met debug logging ------------------------
 function installIdleCTA({ idleMs = 20000, cooldownMs = 120000 } = {}) {
+  // Debug flag: aanzetten via window.AWN_FLAGS.debugLeo = true of ?debug_leo=1
+  const DEBUG = !!(window.AWN_FLAGS?.debugLeo ||
+                   new URL(location.href).searchParams.get('debug_leo') === '1');
+  const log = (...args) => { if (DEBUG) console.debug('[LEO idle]', ...args); };
+
   let t = null;
-  let last = 0;
+  const KEY = '__awn_idle_cta_last';
+  const now = () => Date.now();
+  const since = (k) => { try { return now() - (+sessionStorage.getItem(k) || 0); } catch { return Infinity; } };
+  const mark  = (k) => { try { sessionStorage.setItem(k, String(now())); } catch {} };
+
+  const isEn = (document.documentElement.lang || 'nl').toLowerCase().startsWith('en');
+  const ctaText = isEn
+    ? "Need a hand? ✨ Try AI Compose to draft your note."
+    : "Hulp nodig? ✨ Probeer AI Compose voor een eerste versie.";
+  const ctaReceivedText = isEn
+    ? "Send one back? 💛 Try AI Compose for a quick draft."
+    : "Ook terugsturen? 💛 Laat AI snel helpen.";
+
+  const anyOverlayOpen = () => {
+    const ids = ['sheet-backdrop','ai-backdrop','msgr-help-backdrop','qr-backdrop','about-backdrop'];
+    const overlay = ids.some(id=>{
+      const el = document.getElementById(id);
+      return el && !el.classList.contains('hidden') && el.getAttribute('aria-hidden') !== 'true';
+    });
+    const coachOpen = document.getElementById('coach-leo')?.classList.contains('show');
+    return overlay || coachOpen; // let op: bubble zelf blokkeert NIET
+  };
+  const hasMid = () => new URL(location.href).searchParams.has('mid');
+
+  const fire = () => {
+    log('fire() start', { idleMs, cooldownMs, lastSeenDelta: since(KEY) });
+
+    if (anyOverlayOpen()) {
+      log('AFGEKAPT: overlay/coaching open → her-armen');
+      return arm();                // wacht tot het vrij is
+    }
+    if (since(KEY) < cooldownMs) {
+      log('AFGEKAPT: cooldown actief → her-armen');
+      return arm();                // te snel na vorige
+    }
+
+    const txt = hasMid() ? ctaReceivedText : ctaText;
+
+    // wacht tot LeoFab mounted + bubble vrij met zachte retry via sayOnceWithRetry
+    if (!window.LeoFab?.mounted) {
+      log('LeoFab nog niet mounted → zachte retry via sayOnceWithRetry');
+    } else {
+      log('LeoFab mounted — ga praten');
+    }
+
+    try {
+      sayOnceWithRetry(txt, { setFlag:false, max:5, delay:900 });
+      // auto-dismiss om ruimte te maken voor volgende hints
+      setTimeout(()=> {
+        log('auto-dismiss bubble');
+        window.LeoFab?.clear?.();
+      }, 4200);
+
+      mark(KEY);
+      log('SUCCESS: CTA getoond, cooldown gemarkeerd');
+    } catch (e) {
+      console.warn('[LEO idle] fout tijdens say()', e);
+    } finally {
+      arm();
+    }
+  };
 
   const arm = () => {
     clearTimeout(t);
-    t = setTimeout(() => {
-      // cooldown tegen spam
-      if (Date.now() - last < cooldownMs) return arm();
-      // laat Leo het zeggen (met eigen cooldowns/styling)
-      LeoCTA.fire('idle');
-      last = Date.now();
-      arm();
-    }, idleMs);
+    t = setTimeout(fire, idleMs);
+    log('arm()', { nextInMs: idleMs });
   };
 
-  const reset = () => { clearTimeout(t); arm(); };
+  const reset = (evName) => {
+    clearTimeout(t);
+    arm();
+    log('reset door event:', evName);
+  };
 
-  // reset bij user-activiteit
+  // Reset bij relevante interacties
   ['pointerdown','keydown','wheel','touchstart','scroll','focus'].forEach(ev =>
-    window.addEventListener(ev, reset, { passive:true, capture:true })
+    window.addEventListener(ev, () => reset(ev), { passive:true, capture:true })
   );
 
-  // pauzeer bij tab naar achtergrond
+  // Pauzeer op achtergrond, hervat bij terugkeer
   document.addEventListener('visibilitychange', () => {
-    if (document.hidden) clearTimeout(t);
-    else arm();
+    if (document.hidden) {
+      clearTimeout(t);
+      log('tab → HIDDEN: timer gepauzeerd');
+    } else {
+      arm();
+      log('tab → VISIBLE: timer hervat');
+    }
   });
 
+  // Start
   arm();
+  log('installIdleCTA(): geïnstalleerd', { idleMs, cooldownMs });
+
+  // Expose eenvoudige controller (optioneel)
+  window.__AWN_IDLE_CTA__ = {
+    reset: () => { reset('manual'); },
+    stop:  () => { clearTimeout(t); log('stop()'); },
+    start: () => { arm(); log('start()'); }
+  };
 }
 
-/* ===== LEO CTA ENGINE ===================================================== */
-(function(){
-  if (window.LeoCTA) return;
 
-  // Hulpjes
-  const langIsEN = () => (document.documentElement.lang || 'nl').toLowerCase().startsWith('en');
-  const now = () => Date.now();
-  const lsGet = k => { try { return localStorage.getItem(k); } catch { return null; } };
-  const lsSet = (k,v) => { try { localStorage.setItem(k,v); } catch {} };
-  const ssGet = k => { try { return sessionStorage.getItem(k); } catch { return null; } };
-  const ssSet = (k,v) => { try { sessionStorage.setItem(k,v); } catch {} };
+/* ---- [RESCUE] AI Compose hard glue (idempotent) ------------------------- */
+function bindAISheetGlueHard(){
+  const wrap = document.getElementById('ai-backdrop');
+  const trigger = document.getElementById('smart-compose');
+  const btnGenOld = document.getElementById('ai-generate');
+  if (!wrap || !btnGenOld) return;
 
-  // Cooldown helpers
-  function seenSession(key){ return ssGet(key) === '1'; }
-  function markSession(key){ ssSet(key,'1'); }
-  function seenTTL(key, ttlMs){
-    const t = +lsGet(key) || 0; return (now() - t) < ttlMs;
-  }
-  function markTTL(key){ lsSet(key, String(now())); }
+  // Re-bind veilig: cloneNode verwijdert oude (kapotte) listeners
+  const btnGen = btnGenOld.cloneNode(true);
+  btnGenOld.replaceWith(btnGen);
 
-  // Universele spreker met zachte retry
-  function speak(txt, { autoDismissMs = 4200, maxRetry=5, retryMs=900 } = {}){
-    let left = maxRetry;
-    const step = ()=>{
-      // wacht tot LeoFab er is en geen sheet/coach zicht blokkeert (bubble zelf mag open)
-      const overlayOpen = (() => {
-        const ids = ['sheet-backdrop','ai-backdrop','msgr-help-backdrop','qr-backdrop','about-backdrop'];
-        const coachOpen = document.getElementById('coach-leo')?.classList.contains('show');
-        return ids.some(id=>{ const el = document.getElementById(id); return el && !el.classList.contains('hidden') && el.getAttribute('aria-hidden')!=='true'; }) || coachOpen;
-      })();
-      if (!window.LeoFab?.mounted || overlayOpen) {
-        if (left-- > 0) return setTimeout(step, retryMs);
-        return;
-      }
-      window.LeoFab?.say?.(txt);
-      if (autoDismissMs > 0) setTimeout(()=> window.LeoFab?.clear?.(), autoDismissMs);
-    };
-    step();
-  }
+  const open  = ()=>{ wrap.classList.remove('hidden'); wrap.setAttribute('aria-hidden','false'); };
+  const close = ()=>{ wrap.classList.add('hidden');    wrap.setAttribute('aria-hidden','true');  };
 
-  // **CONFIG** — voeg gerust meer keys toe
-  const CTA = {
-    idle: {
-      text: {
-        en: "Need a hand? ✨ Try AI Compose to draft your note.",
-        nl: "Hulp nodig? ✨ Probeer AI Compose voor een eerste versie."
-      },
-      cooldown: { type: 'session' }           // 1× per sessie
-    },
-    chip: {
-      text: {
-        en: "Nice choice 💛 See what fits your mood!",
-        nl: "Mooie keuze 💛 Kijk wat erbij past!"
-      },
-      cooldown: { type: 'session' }           // 1× per sessie
-    },
-    aiStarted: {
-      text: {
-        en: "Thinking… 💭",
-        nl: "Even denken… 💭"
-      },
-      cooldown: { type: 'none' },             // mag vaker
-      autoDismissMs: 0                        // niet auto-hide (engine die start)
-    },
-    aiResult: {
-      text: {
-        en: "AI note ready ✨",
-        nl: "AI-bericht klaar ✨"
-      },
-      cooldown: { type: 'ttl', ms: 15_000 },  // max 1× per 15s
-      autoDismissMs: 3000
-    },
-    aiError: {
-      text: {
-        en: "Something went wrong — try again later.",
-        nl: "Er ging iets mis — probeer het later nog eens."
-      },
-      cooldown: { type: 'ttl', ms: 15_000 },
-      autoDismissMs: 3200
-    },
-    postSend: {
-      text: {
-        en: "Shared 💛 Want to make another one?",
-        nl: "Gedeeld 💛 Nog eentje maken?"
-      },
-      cooldown: { type: 'ttl', ms: 30_000 },
-      autoDismissMs: 3600
-    },
-    returning: {
-      text: {
-        en: "Welcome back 💛 Who could use a smile today?",
-        nl: "Welkom terug 💛 Wie wil je vandaag laten glimlachen?"
-      },
-      cooldown: { type: 'ttl', ms: 24*60*60*1000 }, // 1× per dag
-      autoDismissMs: 3800
+  trigger?.addEventListener('click', (e)=>{ e.preventDefault(); open(); });
+  document.getElementById('ai-close')?.addEventListener('click', (e)=>{ e.preventDefault(); close(); });
+  wrap.addEventListener('click', (e)=>{ if (e.target === wrap) close(); }); // klik op backdrop sluit
+
+  btnGen.addEventListener('click', async ()=>{
+    try{
+      // lifecycle start
+      document.dispatchEvent(new CustomEvent('ai:started'));
+      window.updateCoachTimed?.('aiThinking', {}, 1600);
+
+      btnGen.disabled = true;
+      btnGen.setAttribute('aria-busy', 'true');
+
+      // Lees formwaarden robuust
+      const lang = (document.documentElement.lang||'nl').toLowerCase().startsWith('en') ? 'en' : 'nl';
+      const tone = document.getElementById('ai-tone')?.value || STATE?.activeSentiment || 'warm';
+      const occ  = document.getElementById('ai-occasion')?.value || '';
+      const ctx  = document.getElementById('ai-context')?.value || '';
+      const len  = document.getElementById('ai-length')?.value || 'short';
+
+      const payload = {
+        lang,
+        sentiments: [tone].filter(Boolean),
+        to:   (typeof getTo==='function'   ? getTo()   : '') || '',
+        from: (typeof getFrom==='function' ? getFrom() : '') || '',
+        special_day: occ || null,
+        context: ctx,
+        length: len
+      };
+
+      // 🔌 API-call
+      const res = await fetch('/api/generate-message', {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error('HTTP_'+res.status);
+      const json = await res.json();
+
+      // Normaliseer respons
+      const msgIn = json?.message || json;
+      const text  = msgIn?.text || msgIn?.message || msgIn?.content;
+      if (!text) throw new Error('EMPTY_PAYLOAD');
+
+      const out = {
+        id: msgIn?.id,
+        icon: '✨',
+        text,
+        sentiments: msgIn?.sentiments || payload.sentiments,
+        special_day: msgIn?.special_day || payload.special_day || null
+      };
+
+      // Zet in app (centrale sink als aanwezig)
+      if (typeof window.onAIGeneratedText === 'function') window.onAIGeneratedText(out);
+
+      // lifecycle success
+      document.dispatchEvent(new CustomEvent('ai:result', { detail: out }));
+
+      // UI: sheet dicht
+      close();
+    } catch (e){
+      console.error('[AI] generate failed', e);
+      document.dispatchEvent(new CustomEvent('ai:error', { detail: { error: String(e) } }));
+      showToastI18n?.('ai.error','AI niet beschikbaar — probeer later opnieuw');
+    } finally {
+      btnGen.disabled = false;
+      btnGen.removeAttribute('aria-busy');
     }
+  });
+}
+
+// Start & rebind na taalwissel
+document.addEventListener('DOMContentLoaded', bindAISheetGlueHard);
+if (typeof window.setLanguage === 'function') {
+  const _setLanguage = window.setLanguage;
+  window.setLanguage = async function(next){
+    const r = await _setLanguage.apply(this, arguments);
+    try { bindAISheetGlueHard(); } catch{}
+    return r;
   };
-
-  // Engine
-  const LeoCTA = {
-    fire(key, opts = {}){
-      const def = CTA[key];
-      if (!def) return;
-      const isEN = langIsEN();
-      const txt = (isEN ? def.text.en : def.text.nl) || '';
-      if (!txt) return;
-
-      // Cooldown gating
-      const baseKey = `awn_cta_${key}`;
-      const cd = def.cooldown || { type:'none' };
-      if (cd.type === 'session') {
-        if (seenSession(baseKey)) return;
-        speak(txt, { autoDismissMs: def.autoDismissMs, ...(opts||{}) });
-        markSession(baseKey);
-        return;
-      }
-      if (cd.type === 'ttl') {
-        const ttl = Math.max(0, cd.ms|0);
-        if (seenTTL(baseKey, ttl)) return;
-        speak(txt, { autoDismissMs: def.autoDismissMs, ...(opts||{}) });
-        markTTL(baseKey);
-        return;
-      }
-      // none
-      speak(txt, { autoDismissMs: def.autoDismissMs, ...(opts||{}) });
-    },
-
-    // Optioneel: runtime config uitbreiden/overschrijven
-    extend(partial){
-      Object.assign(CTA, partial || {});
-    }
-  };
-
-  window.LeoCTA = LeoCTA;
-})();
+}
   // Vind compose inputs (robust)
   function getInputs(){
     const toEl   = (window.els && els.toInput)   || document.getElementById('to-inline')   || document.querySelector('#to,[name="to"]');
@@ -2543,7 +2362,6 @@ function sayOnceWithRetry(text, { setFlag=false, max=RETRIES, delay=RETRY_MS } =
   };
   step();
 }
-
   // --- Campaign: AI Compose nudge ------------------------------------------
   function scheduleAINudge(){
     if (hasMid()) return; // niet in received-flow
@@ -2582,7 +2400,6 @@ function sayOnceWithRetry(text, { setFlag=false, max=RETRIES, delay=RETRY_MS } =
       chipRow.addEventListener('click', chipHandler, true);
     }
   }
-
   // --- Boot ---------------------------------------------------------------
   document.addEventListener('DOMContentLoaded', ()=>{
     LeoFab.mount();
@@ -2590,8 +2407,8 @@ function sayOnceWithRetry(text, { setFlag=false, max=RETRIES, delay=RETRY_MS } =
     // Welkom/Received
     if (!hasMid()) {
       const welcomeTxt = isEN()
-        ? "Give it a try — one small message can change someone’s day."
-        : "Probeer het eens — één klein berichtje kan iemands dag veranderen.";
+        ? "✨ Give it a try — one small message can change someone’s day."
+        : "✨ Probeer het eens — één klein berichtje kan iemands dag veranderen.";
       setTimeout(()=> sayOnceWithRetry(welcomeTxt), WELCOME_DELAY);
     } else {
       const receivedTxt = isEN()
@@ -2601,14 +2418,16 @@ function sayOnceWithRetry(text, { setFlag=false, max=RETRIES, delay=RETRY_MS } =
     }
 
     // AI-campagne nudge (alleen als geen mid)
+    installIdleCTA({ idleMs: 20000, cooldownMs: 120000 }); 
     scheduleAINudge();
-    installIdleCTA({ idleMs: 20000, cooldownMs: 120000 });
+
   });
 })();
 
+
 /* [L] === CONFETTI & TOASTS ================================================== */
 function celebrate(){
-  const qp = getAppURL().searchParams;
+  const qp = new URLSearchParams(location.search);
 /*  const debugForce = qp.get('debug_confetti') === '1';*/
   if (!CONFETTI_ENABLED) return;
 /*  if (!debugForce && prefersReducedMotion()) return; */
@@ -2656,24 +2475,6 @@ function showToastI18n(key, fallback){
 }
 
 /* === CHECK THIS!!!! (waarschijnlijk UTILS) ============================= */
-
-// Base64URL helpers (UTF-8 safe)
-function toB64Url(str){
-  try {
-    const bytes = new TextEncoder().encode(String(str));
-    let bin=""; bytes.forEach(b => bin += String.fromCharCode(b));
-    return btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
-  } catch { return ""; }
-}
-function fromB64Url(s){
-  try {
-    const norm = String(s).replace(/-/g,'+').replace(/_/g,'/');
-    const pad  = '='.repeat((4 - (norm.length % 4)) % 4);
-    const bin  = atob(norm + pad);
-    const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
-    return new TextDecoder().decode(bytes);
-  } catch { return ""; }
-}
 function getTo(){
   const v = (els.toInput?.value || '').trim();
   if (v) return v;
@@ -3019,7 +2820,7 @@ function refreshUIStrings() {
 }
 
 function buildSharedURL(){
-  const u = getAppURL();
+  const u = new URL(location.href);
 
   // to/from uit huidige compose-waarden (als helpers bestaan)
   const to   = (typeof getTo   === 'function') ? getTo()   : '';
@@ -3036,21 +2837,6 @@ function buildSharedURL(){
   const idx = (typeof STATE !== 'undefined') ? STATE.currentIdx : null;
   const mid = (idx != null && STATE?.allMessages?.[idx]?.id) ? STATE.allMessages[idx].id : null;
   mid ? u.searchParams.set('mid', mid) : u.searchParams.delete('mid');
-  
-  // >>> AI-payload meesturen voor ontvangers (reconstructie zonder server)
-try {
-  const idx = (typeof STATE !== 'undefined') ? STATE.currentIdx : -1;
-  const cur = (idx != null && STATE?.allMessages?.[idx]) ? STATE.allMessages[idx] : null;
-  if (cur && String(cur.id || '').startsWith('ai_')) {
-    const t = toB64Url(cur.text || "");
-    const i = cur.icon ? toB64Url(cur.icon) : "";
-    if (t) u.searchParams.set('aitxt', t);
-    if (i) u.searchParams.set('aii',   i);
-  } else {
-    u.searchParams.delete('aitxt');
-    u.searchParams.delete('aii');
-  }
-} catch {}
 
   return u; // gebruik u.toString() als je een string nodig hebt
 }
@@ -3081,7 +2867,7 @@ function currentCampaignTag() {
 }
 
 function shareContentTag() {
-  const url = getAppURL();
+  const url = new URL(location.href);
   // 1) Campagne-welcome of deep link
   if (url.searchParams.has('welcome')) return 'welcome';
   const mid = url.searchParams.get('mid');
@@ -3632,6 +3418,10 @@ function wireLangDropdown(){
 
   // initial UI state
   updateChecked();
+  
+
+
+
   renderLangDropdownUI();
 }
   
@@ -3874,7 +3664,7 @@ function ensureQuickSplashEl(){
 function openNoteSplashSimple({ holdMs = 4800, force = false, stickUntilEsc = false } = {}) {
   // Eén-keer-per-mid guard (tenzij force:true)
   if (!force) {
-    const mid = getAppURL().searchParams.get('mid');
+    const mid = new URLSearchParams(location.search).get('mid');
     if (mid) {
       const key = `splash_shown:${mid}`;
       if (sessionStorage.getItem(key) === '1') return;
@@ -4106,7 +3896,7 @@ function quickSplashMaybeForReceived(sharedMid){
 
   // Hot-state voor Expand bij ?mid=
   function getMID(){
-    const qs = getAppURL().searchParams;
+    const qs = new URLSearchParams(location.search);
     if (qs.get('mid')) return qs.get('mid');
     const h = location.hash || '';
     const m = /(?:[?#]|^)mid=([^&]+)/.exec(h);
@@ -4424,16 +4214,6 @@ function bindAISheetGlue(){
     els.gen.classList.toggle('is-disabled', !ok);
   }
 
-  // ---------- form-export voor ai-module ----------
-  window.AWN_AI_FORM = function collectAIForm(){
-    return {
-      tone:     (els.tone?.value || '').trim() || null,
-      occasion: (els.occasion?.value || '').trim() || null,
-      context:  (els.context?.value || '').trim() || null,
-      length:   (els.length?.value || '').trim() || 'short'
-    };
-  };
-
   // ---------- UI binds ----------
   // Open-knop: eerst 'Voor wie?' check; dan sheet + korte coach-intro
   els.openBtn.addEventListener('click', () => {
@@ -4462,16 +4242,6 @@ function bindAISheetGlue(){
       window.updateCoachTimed?.('error', {}, 1800);
       return;
     }
-    try { console.debug('[AI] generate clicked — form:', window.AWN_AI_FORM?.()); } catch(_){}
-    _closingForGenerate = true;
-    shiftFocusToApp();   // ARIA-fix
-    closeSheet();        // UX: meteen zicht op de note
-
-    setTimeout(() => {   // DOM/ARIA stabiliseert → dan pas call
-      if (window.AWN_AI?.composeWithForm) window.AWN_AI.composeWithForm();
-      else if (window.AWN_AI?.composeOnce) window.AWN_AI.composeOnce();
-      else console.warn('[AI] compose method not found');
-    }, 0);
   });
 
   // ---------- AI events ----------
@@ -4623,42 +4393,6 @@ function hasNoteOnScreen() {
   items[1].textContent = l.how2;
   items[2].textContent = l.how3;
 })();
-
-/* ---- AI sheet: sluiting = thinking reset --------------------------------- */
-(function bindAICloseCancels(){
-  const wrap = document.getElementById('ai-backdrop');
-  if (!wrap) return;
-
-  function resetAIThinking(){
-    try { updateCoachTimed?.('init', {}, 1200); } catch {}
-    try {
-      const s = document.getElementById('smart-compose-status');
-      if (s) s.textContent = ((STATE?.lang)==='en') ? 'Ready' : 'Klaar';
-    } catch {}
-    try { document.dispatchEvent(new CustomEvent('ai:cancel')); } catch {}
-  }
-
-  const doCancel = (e)=>{ e?.preventDefault?.(); resetAIThinking(); };
-
-  // ✖ knop (#ai-close of .sheet-close)
-  wrap.querySelector('#ai-close')?.addEventListener('click', doCancel);
-  wrap.querySelector('.sheet-close')?.addEventListener('click', doCancel);
-
-  // Backdrop-klik
-  wrap.addEventListener('click', (e)=>{ if (e.target === wrap) doCancel(e); });
-
-  // ESC
-  window.addEventListener('keydown', (e)=>{
-    if (e.key === 'Escape' && !wrap.classList.contains('hidden')) doCancel(e);
-  }, { capture: true });
-
-  // Programmatic close (class/aria changes)
-  const mo = new MutationObserver(()=>{
-    const hiddenNow = wrap.classList.contains('hidden') || wrap.getAttribute('aria-hidden') === 'true';
-    if (hiddenNow) resetAIThinking();
-  });
-  mo.observe(wrap, { attributes:true, attributeFilter:['class','aria-hidden'] });
-})();
 /* ========================================================================
    DEBUG HARNESS — NIET PRODUCTIE, HELPT ZIEN WAT ER WEL/NIET TRIGGERT
    - activeer via ?debug=1
@@ -4666,7 +4400,7 @@ function hasNoteOnScreen() {
    - logt theme + motion
    ===================================================================== */
 (function awnDebugHarness(){
-  const qp = getAppURL().searchParams;
+  const qp = new URLSearchParams(location.search);
   const DEBUG = qp.has('debug');
   const log = (...args)=>{ if (DEBUG) console.log("[awn]", ...args); };
 

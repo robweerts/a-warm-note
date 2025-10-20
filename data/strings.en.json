@@ -15,7 +15,7 @@
       "close": "Close"
     },
     "share": {
-      "sheetTitle": "Send your message",
+      "sheetTitle": "Ready to share? Share via",
       "shareLabel": "Share via",
       "copyPrompt": "Copy link",
       "copiedToast": "Link copied 📋",
@@ -49,9 +49,10 @@
       "aiNew": "AI message"
     },
     "qr": {
-      "title": "QR code",
-      "hint": "Scan this code with your phone to open the note.",
-      "download": "Download QR"
+      "title": "QR code, fun way to share your message",
+      "download": "Download QR",
+  	  "hint": "Scan the QR with your camera — instantly open on your phone or share without typing.",
+  	  "savedToast": "QR code saved in Downloads ⬇️"
     },
     "messenger": {
       "title": "Messenger",
@@ -75,7 +76,7 @@
   "generated": "AI message created ✨",
   "failed": "Couldn't generate a message",
   "sheet": {
-    "title": "AI — write a warm note",
+    "title": "AI helps you to create your warm message",
     "tone": "Tone",
     "toneOptions": {
       "warm": "Warm",

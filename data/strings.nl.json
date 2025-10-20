@@ -15,7 +15,7 @@
       "close": "Sluiten"
     },
     "share": {
-      "sheetTitle": "Verstuur je boodschap",
+      "sheetTitle": "Klaar om te delen? Delen via:",
       "shareLabel": "Deel via",
       "copyPrompt": "Kopieer link",
       "copiedToast": "Link gekopieerd 📋",
@@ -49,9 +49,11 @@
       "aiNew": "AI-boodschap"
     },
     "qr": {
-      "title": "QR-code",
-      "hint": "Scan deze code met je telefoon om de note te openen.",
-      "download": "Download QR"
+      "title": "QR-code, leuke manier om je berichtje te delen",
+      "download": "Download QR",
+  	  "hint": "Simpelweg scannen met een smartphone — delen zonder te typen.",
+      "download": "QR downloaden",
+      "savedToast": "QR opgeslagen in Download ⬇️"
     },
     "messenger": {
       "title": "Messenger",
@@ -75,7 +77,7 @@
   		"generated": "AI-boodschap gemaakt ✨",
   		"failed": "Kon geen boodschap genereren",
   		"sheet": {
-    	"title": "AI — maak een warm bericht",
+    	"title": "AI helpt je een warm bericht te maken",
     	"tone": "Toon",
     	"toneOptions": {
       	"warm": "Warm",
