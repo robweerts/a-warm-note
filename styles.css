@@ -1,6 +1,25 @@
 /* Copyright (c) 2025 Rob Weerts */
 
-/* =================== Vars & Base =================== */
+/* ============================================================
+   STRUCTUUR: herordende style.css
+   Secties:
+   [00] Vars & Base
+   [01] Topbar
+   [02] Intro
+   [03] Chips
+   [04] Note (paper)
+   [05] Compose & Coach (tekst-bubble, CTA)
+   [06] Avatar (Leo) & Sticky avatar
+   [07] Sheets (Share / About / QR / Backdrops)
+   [08] Splash overlay / Stage
+   [09] Toast & Confetti
+   [10] Motion / Debug / Animations
+   [11] Responsive / Small viewport polish
+   [12] Theme-dark overrides
+   [13] Utilities / Misc
+   ============================================================ */
+
+/* =================== [00] Vars & Base =================== */
 :root{
   --ink:#00008B;
   --paper:#FFE66D;
@@ -9,11 +28,10 @@
   --shadow:0 18px 40px rgba(0,0,0,.35);
   --ui:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
   --hand:"Caveat","Patrick Hand",ui-rounded,system-ui,sans-serif;
- /* --ease:cubic-bezier(.2,.8,.2,1);*/
   --btn-h: 35px;
   --btn-pad-x: 12px;
   --btn-radius: 12px;
-  --icon: 18px;           /* << vaste iconmaat */
+  --icon: 18px;
 }
 
 *{box-sizing:border-box}
@@ -27,28 +45,14 @@ body{
 }
 body::before{
   content:""; position:fixed; inset:0; z-index:-1; opacity:.05;
-  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4'/></filter><rect width='160' height='160' filter='url(%23n)'/></svg>");
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequenc[...]"
   animation: subtleMove 30s linear infinite;
 }
 @keyframes subtleMove{from{transform:translate(0,0)} to{transform:translate(-80px,-80px)}}
 
 .page{width:min(980px,92vw); padding:96px 0 32px}
 
-/* =================== Topbar =================== */
-.topbar{
-  position:fixed; top:10px; left:50%; transform:translateX(-50%); z-index:1000;
-  display:flex; flex-direction:column; align-items:center; gap:8px;
-  width:96vw; padding:8px 10px; border-radius:14px;
-  background:var(--bar); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
-  box-shadow:0 14px 36px rgba(0,0,0,.42);
-}
-.brand{
-  margin:0; font-family:var(--hand); color:#fff; text-shadow:0 1px 4px rgba(0,0,0,.7);
-  font-size:clamp(18px,5vw,22px);
-}
-.brand-payoff{font-weight:500; opacity:.85; margin-left:.25rem; white-space:nowrap; font-size:.95rem}
-.actions{display:flex; gap:6px; flex-wrap:wrap; justify-content:center}
-
+/* Generic buttons & icon constraints */
 .btn{
   appearance:none; border:0; padding:7px 10px; border-radius:10px; cursor:pointer;
   background:rgba(0,0,0,.45); color:#fff; font-weight:600; font-size:.92rem;
@@ -60,22 +64,9 @@ body::before{
 .btn:hover{transform:translateY(-1px)} .btn:active{transform:translateY(1px)}
 .btn:focus-visible{outline:2px solid rgba(255,255,255,.9); outline-offset:2px}
 .btn-ico{display:inline-flex; align-items:center; gap:8px; line-height:1; white-space:nowrap}
-.btn-ico svg{flex:0 0 auto; display:block; overflow:visible}
-.btn-ico .btn-label{display:inline-block}
 @media (max-width:360px){ .btn-ico .btn-label{display:none} }
 
-/* vaste, compacte knophoogte */
-#btn-new{
-  height: 35px;           /* of wat je topbar-knophoogte is */
-  padding: 0 12px;        /* horizontale padding */
-  line-height: 1;         /* voorkomt extra vertical space */
-  display: inline-flex;
-  align-items: center;
-  gap: .4rem;             /* ruimte tussen icoon en label */
-  box-sizing: border-box;
-}
-
-/* Mobile compacter maken */
+/* Global small responsive tweaks */
 @media (max-width: 480px){
   :root{
     --btn-h: 35px;
@@ -83,26 +74,45 @@ body::before{
   }
 }
 
-/* Trek ALLE knoppen gelijk (ook language) */
+/* Normalize button heights */
 button.btn,
 #lang-dd .lang-btn {
   height: var(--btn-h);
   padding: 0 var(--btn-pad-x);
   border-radius: var(--btn-radius);
   display: inline-flex;
-  align-items: center;     /* voorkomt “rekken” */
+  align-items: center;
   gap: .4rem;
-  line-height: 1;          /* geen extra hoogte door tekst */
+  line-height: 1;
   box-sizing: border-box;
 }
+button.btn svg,
+#lang-dd .lang-btn svg {
+  width: var(--icon) !important;
+  height: var(--icon) !important;
+  display: block;
+  flex: 0 0 var(--icon);
+  pointer-events: none;
+}
 
-/* de container moet boven je topbar/overlays uitkomen */
-#lang-dd { position: relative; z-index: 999; }
+/* =================== [01] Topbar =================== */
+.topbar{
+  position:fixed; top:10px; left:50%; transform:translateX(-50%); z-index:1000;
+  display:flex; flex-direction:column; align-items:center; gap:8px;
+  width:96vw; padding:8px 10px; border-radius:14px;
+  background:var(--bar); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+  box-shadow:0 14px 36px rgba(0,0,0,.42);
+}
+.brand{ margin:0; font-family:var(--hand); color:#fff; text-shadow:0 1px 4px rgba(0,0,0,.7); font-size:clamp(18px,5vw,22px); }
+.brand-payoff{font-weight:500; opacity:.85; margin-left:.25rem; white-space:nowrap; font-size:.95rem}
+.actions{display:flex; gap:6px; flex-wrap:wrap; justify-content:center}
+#btn-new{ height: 35px; padding: 0 12px; line-height:1; display:inline-flex; align-items:center; gap:.4rem; box-sizing:border-box; }
 
-/* menu zelf mag niet afgeknipt worden door parent */
+/* Language dropdown / topbar overflow */
+#lang-dd { position: relative; z-index: 50; }
+.topbar, header, nav { overflow: visible; }
 #lang-dd .lang-menu{
-  position: absolute;
-  top: 110%; right: 0;
+  position: absolute; top: 110%; right: 0;
   min-width: 12rem;
   background: rgba(0,0,0,.85);
   color: #fff;
@@ -111,90 +121,64 @@ button.btn,
   box-shadow: 0 8px 20px rgba(0,0,0,.25);
 }
 
-/* als je topbar/header overflow:hidden heeft → zichtbaar houden */
-.topbar, header, nav { overflow: visible; } /* pas selector aan naar jouw topbar */
-
-/* Constraining icons (SVG) – the magic */
-button.btn svg,
-#lang-dd .lang-btn svg {
-  width: var(--icon) !important;
-  height: var(--icon) !important;
-  display: block;          /* geen baseline-whitespace */
-  flex: 0 0 var(--icon);
-  pointer-events: none;
-}
-
-/* Als je icon via <span class="icon"> … </span> hebt */
-button.btn .icon { 
-  width: var(--icon); height: var(--icon); display: inline-flex; 
-}
-button.btn .icon svg { width: 100% !important; height: 100% !important; }
-
-/* =================== Intro =================== */
-.intro{
-  margin:4px auto 6px; text-align:center; font-family:var(--hand);
-  font-size:clamp(16px,2.2vw,20px); color:#2b261f; text-shadow:0 1px rgba(255,255,255,.35);
-}
+/* =================== [02] Intro =================== */
+.intro{ margin:4px auto 6px; text-align:center; font-family:var(--hand); font-size:clamp(16px,2.2vw,20px); color:#2b261f; text-shadow:0 1px rgba(255,255,255,.35); }
 .intro-hint{margin:8px auto 0; font-weight:600; text-align:center; opacity:.95}
 .hint-swipe{font-weight:500; opacity:.9}
 
-/* =================== Chips =================== */
+/* Mobile Boot Intro */
+.intro-boot { display: none; }
+@media (max-width: 768px) {
+  .intro-boot {
+    display: grid;
+    position: fixed; inset: 0; z-index: 100000;
+    place-items: center;
+    background: var(--boot-bg, #fffef8);
+    color: var(--boot-fg, #2a2a2a);
+    transition: opacity .32s ease, visibility .32s ease;
+  }
+  .intro-boot__center{ display:grid; gap:10px; transform:translateY(0); animation: ibFloat 1.2s ease-in-out infinite alternate; }
+  .intro-boot__logo{ font-size:48px; line-height:1; filter: drop-shadow(0 6px 22px rgba(0,0,0,.1)); }
+  .intro-boot__brand{ font-family:'Patrick Hand', system-ui, -apple-system, sans-serif; font-size:24px; letter-spacing:.2px; }
+  .intro-boot__tagline{ opacity:.7; font-size:14px; }
+  .intro-boot__spinner{ width:28px; height:28px; border-radius:50%; border:3px solid currentColor; border-right-color:transparent; animation: ibSpin 0.9s linear infinite; opacity:.65; margin-top:8px; }
+  .intro-boot.is-hide{ opacity:0; visibility:hidden; pointer-events:none; }
+  @keyframes ibSpin { to { transform: rotate(360deg); } }
+  @keyframes ibFloat { from { transform: translateY(0); } to { transform: translateY(-4px); } }
+}
+@media (prefers-reduced-motion: reduce) {
+  .intro-boot__spinner{ animation: none; }
+  .intro-boot__center{ animation: none; }
+}
+
+/* =================== [03] Chips =================== */
 .chips-wrap{ margin:6px auto 0; width:min(980px,92vw); position:relative; }
-.chip-row{
-  display:flex; gap:6px; overflow:auto; -webkit-overflow-scrolling:touch;
-  padding:2px 8px 6px; scroll-snap-type:x mandatory;
-  -webkit-mask-image:none; mask-image:none; /* geen fade over eerste chip */
-}
-.chip{
-  border:0; padding:5px 9px; border-radius:10px; font-weight:600; font-size:.85rem;
-  background:rgba(0,0,0,.08); color:#222; cursor:pointer; white-space:nowrap;
-  scroll-snap-align:start;
-  transition:transform .06s var(--ease), background .2s var(--ease), box-shadow .2s ease;
-}
+.chip-row{ display:flex; gap:6px; overflow:auto; -webkit-overflow-scrolling:touch; padding:2px 8px 6px; scroll-snap-type:x mandatory; -webkit-mask-image:none; mask-image:none; }
+.chip{ border:0; padding:5px 9px; border-radius:10px; font-weight:600; font-size:.85rem; background:rgba(0,0,0,.08); color:#222; cursor:pointer; white-space:nowrap; scroll-snap-align:start; transition:transform .06s var(--ease), background .2s var(--ease), box-shadow .2s ease; }
 .chip:hover{transform:translateY(-1px)} .chip:active{transform:translateY(1px)}
 .chip.active{ background:#222; color:#fff; box-shadow:0 0 0 1px rgba(0,0,0,.12), 0 6px 12px rgba(0,0,0,.16) }
 .chip--theme{ background:rgba(255,0,85,.1); color:#b0003a; border:1px solid rgba(255,0,85,.25); font-weight:700 }
 .chip--theme.active{ background:#b0003a; color:#fff; border-color:#b0003a }
 @media (max-width:360px){ .chip{padding:4px 8px; font-size:.8rem} }
 
-/* Chevrons (zichtbaar bij overflow; JS toggelt display) */
-.chip-chevron{
-  position:absolute; top:0; bottom:0; width:28px; display:none; place-items:center;
-  background:none; color:#222; font-weight:700; font-size:18px; border:0; cursor:pointer; z-index:2;
-  backdrop-filter:blur(2px);
-}
-.chip-chevron--left{ left:0; }  /* geen spiegeling nodig; teken ‘‹’ */
-.chip-chevron--right{ right:0; }
-
-/* Extra ruimte wanneer chevrons aanwezig zijn */
+/* Chevrons and sentiment-strip */
+.chip-chevron{ position:absolute; top:0; bottom:0; width:28px; display:none; place-items:center; background:none; color:#222; font-weight:700; font-size:18px; border:0; cursor:pointer; z-index:2; backdrop-filter:blur(2px); }
+.chip-chevron--left{ left:0; } .chip-chevron--right{ right:0; }
 .chips-wrap:has(#chips-left) .chip-row{ padding-left:38px; }
 .chips-wrap:has(#chips-right) .chip-row{ padding-right:38px; }
-
-/* Sentiment swipe-hint maskers aan de randen */
 .sentiment-strip{position:relative}
-.sentiment-strip::before,.sentiment-strip::after{
-  content:""; position:absolute; top:0; bottom:0; width:32px; pointer-events:none;
-}
-.sentiment-strip::before{left:0;  background:linear-gradient(to right, rgba(255,248,231,.95), rgba(255,248,231,0))}
-.sentiment-strip::after {right:0; background:linear-gradient(to left,  rgba(255,248,231,.95), rgba(255,248,231,0))}
-.sentiment-strip.hint-active{animation:nudgeX .6s ease-in-out}
-@keyframes nudgeX{
-  0%,100%{transform:translateX(0)}
-  20%{transform:translateX(-8px)} 40%{transform:translateX(8px)}
-  60%{transform:translateX(-4px)} 80%{transform:translateX(4px)}
-}
-/* --- Chips: verberg horizontale scrollbars clean --- */
-.chips-wrap { overflow: hidden; }                 /* container geen bars */
-#chip-row {
-  overflow-x: auto;
-  overflow-y: hidden;
-  -webkit-overflow-scrolling: touch;              /* soepel op iOS */
-  scrollbar-width: none;                          /* Firefox */
-  -ms-overflow-style: none;                       /* IE/Edge legacy */
-}
-#chip-row::-webkit-scrollbar { display: none; }   /* Chrome/Safari */
-.chip-chevron { transition: opacity .18s ease; }
-/* =================== Note =================== */
+.sentiment-strip::before,.sentiment-strip::after{ content:""; position:absolute; top:0; bottom:0; width:32px; pointer-events:none; }
+sentiment-strip::before{left:0;  background:linear-gradient(to right, rgba(255,248,231,.95), rgba(255,248,231,0))}
+sentiment-strip::after {right:0; background:linear-gradient(to left,  rgba(255,248,231,.95), rgba(255,248,231,0))}
+sentiment-strip.hint-active{animation:nudgeX .6s ease-in-out}
+@keyframes nudgeX{ 0%,100%{transform:translateX(0)} 20%{transform:translateX(-8px)} 40%{transform:translateX(8px)} 60%{transform:translateX(-4px)} 80%{transform:translateX(4px)} }
+
+/* Hide scrollbars but keep scrolling */
+.chips-wrap { overflow: hidden; }
+#chip-row { overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; scrollbar-width: none; -ms-overflow-style: none; }
+#chip-row::-webkit-scrollbar { display: none; }
+
+/* =================== [04] Note (paper) =================== */
 .note-wrap{display:grid; place-items:center; padding:20px 0}
 .note{
   width:min(360px,88vw); min-height:320px; padding:clamp(18px,3vw,28px);
@@ -207,43 +191,28 @@ button.btn .icon svg { width: 100% !important; height: 100% !important; }
   animation: note-drop .6s var(--ease) both;
 }
 .note--welcome{ outline:2px solid rgba(0,0,0,.06); outline-offset:2px; }
-@keyframes note-drop{
-  from{transform:translateY(-12px) rotate(-2deg); opacity:0}
-  60%{transform:translateY(2px) rotate(1.2deg); opacity:1}
-  to{transform:translateY(0) rotate(-1.2deg)}
-}
+@keyframes note-drop{ from{transform:translateY(-12px) rotate(-2deg); opacity:0} 60%{transform:translateY(2px) rotate(1.2deg); opacity:1} to{transform:translateY(0) rotate(-1.2deg)} }
 .message{font-family:var(--hand); font-size:clamp(26px,3.2vw,38px); line-height:1.2; white-space:pre-wrap}
 #iconline{margin-top:12px; text-align:center; font-size:clamp(36px,6vw,46px)}
 #toline,#fromline{position:absolute; font-family:var(--hand); font-size:22px; opacity:.9}
 #toline{left:16px; top:25px}
 #fromline{right:16px; bottom:12px}
-/* was: bottom:46px; */
 #from-symbol{ bottom:52px; }
 
-@media (max-width:500px){
-  #toline{ position:static!important; display:block; margin-bottom:18px; left:auto; top:auto; font-size:22px }
-}
-
-.tape{width:86px; height:28px; position:absolute; top:-12px;
-  background:linear-gradient(180deg, rgba(255,255,255,.55), rgba(255,255,255,.25));
-  box-shadow:0 3px 8px rgba(0,0,0,.18); border-radius:3px}
+.tape{width:86px; height:28px; position:absolute; top:-12px; background:linear-gradient(180deg, rgba(255,255,255,.55), rgba(255,255,255,.25)); box-shadow:0 3px 8px rgba(0,0,0,.18); border-radius:3px}
 .tape--tl{left:22px; transform:rotate(-12deg)}
 .tape--tr{right:22px; transform:rotate(8deg)}
-
-/* Handgetekend symbool (JS vult #from-symbol met SVG) */
-#from-symbol{
-  position:absolute; right:16px; bottom:46px;
-  width:28px; height:28px; opacity:.9; pointer-events:none;
-  animation:handsketch 5s ease-in-out infinite;
-}
+#from-symbol{ position:absolute; right:16px; bottom:46px; width:28px; height:28px; opacity:.9; pointer-events:none; animation:handsketch 5s ease-in-out infinite; }
 #from-symbol svg{width:100%; height:100%; stroke:#FF5757; fill:none; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round}
-@keyframes handsketch{0%{transform:rotate(-1deg)} 50%{transform:rotate(1deg)} 100%{transform:rotate(-1deg)}}
+@keyframes handsketch{0%{transform:rotate(-1deg)} 50%{transform:rotate(1deg)} 100%{transform:rotate(-1deg)} }
 
-/* Message bladeren */
 .nav-ctl{ display:flex; gap:.5rem; justify-content:center; margin:0.5rem 0; }
 .nav-ctl button{ padding:.5rem .8rem; border-radius:.5rem; border:1px solid var(--border,#ddd); }
 
-/* =================== Compose & Coach =================== */
+.note--compact { padding: 16px 18px; }
+.note--compact #message { font-size: clamp(14px, 2vh, 18px); line-height: 1.3; }
+
+/* =================== [05] Compose & Coach (bubble, CTA) =================== */
 .compose{
   background:var(--bar); color:#fff; border-radius:14px; box-shadow:0 10px 26px rgba(0,0,0,.28);
   backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
@@ -255,7 +224,6 @@ button.btn .icon svg { width: 100% !important; height: 100% !important; }
   height:38px; padding:0 12px; border-radius:10px; border:1px solid rgba(255,255,255,.2);
   background:rgba(0,0,0,.25); color:#fff; font-weight:500; font-size:.95rem
 }
-/* Hint de browser dat dit een donkere UI is */
 .compose { color-scheme: normal; }
 .compose input::placeholder{ color:rgba(255,255,255,.72) }
 .compose input:focus{outline:2px solid rgba(255,255,255,.9); outline-offset:2px}
@@ -274,7 +242,75 @@ button.btn .icon svg { width: 100% !important; height: 100% !important; }
 .coach .coach-inline:focus-visible{ outline:2px solid rgba(255,255,255,.9); outline-offset:2px; border-radius:4px }
 .hidden{display:none!important}
 
-/* =================== Sheets (Share / About / QR) =================== */
+#coach-tip {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: visible;
+  padding-inline-end: max(0px, env(safe-area-inset-right));
+}
+#coach-tip .coach-text{
+  font-size: clamp(13px, 1.7vw, 15px) !important;
+  line-height: 1.28 !important;
+}
+#coach-tip .coach-inline{
+  font-size: 0.95em !important;
+  line-height: 1.2 !important;
+  padding: 4px 8px !important;
+  border-radius: 8px;
+}
+
+/* =================== [06] Avatar (Leo) & Sticky avatar =================== */
+/* Host van de avatar: basispositie (desktop) */
+#coach-avatar {
+  position: absolute;
+  inset-block-end: 38px;
+  inset-inline-end: clamp(-24px, -6vw, 0px);
+  inline-size: clamp(40px, 10vw, 64px);
+  block-size:  clamp(40px, 10vw, 64px);
+  pointer-events: none;
+  z-index: 2;
+}
+/* awn-avatar common */
+.awn-avatar {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  inline-size: 100%;
+  block-size: 100%;
+}
+.awn-avatar svg { inline-size: 100%; block-size: 100%; }
+
+/* Leo selectors: sommige templates now use 'leo' naming — ensure Leo is always above UI */
+#leo, #leo-avatar, .leo, .leo-avatar, [data-actor="leo"] { z-index: 99999 !important; pointer-events: auto; }
+
+/* Extra breakpoints for avatar nudges */
+@media (max-width: 480px) {
+  #coach-avatar { inset-inline-end: clamp(-10px, -3vw, 0px); }
+}
+@media (max-width: 360px) {
+  #coach-avatar { inset-inline-end: 0; }
+}
+
+/* Mobile avatar behavior: prefer Leo fixed above everything; JS can still set coordinates */
+@media (max-width: 767px) {
+  #coach-avatar { /* keep for legacy, but Leo rules take precedence for z-index */ }
+  /* force Leo into a fixed layer so it cannot be clipped by stacking contexts */
+  #leo, #leo-avatar, .leo, .leo-avatar, [data-actor="leo"] {
+    position: fixed !important;
+    right: 12px !important;
+    bottom: 84px !important;
+    z-index: 99999 !important;
+    transform: none !important;
+    pointer-events: auto;
+  }
+
+  /* Ensure coach (bubble) doesn't accidentally float above Leo */
+  .coach { z-index: 1000; }
+}
+
+/* =================== [07] Sheets (Share / About / QR / Backdrops) =================== */
 .sheet-backdrop{position:fixed; inset:0; display:grid; place-items:end center; background:rgba(0,0,0,.35); z-index:1200}
 .sheet{
   width:100%; max-width:560px; background:rgba(20,20,20,.75); color:#fff;
@@ -286,25 +322,20 @@ button.btn .icon svg { width: 100% !important; height: 100% !important; }
 }
 @keyframes sheet-in{from{transform:translateY(16px); opacity:0} to{transform:translateY(0); opacity:1}}
 .sheet.closing{ transform:translateY(120%) }
-
-.sheet-header{
-  position:relative; display:flex; flex-direction:column; align-items:center;
-  padding-top:14px; min-height:44px;
-}
+.sheet-header{ position:relative; display:flex; flex-direction:column; align-items:center; padding-top:14px; min-height:44px; }
 .sheet-header h2{ margin:0 32px; text-align:center; width:100% }
-.sheet-close{
-  position:absolute; top:8px; right:12px; z-index:3;
-  appearance:none; border:0; cursor:pointer; background:rgba(255,255,255,.12); color:#fff; width:30px; height:30px; border-radius:50%;
-}
-/* Drag-indicator */
-.sheet-header .drag-indicator{
-  position:absolute; top:6px; left:50%; transform:translateX(-50%);
-  width:44px; height:5px; border-radius:3px; pointer-events:none;
-  background:rgba(255,255,255,.43); transition:background .2s;
-}
+.sheet-close{ position:absolute; top:8px; right:12px; z-index:3; appearance:none; border:0; cursor:pointer; background:rgba(255,255,255,.12); color:#fff; width:30px; height:30px; border-radius:50%; }
+.sheet-header .drag-indicator{ position:absolute; top:6px; left:50%; transform:translateX(-50%); width:44px; height:5px; border-radius:3px; pointer-events:none; background:rgba(255,255,255,.43); transition:background .2s; }
 .sheet--dragging .sheet-header .drag-indicator{ background:#FFE66D }
 
-/* Sheet varianten */
+/* AI sheet (special overlay for assistant / AI) */
+.ai-sheet-backdrop{ position:fixed; inset:0; display:grid; place-items:end center; background:rgba(0,0,0,.4); z-index:1250 }
+.ai-sheet{
+  width:100%; max-width:640px; background:rgba(14,17,20,.96); color:#fff;
+  border-top-left-radius:16px; border-top-right-radius:16px; padding:12px 16px;
+  box-shadow:0 -12px 40px rgba(0,0,0,.45); z-index:1251; touch-action:pan-y;
+}
+
 .sheet--about{
   background:
     radial-gradient(1200px 300px at 50% -120px, rgba(255,230,109,.35), rgba(0,0,0,0) 60%),
@@ -313,11 +344,7 @@ button.btn .icon svg { width: 100% !important; height: 100% !important; }
     rgba(20,20,20,.75);
   position:relative; overflow:hidden;
 }
-.sheet--about .sheet-body{
-  border-top:6px solid transparent;
-  border-image:linear-gradient(90deg, #FFE66D, #C5FAD5, #CDE7FF) 1;
-  padding-top:12px; margin-top:6px; border-top-left-radius:10px; border-top-right-radius:10px;
-}
+.sheet--about .sheet-body{ border-top:6px solid transparent; border-image:linear-gradient(90deg, #FFE66D, #C5FAD5, #CDE7FF) 1; padding-top:12px; margin-top:6px; border-top-left-radius:10px; border-top-right-radius:10px; }
 .sheet--about .sheet-header{ background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,0)) }
 .sheet--about .sheet-header h2{ display:flex; align-items:center; gap:8px }
 .sheet--about .sheet-header h2::before{ content:"✨"; font-size:18px }
@@ -336,414 +363,34 @@ button.btn .icon svg { width: 100% !important; height: 100% !important; }
 .sheet--qr{ background:rgba(20,20,20,.78) }
 .qr-hint{text-align:center; margin:0 0 10px; opacity:.9}
 .qr-box{display:grid; place-items:center; padding:10px}
-.qr-box canvas{
-  background:#fff; border-radius:12px; padding:10px;
-  box-shadow:0 10px 30px rgba(0,0,0,.35);
-}
+.qr-box canvas{ background:#fff; border-radius:12px; padding:10px; box-shadow:0 10px 30px rgba(0,0,0,.35); }
 
-/* Sheet content */
 .sheet-body{padding:8px 2px 10px; display:grid; gap:8px}
 .sheet-header h2{font-size:18px}
 
-/* Pair inline */
-.pair-inline{
-  width:100%; justify-content:center; text-align:center; gap:10px; flex-wrap:wrap;
-  font-family:var(--hand); font-size:clamp(16px,2.4vw,20px); display:flex; align-items:baseline;
-}
-.pair-inline .pair-label{ opacity:.85; font-weight:600 }
-.pair-inline .pair-val{   opacity:.95; font-weight:700 }
-.pair-inline .pair-sep{   opacity:.6 }
-@media (max-width:380px){ .pair-inline .pair-sep{ display:none } }
-
-/* Tiles */
-.share-grid{
-  --tile-gap:10px; --tile-ic:48px;
-  display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:var(--tile-gap);
-  align-items:start; justify-items:center; margin-top:8px;
-}
+.pair-inline{ width:100%; justify-content:center; text-align:center; gap:10px; flex-wrap:wrap; font-family:var(--hand); font-size:clamp(16px,2.4vw,20px); display:flex; align-items:baseline; }
+.share-grid{ --tile-gap:10px; --tile-ic:48px; display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:var(--tile-gap); align-items:start; justify-items:center; margin-top:8px; }
 @media (min-width:560px){ .share-grid{ --tile-ic:56px; gap:12px } }
-.share-tile{
-  appearance:none; border:0; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:6px;
-  padding:8px 6px; border-radius:12px; background:rgba(255,255,255,.06); color:#fff; text-align:center;
-  transition:background .2s var(--ease), transform .06s var(--ease);
-}
+.share-tile{ appearance:none; border:0; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:6px; padding:8px 6px; border-radius:12px; background:rgba(255,255,255,.06); color:#fff; text-align:center; transition:background .2s var(--ease), transform .06s var(--ease); }
 .share-tile:hover{ background:rgba(255,255,255,.10); transform:translateY(-1px) }
 .share-tile:active{ transform:translateY(1px) }
 .share-tile:focus-visible{ outline:2px solid rgba(255,255,255,.9); outline-offset:2px }
 .tile-icon{ width:var(--tile-ic); height:var(--tile-ic); object-fit:contain; display:block }
 .tile-label{ font-weight:600; font-size:.92rem; line-height:1.1; letter-spacing:.1px }
 
-/* Share list (alt layout) */
 .share-list{ list-style:none; margin:8px 0 0; padding:0; display:flex; flex-direction:column; gap:10px }
 .share-li{ margin:0; padding:0 }
-.share-item{
-  width:100%; display:flex; align-items:flex-start; gap:12px;
-  padding:10px 12px; border:0; border-radius:12px; cursor:pointer;
-  background:rgba(255,255,255,.06); color:#fff; text-align:left;
-  transition:background .2s var(--ease), transform .06s var(--ease);
-}
+.share-item{ width:100%; display:flex; align-items:flex-start; gap:12px; padding:10px 12px; border:0; border-radius:12px; cursor:pointer; background:rgba(255,255,255,.06); color:#fff; text-align:left; transition:background .2s var(--ease), transform .06s var(--ease); }
 .share-item:hover{ background:rgba(255,255,255,.10); transform:translateY(-1px) }
 .share-item:active{ transform:translateY(1px) }
 .share-item:focus-visible{ outline:2px solid rgba(255,255,255,.9); outline-offset:2px }
 .share-icon{ width:48px; height:48px; flex:0 0 auto; object-fit:contain }
 @media (min-width:480px){ .share-icon{ width:56px; height:56px } }
 
-/* Actieknoppen in sheets */
-.sheet .sheet-actions{
-  display:flex;
-  gap:8px;
-  flex-wrap:wrap;
-  margin-top:10px;
-  justify-content:center;
-}
-
-/* About heeft geen acties */
+.sheet .sheet-actions{ display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; justify-content:center; }
 .sheet--about .sheet-actions{ display:none }
 
-/* QR-sheet acties (mag gelijk blijven of extra styling) */
-.sheet--qr .sheet-actions{
-  display:flex;
-  gap:8px;
-  flex-wrap:wrap;
-  margin-top:10px;
-  justify-content:center;
-}
-#qr-backdrop .sheet-actions .btn{ min-width:140px }
-@media (max-width:420px){
-  #qr-backdrop .sheet-actions .btn{ flex:1 1 45% }
-}
-
-/* =================== Toast & Confetti =================== */
-.toast{
-  position:fixed; left:50%; bottom:18px; transform:translateX(-50%); z-index:1300;
-  padding:10px 14px; border-radius:12px; background:rgba(0,0,0,.72); color:#fff; text-align:center; font-size:14px;
-  backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); box-shadow:0 6px 18px rgba(0,0,0,.25)
-}
-@keyframes confetti{0%{transform:translateY(-20vh) rotate(0); opacity:0}10%{opacity:1}100%{transform:translateY(100vh) rotate(720deg); opacity:0}}
-.confetti{position:fixed; top:-20vh; left:0; width:8px; height:12px; z-index:1400; pointer-events:none; animation:confetti 1.2s linear forwards}
-
-/* =================== Motion preferences =================== */
-@media (prefers-reduced-motion:reduce){
-  *{animation:none!important; transition:none!important}
-  .confetti{display:none!important}
-  .note.anim-pop{animation:none; opacity:1}
-}
-
-/* =================== Debug / Pop-in / Nudges =================== */
-@keyframes awnPopIn{0%{transform:translateY(8px) scale(.98); opacity:0} 100%{transform:translateY(0) scale(1); opacity:1}}
-.note.anim-pop{ animation:awnPopIn .28s var(--ease) }
-
-@keyframes awnSparkle{0%{opacity:0; transform:translateY(6px)} 20%{opacity:1; transform:translateY(0)} 100%{opacity:0; transform:translateY(-6px)}}
-.awn-sparkle{ position:fixed; inset:auto auto 16px 16px; pointer-events:none; font-size:18px; opacity:0; animation:awnSparkle .9s ease-out }
-
-@keyframes awnFieldNudge{0%,100%{transform:translateX(0)} 20%{transform:translateX(-6px)} 40%{transform:translateX(6px)} 60%{transform:translateX(-3px)} 80%{transform:translateX(3px)}}
-.field-nudge{ animation:awnFieldNudge .5s ease; box-shadow:0 0 0 2px rgba(255,213,0,.85) }
-
-/* =================== Small viewport polish =================== */
-@media (max-width:500px){
-  .note{ padding-top:38px; padding-bottom:18px }
-  #toline{ position:static!important; display:block; margin-bottom:18px; left:auto; top:auto; font-size:22px }
-  .note .message{ margin-top:0!important }
-}
-
-@media (prefers-reduced-motion: reduce){
-  .splash-overlay { transition: none !important; }
-}
-
-/* Expand-knop: actieve state bij ?mid=... */
-button[data-action="expand-note"].is-hot{
-  box-shadow: 0 0 0 2px rgba(0,0,0,.15), 0 8px 24px rgba(0,0,0,.16);
-  position: relative;
-}
-button[data-action="expand-note"].is-hot::after{
-  content:"";
-  position:absolute; inset:-6px;
-  border-radius:12px;
-  pointer-events:none;
-  animation: splashPulse 1.4s ease-out infinite;
-  border:2px solid currentColor; opacity:.35;
-}
-@keyframes splashPulse{
-  0%   { transform: scale(.9); opacity:.55; }
-  100% { transform: scale(1.2); opacity:0; }
-}
-
-/* Floating About knop rechtsonder */
-.about-fab {
-  position: fixed;
-  right: 16px;
-  bottom: 16px;
-  z-index: 100002;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 10px 14px;
-  border: 0;
-  border-radius: 12px;
-  background: rgba(255,255,255,.92);
-  box-shadow: 0 8px 24px rgba(0,0,0,.16);
-  backdrop-filter: saturate(1.1) blur(6px);
-  color: inherit;
-  cursor: pointer;
-}
-
-/* Expand-knop highlight wanneer ?mid= aanwezig is */
-button[data-action="expand-note"].is-hot{
-  box-shadow: 0 0 0 2px rgba(0,0,0,.15), 0 8px 24px rgba(0,0,0,.16);
-  position: relative;
-}
-button[data-action="expand-note"].is-hot::after{
-  content:"";
-  position:absolute; inset:-6px;
-  border-radius:12px;
-  pointer-events:none;
-  animation: splashPulse 1.4s ease-out infinite;
-  border:2px solid currentColor; opacity:.35;
-}
-@keyframes splashPulse{
-  0%   { transform: scale(.9); opacity:.55; }
-  100% { transform: scale(1.2); opacity:0; }
-}
-
-button[data-action="expand-note"].is-hot{
-  box-shadow: 0 0 0 2px rgba(0,0,0,.15), 0 8px 24px rgba(0,0,0,.16);
-  position: relative;
-}
-button[data-action="expand-note"].is-hot::after{
-  content:"";
-  position:absolute; inset:-6px;
-  border-radius:12px;
-  pointer-events:none;
-  animation: splashPulse 1.4s ease-out infinite;
-  border:2px solid currentColor; opacity:.35;
-}
-@keyframes splashPulse{
-  0%   { transform: scale(.9); opacity:.55; }
-  100% { transform: scale(1.2); opacity:0; }
-}
-
-/* ===== Mobile Boot Intro ===== */
-/* Basis: desktop = uit */
-.intro-boot { display: none; }
-
-/* Alleen op mobiel tonen en positioneren */
-@media (max-width: 768px) {
-  .intro-boot {
-    display: grid;
-    position: fixed; inset: 0; z-index: 100000;
-    place-items: center;
-    background: var(--boot-bg, #fffef8);
-    color: var(--boot-fg, #2a2a2a);
-    transition: opacity .32s ease, visibility .32s ease;
-  }
-}
-@media (max-width: 768px) {
-  .intro-boot{
-    position: fixed; inset: 0; z-index: 100000;  /* boven alles, hoger dan note-splash */
-    display: grid; place-items: center;
-    background: var(--boot-bg, #fffef8);
-    color: var(--boot-fg, #2a2a2a);
-    transition: opacity .32s ease, visibility .32s ease;
-  }
-  .intro-boot__center{
-    display: grid; gap: 10px; justify-items: center;
-    transform: translateY(0);
-    animation: ibFloat 1.2s ease-in-out infinite alternate;
-  }
-  .intro-boot__logo{
-    font-size: 48px; line-height: 1;
-    filter: drop-shadow(0 6px 22px rgba(0,0,0,.1));
-  }
-  .intro-boot__brand{
-    font-family: 'Patrick Hand', system-ui, -apple-system, sans-serif;
-    font-size: 24px; letter-spacing: .2px;
-  }
-  .intro-boot__tagline{
-    opacity: .7; font-size: 14px;
-  }
-  .intro-boot__spinner{
-    width: 28px; height: 28px; border-radius: 50%;
-    border: 3px solid currentColor; border-right-color: transparent;
-    animation: ibSpin 0.9s linear infinite;
-    opacity: .65; margin-top: 8px;
-  }
-  .intro-boot.is-hide{
-    opacity: 0; visibility: hidden; pointer-events: none;
-  }
-  @keyframes ibSpin { to { transform: rotate(360deg); } }
-  @keyframes ibFloat { from { transform: translateY(0); } to { transform: translateY(-4px); } }
-}
-
-/* Respecteer reduced motion */
-@media (prefers-reduced-motion: reduce) {
-  .intro-boot__spinner{ animation: none; }
-  .intro-boot__center{ animation: none; }
-}
-
-/* Donkere modus (optioneel) */
-@media (prefers-color-scheme: dark) {
-  .intro-boot{ --boot-bg: #0f0f0f; --boot-fg: #f5f5f5; }
-}
-/* Hotfix: 'Verstuur' niet vol-zwart, icon nooit geknipt */
-#btn-share { background: rgba(255,255,255,.10); line-height: 1; }
-#btn-share, #btn-share * { overflow: visible; }
-#btn-share svg { width: 20px; height: 20px; display: block; }
-
-/* trigger */
-.lang-dd { position: relative; display:inline-block; }
-.lang-btn{
-  display:inline-flex; align-items:center; gap:.35rem;
-  background:rgba(0,0,0,.25); color:#fff; border:0; border-radius:.8rem;
-  padding:.45rem .7rem; line-height:1; cursor:pointer;
-}
-.lang-btn .flag{ font-size:1.05rem; }
-
-/* menu */
-.lang-menu{
-  position:absolute; top:110%; right:0; min-width:12rem;
-  background:rgba(0,0,0,.85); color:#fff; border-radius:.9rem;
-  padding:.6rem; box-shadow:0 8px 20px rgba(0,0,0,.25); backdrop-filter: blur(6px);
-}
-.lang-item{
-  width:100%; display:flex; align-items:center; gap:.6rem;
-  background:transparent; border:0; color:inherit; text-align:left;
-  padding:.55rem .6rem; border-radius:.6rem; cursor:pointer;
-}
-.lang-item .flag{ font-size:1.1rem; }
-.lang-item[aria-checked="true"]{ font-weight:700; }
-.lang-item:hover{ background:rgba(255,255,255,.08); }
-
-/* show/hide */
-.lang-dd.open #lang-dd-menu{ display:block; }
-.lang-dd #lang-dd-menu[hidden]{ display:none; }
-
-/* dropdown container mag buiten .topbar uitsteken */
-.topbar { overflow: visible; }
-
-/* menu zichtbaar als JS 'm opent */
-#lang-dd-menu[hidden] { display: none !important; }
-#lang-dd.open #lang-dd-menu { display: block; }
-
-/* boven UI lagen */
-#lang-dd { position: relative; z-index: 50; }
-#lang-dd-menu {
-  position: absolute;
-  top: 100%;
-  right: 0;
-  min-width: 140px;
-  touch-action: manipulation;  /* helpt iOS */
-}
-
-/* Host van de avatar: “zo ver mogelijk rechts”, maar nooit buiten het scherm */
-#coach-avatar {
-  position: absolute;
-  inset-block-end: 38px;                /* onderlijn – pas aan naar smaak */
-  inset-inline-end: clamp(-24px, -6vw, 0px);
-  /*  ↑ desktop ~ -24px buiten, op small screens schuift hij richting 0px (binnen) */
-  inline-size: clamp(40px, 10vw, 64px); /* schaalt mee met viewport */
-  block-size:  clamp(40px, 10vw, 64px);
-  pointer-events: none;
-  z-index: 2;
-}
-
-/* Alleen de sticky, geen cirkel erachter */
-.awn-avatar {
-  background: transparent !important;
-  border: 0 !important;
-  box-shadow: none !important;
-  inline-size: 100%;
-  block-size: 100%;
-}
-.awn-avatar svg {
-  inline-size: 100%;
-  block-size: 100%;
-}
-
-/* Extra fine-tuning per breakpoint (optioneel) */
-@media (max-width: 480px) {
-  #coach-avatar {
-    inset-inline-end: clamp(-10px, -3vw, 0px);
-  }
-}
-@media (max-width: 360px) {
-  #coach-avatar {
-    inset-inline-end: 0;               /* helemaal binnen blijven op heel klein scherm */
-  }
-}
-/* Basis (mag je laten staan zoals je nu hebt) */
-#message { 
-  /* iets fluid al in basis helpt op kleine schermen */
-  font-size: clamp(28px, 2.4vh, 20px);
-  line-height: 1.55;
-}
-
-/* Compact wanneer de note te lang wordt */
-.note--compact { padding: 16px 18px; }
-.note--compact #message { font-size: clamp(14px, 2vh, 18px); line-height: 1.3; }
-
-/* Coach container */
-#coach-tip {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  overflow: visible;                    /* avatar mag uitsteken */
-  padding-inline-end: max(0px, env(safe-area-inset-right));
-}
-
-/* Alleen de sticky tonen (override module) */
-.awn-avatar {
-  background: transparent !important;
-  border: 0 !important;
-  box-shadow: none !important;
-  inline-size: 100%;
-  block-size: 100%;
-}
-.awn-avatar svg { inline-size: 100%; block-size: 100%; }
-
-/* Safe area iOS (landscape) */
-@supports(padding:max(0px)){
-  #coach-tip { padding-inline-end: max(0px, env(safe-area-inset-right)); }
-}
-
-@media (max-width: 640px) {
-  #chip-row {
-    margin-top: calc(10px + env(safe-area-inset-top));
-  }
-}
-
-#coach-avatar {
-  position: absolute;
-  right: -8px;
-  bottom: -2px;
-  width: clamp(40px, 10vw, 64px);
-  height: clamp(40px, 10vw, 64px);
-  pointer-events: none;
-  z-index: 2;
-}
-
-/* Alleen de sticky tonen */
-.awn-avatar { background: transparent !important; border: 0 !important; box-shadow: none !important; }
-.awn-avatar, .awn-avatar svg { width: 100%; height: 100%; }
-
-/* Mobiel: laat JS bepalen waar de avatar staat (naast About-knop) */
-@media (max-width: 767px) {
-  #coach-avatar {
-    position: fixed;          /* prima voor viewport-positie */
-    /* laat JS (inline styles) top/left zetten: */
-    right: auto !important;   /* niet forceren naar rechterkant */
-    bottom: auto !important;
-    z-index: 40;              /* boven coach en knoppen */
-  }
-}
-
-/* ruimte voor de sticky rechts van de coach-bubble */
-#coach-tip {
-  padding-right: clamp(64px, 9vw, 110px); /* was 0; voorkomt overlap met tekst */
-}
-
-/* === Splash overlay (één versie) ========================================= */
+/* =================== [08] Splash overlay / Stage =================== */
 .splash-overlay{
   position: fixed; inset: 0; z-index: 100000;
   display: grid; place-items: center;
@@ -765,107 +412,80 @@ button[data-action="expand-note"].is-hot::after{
   -webkit-backdrop-filter: saturate(1.05) blur(4px);
 }
 
-/* Stage container (één versie) */
-.splash-stage{
-  position: relative;
-  --splash-scale: 1;
-  transform-origin: center center;
-  transform: translateZ(0) scale(var(--splash-scale));
-  will-change: transform;
-  pointer-events: none;
-  filter: drop-shadow(0 24px 60px rgba(0,0,0,.16));
-}
-/* voorkom knippen van de note in de clone */
+.splash-stage{ position: relative; --splash-scale: 1; transform-origin: center center; transform: translateZ(0) scale(var(--splash-scale)); will-change:transform; pointer-events: none; filter: drop-shadow(0 24px 60px rgba(0,0,0,.16)); }
 .splash-stage > * { max-width: unset !important; overflow: visible !important; }
 
-/* Verberg compose in live-clone (alleen als je .is-live op overlay zet) */
 .splash-overlay.is-live #to-inline,
 .splash-overlay.is-live #from-inline,
 .splash-overlay.is-live .compose,
 .splash-overlay.is-live .compose-inline,
-.splash-overlay.is-live [data-compose]{
-  display: none !important;
-}
+.splash-overlay.is-live [data-compose]{ display: none !important; }
 
-/* Zorg dat body & icon in splash altijd zichtbaar zijn en niet animeren */
 .splash-overlay .note #message,
 .splash-overlay .note .message,
 .splash-overlay .note #iconline,
-.splash-overlay .note .iconline{
-  opacity: 1 !important;
-  visibility: visible !important;
-  transition: none !important;
-}
-.splash-overlay .note{
-  animation: none !important;
-  transition: none !important;
+.splash-overlay .note .iconline{ opacity: 1 !important; visibility: visible !important; transition: none !important; }
+.splash-overlay .note{ animation: none !important; transition: none !important; }
+
+@media (prefers-reduced-motion: reduce){
+  .splash-overlay{ transition: opacity .2s ease !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
 }
 
-/* Motion-preferences (één keer) */
-@media (prefers-reduced-motion: reduce){
-  .splash-overlay{
-    transition: opacity .2s ease !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-  }
+/* =================== [09] Toast & Confetti =================== */
+.toast{
+  position:fixed; left:50%; bottom:18px; transform:translateX(-50%); z-index:1300;
+  padding:10px 14px; border-radius:12px; background:rgba(0,0,0,.72); color:#fff; text-align:center; font-size:14px;
+  backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); box-shadow:0 6px 18px rgba(0,0,0,.25)
 }
-/* Mobile: sticky onder de coach-tekst, links uitgelijnd */
+@keyframes confetti{0%{transform:translateY(-20vh) rotate(0); opacity:0}10%{opacity:1}100%{transform:translateY(100vh) rotate(720deg); opacity:0}}
+.confetti{position:fixed; top:-20vh; left:0; width:8px; height:12px; z-index:1400; pointer-events:none; animation:confetti 1.2s linear forwards}
+
+/* =================== [10] Motion / Debug / Animations =================== */
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important; transition:none!important}
+  .confetti{display:none!important}
+  .note.anim-pop{animation:none; opacity:1}
+}
+@keyframes awnPopIn{0%{transform:translateY(8px) scale(.98); opacity:0} 100%{transform:translateY(0) scale(1); opacity:1}}
+.note.anim-pop{ animation:awnPopIn .28s var(--ease) }
+@keyframes awnSparkle{0%{opacity:0; transform:translateY(6px)} 20%{opacity:1; transform:translateY(0)} 100%{opacity:0; transform:translateY(-6px)}}
+.awn-sparkle{ position:fixed; inset:auto auto 16px 16px; pointer-events:none; font-size:18px; opacity:0; animation:awnSparkle .9s ease-out }
+@keyframes awnFieldNudge{0%,100%{transform:translateX(0)} 20%{transform:translateX(-6px)} 40%{transform:translateX(6px)} 60%{transform:translateX(-3px)} 80%{transform:translateX(3px)} }
+.field-nudge{ animation:awnFieldNudge .5s ease; box-shadow:0 0 0 2px rgba(255,213,0,.85) }
+
+/* =================== [11] Responsive / Small viewport polish =================== */
+@media (max-width:500px){
+  .note{ padding-top:38px; padding-bottom:18px }
+  #toline{ position:static!important; display:block; margin-bottom:18px; left:auto; top:auto; font-size:22px }
+  .note .message{ margin-top:0!important }
+}
+@media (max-width:640px){
+  #chip-row { margin-top: calc(10px + env(safe-area-inset-top)); }
+}
+
 @media (max-width: 767px){
   #coach-tip{
     display: flex;
     align-items: center;
     gap: 8px;
-  }
-  #coach-tip .coach-text{
-    order: 1;
-  }
-  #coach-avatar{
-    order: 2;
-    position: static !important;   /* geen absolute/left/top op mobiel */
-    transform: none !important;
-    align-self: flex-start;         /* links */
-    margin-top: 4px;
-    /* voorkom overlap */
-    z-index: 0;
-  }
-}
-
-/* Coach compacter: minder hoog & iets kleinere tekst */
-#coach-tip{
-  padding: 8px 12px !important;   /* was vaak ~12–16px */
-  gap: 8px !important;            /* minder ruimte tussen icon/tekst/close */
-}
-
-/* Tekst iets kleiner en strakker gezet */
-#coach-tip .coach-text{
-  font-size: clamp(13px, 1.7vw, 15px) !important;  /* ~1pt kleiner */
-  line-height: 1.28 !important;                    /* strakker maar leesbaar */
-}
-
-/* Inline CTA in de coach: klein tikdoel maar toegankelijk */
-#coach-tip .coach-inline{
-  font-size: 0.95em !important;
-  line-height: 1.2 !important;
-  padding: 4px 8px !important;
-  border-radius: 8px;
-}
-
-/* Mobile: nog iets compacter als het krap is */
-@media (max-width: 767px){
-  #coach-tip{
     padding: 7px 10px !important;
   }
-  #coach-tip .coach-text{
-    font-size: clamp(13px, 3.6vw, 14px) !important;
-    line-height: 1.26 !important;
+  #coach-tip .coach-text{ order: 1; font-size: clamp(13px, 3.6vw, 14px) !important; line-height: 1.26 !important; }
+  #coach-avatar{
+    order: 2;
+    position: static !important;
+    transform: none !important;
+    align-self: flex-start;
+    margin-top: 4px;
+    z-index: 0;
   }
+
+  #coach-tip{ padding: 7px 10px !important; }
 }
 
-/* Basis: niets forceren, je huidige styles blijven leidend */
-
-/* Donker thema aan op <html class="theme-dark"> of <body class="theme-dark"> */
+/* =================== [12] Theme-dark overrides =================== */
 .theme-dark {
-  color-scheme: dark;                    /* juiste form-controls & UA-colors */
+  color-scheme: dark;
   --bg: #121212;
   --fg: #e8eaed;
   --muted: #9aa0a6;
@@ -874,493 +494,53 @@ button[data-action="expand-note"].is-hot::after{
   --border: rgba(255,255,255,.08);
   --shadow: 0 8px 24px rgba(0,0,0,.45);
 }
-
-/* Pagina-achtergrond & basis-tekst */
-.theme-dark body {
-  background: var(--bg);
-  color: var(--fg);
+.theme-dark body{ background: var(--bg); color: var(--fg); }
+.theme-dark .topbar, .theme-dark .actions, .theme-dark .chips-wrap {
+  background: linear-gradient(180deg, rgba(23,26,31,.92), rgba(23,26,31,.86)); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); box-shadow: var(--shadow); border-bottom: 1px solid var(--border);
 }
-
-/* Topbar / knoppenomgeving (houd jouw layout-class hier aan) */
-.theme-dark .topbar,
-.theme-dark .actions,
-.theme-dark .chips-wrap {
-  background: linear-gradient(180deg, rgba(23,26,31,.92), rgba(23,26,31,.86));
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  box-shadow: var(--shadow);
-  border-bottom: 1px solid var(--border);
-}
-
-/* Buttons (gebruik je bestaande .btn; alleen kleur aanpassen) */
-.theme-dark .btn {
-  background: rgba(255,255,255,.10);
-  color: var(--fg);
-  box-shadow: 0 6px 18px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.06);
-}
+.theme-dark .btn { background: rgba(255,255,255,.10); color: var(--fg); box-shadow: 0 6px 18px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.06); }
 .theme-dark .btn:hover { background: rgba(255,255,255,.16); }
-
-/* Chips */
-.theme-dark .chip { 
-  background: rgba(255,255,255,.08);
-  color: var(--fg);
-  border-color: var(--border);
-}
+.theme-dark .chip { background: rgba(255,255,255,.08); color: var(--fg); border-color: var(--border); }
 .theme-dark .chip.active { background: rgba(255,255,255,.18); }
 
-/* Coach */
-.theme-dark #coach-tip{
-  background: var(--surface);
-  color: var(--fg);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow);
-}
-.theme-dark #coach-tip .coach-inline{
-  background: rgba(255,255,255,.12);
-  color: var(--fg);
+.theme-dark #coach-tip{ background: var(--surface); color: var(--fg); border: 1px solid var(--border); box-shadow: var(--shadow); }
+.theme-dark #coach-tip .coach-inline{ background: rgba(255,255,255,.12); color: var(--fg); }
+
+.theme-dark #sheet-backdrop .sheet, .theme-dark #about-backdrop .sheet, .theme-dark #msgr-help-backdrop .sheet {
+  background: var(--surface-2); color: var(--fg); border: 1px solid var(--border); box-shadow: var(--shadow);
 }
 
-/* Sheets / backdrops */
-.theme-dark #sheet-backdrop .sheet,
-.theme-dark #about-backdrop .sheet,
-.theme-dark #msgr-help-backdrop .sheet {
-  background: var(--surface-2);
-  color: var(--fg);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow);
+.theme-dark #toast{ background: rgba(255,255,255,.12); color: var(--fg); border-color: var(--border); }
+
+.theme-dark input[type="text"], .theme-dark input[type="search"], .theme-dark input[type="email"], .theme-dark input[type="tel"], .theme-dark textarea, .theme-dark #to-inline, .theme-dark #from-inline {
+  background: rgba(255,255,255,.12); color: #f3f4f6; border: 1px solid rgba(255,255,255,.18); box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
+}
+.theme-dark input::placeholder, .theme-dark textarea::placeholder { color: rgba(255,255,255,.55); }
+.theme-dark input:focus, .theme-dark textarea:focus, .theme-dark #to-inline:focus, .theme-dark #from-inline:focus {
+  outline: none; border-color: rgba(255,255,255,.34);
+  box-shadow: 0 0 0 3px rgba(255,255,255,.08), inset 0 1px 0 rgba(255,255,255,.06);
 }
 
-/* Toast */
-.theme-dark #toast{
-  background: rgba(255,255,255,.12);
-  color: var(--fg);
-  border-color: var(--border);
-}
-
-/* Splash overlay */
-.theme-dark .splash-overlay{
-  background: radial-gradient(1200px 600px at 50% -100px, rgba(255,255,255,.08), rgba(0,0,0,.75));
-}
-
-/* --- Inputs iets lichter in dark mode --- */
-.theme-dark input[type="text"],
-.theme-dark input[type="search"],
-.theme-dark input[type="email"],
-.theme-dark input[type="tel"],
-.theme-dark textarea,
-.theme-dark #to-inline,
-.theme-dark #from-inline {
-  background: rgba(255,255,255,.12);   /* net lichter dan de UI */
-  color: #f3f4f6;                      /* helder maar niet spierwit */
-  border: 1px solid rgba(255,255,255,.18);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
-}
-
-.theme-dark input::placeholder,
-.theme-dark textarea::placeholder {
-  color: rgba(255,255,255,.55);        /* beter contrast voor hint */
-}
-
-/* Focusring subtiel en duidelijk */
-.theme-dark input:focus,
-.theme-dark textarea:focus,
-.theme-dark #to-inline:focus,
-.theme-dark #from-inline:focus {
-  outline: none;
-  border-color: rgba(255,255,255,.34);
-  box-shadow:
-    0 0 0 3px rgba(255,255,255,.08),   /* soft outer glow */
-    inset 0 1px 0 rgba(255,255,255,.06);
-}
-
-/* Positioning context */
+/* =================== [13] Utilities / Misc / Small fixes =================== */
 .note-wrap { position: relative; }
-#note { position: relative; }  /* <<< belangrijk: anker voor de chevrons */
+#note { position: relative; }
 
-/* Chevrons */
-.chev{
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  display: grid; place-items: center;
-  width: 44px; height: 44px; border-radius: 999px;
-  font-size: 24px; line-height: 1;
-  background: rgba(0,0,0,.06);
-  color: #222;
-  border: none;
-  box-shadow: 0 2px 8px rgba(0,0,0,.08);
-  opacity: 0; pointer-events: none; transition: opacity .15s ease;
-  -webkit-tap-highlight-color: transparent;
-  z-index: 3; /* boven tape etc. */
-}
-
-/* Hangen net *in* de note-rand */
+.chev{ position: absolute; top: 50%; transform: translateY(-50%); display: grid; place-items: center; width: 44px; height: 44px; border-radius: 999px; font-size: 24px; line-height: 1; background: rgba(0,0,0,.06); color: #222; border: none; box-shadow: 0 2px 8px rgba(0,0,0,.08); opacity: 0; pointer-events: none; transition: opacity .15s ease; z-index: 3; -webkit-tap-highlight-color: transparent; }
 .chev--left  { left: 16px;  }
 .chev--right { right: 16px; }
 
-/* Zichtbaar bij intentie:*/
+button[data-action="expand-note"].is-hot{ box-shadow: 0 0 0 2px rgba(0,0,0,.15), 0 8px 24px rgba(0,0,0,.16); position: relative; }
+button[data-action="expand-note"].is-hot::after{ content:""; position:absolute; inset:-6px; border-radius:12px; pointer-events:none; animation: splashPulse 1.4s ease-out infinite; border:2px solid currentColor; opacity:.35; }
+@keyframes splashPulse{ 0%   { transform: scale(.9); opacity:.55; } 100% { transform: scale(1.2); opacity:0; } }
 
-.note-wrap:hover .chev,
-.note-wrap:focus-within .chev,
-.chev:hover,
-.chev:focus-visible{
-  opacity: 1; pointer-events: auto;
-}
+#btn-share { background: rgba(255,255,255,.10); line-height: 1; }
+#btn-share, #btn-share * { overflow: visible; }
+#btn-share svg { width: 20px; height: 20px; display: block; }
 
-/* Mobile: altijd subtiel zichtbaar */
-@media (max-width: 480px){
-  .chev{ opacity: .9; pointer-events: auto; }
-}
+.lang-dd { position: relative; display:inline-block; }
+.lang-btn{ display:inline-flex; align-items:center; gap:.35rem; background:rgba(0,0,0,.25); color:#fff; border:0; border-radius:.8rem; padding:.45rem .7rem; line-height:1; cursor:pointer; }
+.lang-item{ width:100%; display:flex; align-items:center; gap:.6rem; background:transparent; border:0; color:inherit; text-align:left; padding:.55rem .6rem; border-radius:.6rem; cursor:pointer; }
+.lang-item[aria-checked="true"]{ font-weight:700; }
+.lang-item:hover{ background:rgba(255,255,255,.08); }
 
-/* Dark mode */
-@media (prefers-color-scheme: dark){
-  .chev{ background: rgba(255,255,255,.10); color: #eee; }
-}
-/* A11Y helper */
-.sr-only{
-  position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden;
-  clip:rect(0,0,0,0); white-space:nowrap; border:0;
-}
-
-.note-wrap { position: relative; }
-#note { position: relative; } /* anker voor visuele referentie */
-
-.nav-ctl{
-  position: absolute;
-  inset: 0;               /* overlay boven de note */
-  pointer-events: none;   /* container zelf niet klikbaar */
-}
-
-/* Buttons: grote touch targets, overlay, pointer-events aan */
-.nav-btn{
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 44px; height: 44px; border-radius: 999px;
-  display: grid; place-items: center;
-  background: rgba(0,0,0,.06);
-  border: none;
-  box-shadow: 0 2px 8px rgba(0,0,0,.08);
-  color: #222;
-  pointer-events: auto;
-  opacity: 0;
-  transition: opacity .15s ease;
-  -webkit-tap-highlight-color: transparent;
-  z-index: 3;
-}
-
-/* Dicht tegen de note (naar wens 4–10px) */
-.nav-btn--prev { left: 6px; }
-.nav-btn--next { right: 6px; }
-
-/* Chevron-iconen via ::before, tekst is sr-only */
-.nav-btn--prev::before { content: '‹'; font-size: 24px; line-height: 1; }
-.nav-btn--next::before { content: '›'; font-size: 24px; line-height: 1; }
-
-/* Zichtbaar bij intentie: hover/focus op wrapper of knop zelf */
-.note-wrap:hover .nav-btn,
-.note-wrap:focus-within .nav-btn,
-.nav-btn:hover,
-.nav-btn:focus-visible { opacity: 1; }
-
-/* Mobile: altijd subtiel zichtbaar (optioneel) */
-@media (max-width: 480px){
-  .nav-btn{ opacity: .9; }
-}
-
-/* Dark mode */
-@media (prefers-color-scheme: dark){
-  .nav-btn{ background: rgba(255,255,255,.10); color: #eee; }
-}
-/* Subtiele, zuinige “double-beat” voor het hartje in de coach */
-.coach-heart{
-  display:inline-block;
-  transform-origin: center;
-  will-change: transform, filter, text-shadow, opacity;
-  animation: coach-heart-beat 7s ease-in-out infinite;
-  /* iets minder opdringerig standaard */
-  opacity: .92;
-}
-
-/* Hover/focus mag iets nadrukkelijker zijn */
-#coach-tip:hover .coach-heart,
-#coach-tip:focus-within .coach-heart{
-  animation-duration: 6.5s;
-  opacity: 1;
-}
-
-@keyframes coach-heart-beat{
-  /* Rustfase */
-  0%   { transform: scale(1);   filter: none; text-shadow: none; }
-  /* Beat 1 (kort-krachtig) */
-  8%   { transform: scale(1.16); filter: saturate(1.2); text-shadow: 0 0 6px rgba(255,200,0,.25); }
-  12%  { transform: scale(1.00); filter: none;           text-shadow: none; }
-  /* Beat 2 (iets kleiner) */
-  16%  { transform: scale(1.10); filter: saturate(1.1);  text-shadow: 0 0 4px rgba(255,200,0,.18); }
-  20%  { transform: scale(1.00); filter: none;           text-shadow: none; }
-  /* Lange rust tot volgende cyclus */
-  100% { transform: scale(1);    filter: none;           text-shadow: none; }
-}
-
-/* Respecteer reduce motion */
-@media (prefers-reduced-motion: reduce){
-  .coach-heart{ animation: none; }
-}
-/* ==== Coach pulse (halo rondom de coach-box) ========================= */
-#coach-tip{ position: relative; isolation: isolate; } /* eigen stacking context */
-
-#coach-tip::after{
-  content: "";
-  position: absolute;
-  inset: -6px;                 /* halo net buiten de box */
-  border-radius: 14px;         /* match je coach-box radius */
-  pointer-events: none;
-  z-index: -1;                 /* achter de inhoud van coach-tip */
-  background: radial-gradient(
-    circle,
-    rgba(255, 210, 0, .30) 0%,  /* warme gele gloed */
-    rgba(255, 210, 0, .18) 35%,
-    rgba(255, 210, 0, .00) 70%
-  );
-  transform: scale(.95);
-  opacity: 0;
-  animation: coach-pulse 2.6s ease-out infinite;
-}
-
-/* Iets actiever bij hover/focus (kortere cycle) */
-#coach-tip:hover::after,
-#coach-tip:focus-within::after{
-  animation-duration: 2.0s;
-}
-
-@keyframes coach-pulse{
-  0%   { transform: scale(.94); opacity: .0; }
-  10%  { transform: scale(1.00); opacity: .70; }  /* snelle opbouw */
-  35%  { transform: scale(1.08); opacity: .30; }
-  60%  { transform: scale(1.12); opacity: .12; }  /* spreidt uit */
-  100% { transform: scale(1.20); opacity: .0; }    /* volledig vervaagd */
-}
-
-/* Respecteer OS-instelling */
-@media (prefers-reduced-motion: reduce){
-  #coach-tip::after{ animation: none; opacity: 0; }
-  
-}/* Calm Breathe <div id="coach-tip" class="breathe">…</div> */
-#coach-tip.breathe{ position:relative; isolation:isolate; }
-#coach-tip.breathe::after{
-  content:""; position:absolute; inset:-6px; border-radius:14px; pointer-events:none; z-index:-1;
-  background: radial-gradient(circle, rgba(255,210,0,.22) 0%, rgba(255,210,0,.10) 40%, rgba(255,210,0,0) 72%);
-  transform: scale(.96); opacity:.0; animation: coach-breathe 5.5s ease-in-out infinite;
-}
-@keyframes coach-breathe{
-  0%{   transform:scale(.96); opacity:.00; }
-  25%{  transform:scale(1.02); opacity:.35; }
-  50%{  transform:scale(1.06); opacity:.18; }
-  75%{  transform:scale(1.02); opacity:.30; }
-  100%{ transform:scale(.96); opacity:.00; }
-}
-@media (prefers-reduced-motion: reduce){
-  #coach-tip.breathe::after{ animation:none; opacity:0; }
-}
-
-/* Footer link zichtbaar/onderstreept (alle pagina's) */
-.site-footer nav, .site-footer a {
-  display: inline-block;
-  visibility: visible;
-  opacity: 1;
-  text-decoration: underline;
-  color: inherit;
-}
-/* ===== About theme (scoped) =========================================== */
-.about-theme { --ink:#151515; --muted:rgba(0,0,0,.62); --card:#fff; --ring:rgba(255,210,0,.28); }
-@media (prefers-color-scheme: dark){
-  .about-theme { --ink:#eee; --muted:rgba(255,255,255,.68); --card:#1b1b1b; --ring:rgba(255,210,0,.20); }
-}
-.about-theme { color: var(--ink); }
-
-/* layout helpers */
-.container { max-width: 960px; margin: 0 auto; padding: 24px; }
-
-/* topbar */
-.about-topbar{
-  position: sticky; top: 0; z-index: 5;
-  display:flex; align-items:center; justify-content:space-between;
-  padding: 12px 24px; backdrop-filter: blur(6px);
-  background: color-mix(in srgb, var(--card) 78%, transparent);
-  border-bottom: 1px solid color-mix(in srgb, var(--ink) 10%, transparent);
-}
-.about-back{ text-decoration:none; color:inherit; opacity:.85; }
-.about-back:hover{ opacity:1; }
-.about-nav .about-link{ text-decoration: underline; color: inherit; }
-
-/* hero */
-.about-heroSection{
-  display:grid; place-items:center; padding: 36px 16px 24px;
-  background:
-    radial-gradient(1200px 600px at 50% -10%, rgba(255,230,109,.25), transparent 60%),
-    radial-gradient(800px 400px at 10% 0%, rgba(255,210,0,.18), transparent 55%),
-    radial-gradient(900px 520px at 90% 0%, rgba(255,170,0,.12), transparent 50%);
-}
-.about-heroCard{
-  text-align:center; background: var(--card);
-  border: 1px solid color-mix(in srgb, var(--ink) 10%, transparent);
-  border-radius: 20px; padding: 24px 20px; width: min(840px, 96vw);
-  box-shadow: 0 12px 40px rgba(0,0,0,.08);
-  position: relative; isolation: isolate;
-}
-.about-heroCard::after{
-  content:""; position:absolute; inset:-8px; border-radius: 22px; z-index:-1;
-  background: radial-gradient(circle, var(--ring), transparent 70%);
-  transform: scale(.96); opacity: .0; animation: aboutHalo 3.8s ease-out infinite;
-}
-@keyframes aboutHalo{
-  0%{transform:scale(.94); opacity:0;}
-  12%{transform:scale(1.02); opacity:.55;}
-  60%{transform:scale(1.10); opacity:.12;}
-  100%{transform:scale(1.18); opacity:0;}
-}
-.about-logo{ width:64px; height:64px; margin-bottom: 8px; }
-.about-title{ margin: 4px 0 6px; font-size: clamp(28px, 4.5vw, 40px); line-height:1.15; }
-.about-subtitle{ display:block; font-size: clamp(14px, 2.1vw, 18px); color: var(--muted); }
-.about-tagline{ margin: 8px 0 14px; color: var(--muted); }
-.about-heart{
-  display:inline-block; transform-origin:center;
-  animation: heartBeat 6.5s ease-in-out infinite; opacity:.95;
-}
-@keyframes heartBeat{
-  8%{ transform: scale(1.16); } 12%{ transform: scale(1.00); }
-  16%{ transform: scale(1.10); } 20%{ transform: scale(1.00); }
-}
-.about-pillRow{ display:flex; flex-wrap:wrap; gap:8px; justify-content:center; }
-.about-pill{
-  padding:6px 10px; border-radius:999px; font-size:13px;
-  background: color-mix(in srgb, var(--ink) 6%, transparent);
-  border: 1px solid color-mix(in srgb, var(--ink) 10%, transparent);
-}
-
-/* content */
-.about-main{ padding: 16px 24px 24px; }
-.about-section{ margin: 18px 0 12px; }
-.about-h2{ font-size: clamp(20px, 3vw, 26px); margin: 0 0 8px; }
-.about-h3{ font-size: clamp(16px, 2.1vw, 18px); margin: 0 0 6px; }
-
-.about-grid{
-  display:grid; gap: 12px; margin: 16px 0 8px;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-}
-.about-card{
-  background: var(--card);
-  border: 1px solid color-mix(in srgb, var(--ink) 10%, transparent);
-  border-radius: 16px; padding: 14px 14px 16px;
-  box-shadow: 0 8px 24px rgba(0,0,0,.06);
-}
-
-/* privacy */
-.about-privacy{ scroll-margin-top: 80px; } /* anchor lands netjes onder topbar */
-.about-updated{ color: var(--muted); margin: 4px 0 10px; }
-
-.about-acc{
-  margin: 8px 0; background: var(--card);
-  border: 1px solid color-mix(in srgb, var(--ink) 10%, transparent);
-  border-radius: 14px; padding: 0;
-  overflow: clip;
-  box-shadow: 0 6px 18px rgba(0,0,0,.05);
-}
-.about-acc > summary{
-  cursor: pointer; list-style: none; padding: 12px 14px; position: relative;
-  font-weight: 600;
-}
-.about-acc > summary::-webkit-details-marker{ display:none; }
-.about-acc > summary::after{
-  content: "›"; position:absolute; right: 12px; top: 50%; transform: translateY(-50%) rotate(90deg);
-  opacity:.7; transition: transform .18s ease;
-}
-.about-acc[open] > summary::after{ transform: translateY(-50%) rotate(270deg); }
-.about-acc > div{ padding: 0 14px 12px; color: var(--muted); }
-
-/* footer */
-.about-footer{
-  display:flex; align-items:center; justify-content:space-between; gap:12px;
-  padding: 18px 24px; margin-top: 12px;
-  border-top: 1px solid color-mix(in srgb, var(--ink) 10%, transparent);
-}
-.about-footer .about-link{ text-decoration: underline; color: inherit; }
-
-/* print (compact, privacy only) */
-@media print{
-  .about-topbar, .about-heroSection, .about-grid, .about-footer { display:none !important; }
-  .about-section { margin: 0; }
-  .about-privacy { margin-top: 0; }
-}
-/* === ABOUT FIX PACK: contrast & compact ================================= */
-
-/* Forceer donker leesbare tekst (soms overschreven door globale thema's) */
-.about-theme,
-.about-theme * {
-  color: #222 !important;
-}
-
-/* Hero-kaart en pills: lichte achtergrond met duidelijke rand */
-.about-heroCard {
-  background: #fff !important;
-  border-color: rgba(0,0,0,.10) !important;
-}
-.about-pill {
-  background: rgba(0,0,0,.05) !important;
-  border-color: rgba(0,0,0,.12) !important;
-}
-
-/* Typografie kleiner en rustiger */
-.about-title     { font-size: clamp(24px, 4vw, 32px) !important; }
-.about-subtitle  { font-size: clamp(13px, 1.8vw, 16px) !important; }
-.about-tagline   { font-size: clamp(14px, 2vw, 16px) !important; }
-.about-h2        { font-size: clamp(18px, 2.5vw, 22px) !important; }
-.about-h3        { font-size: clamp(15px, 2vw, 17px) !important; }
-.about-main p,
-.about-card p,
-.about-privacy div { font-size: 15px !important; line-height: 1.5; }
-
-/* Cards compacter */
-.about-card { padding: 12px 12px 14px !important; }
-
-/* Accordeon headings compacter + betere klikdoel */
-.about-acc > summary { padding: 10px 12px !important; }
-.about-acc > div     { padding: 0 12px 10px !important; }
-
-/* Hero-anim glans wat subtieler zodat tekst leesbaar blijft */
-.about-heroCard::after { opacity: .0 !important; }
-@media (prefers-reduced-motion: no-preference){
-  .about-heroCard::after { opacity: .10 !important; }
-}
-
-/* Link-stijl zichtbaar maar niet schreeuwerig */
-.about-link { text-decoration: underline; color: inherit !important; }
-
-/* Donker thema fijntunen (mocht systeem donker zijn) */
-@media (prefers-color-scheme: dark){
-  .about-theme,
-  .about-theme * { color: #eee !important; }
-  .about-heroCard { background: #1b1b1b !important; border-color: rgba(255,255,255,.12) !important; }
-  .about-pill { background: rgba(255,255,255,.08) !important; border-color: rgba(255,255,255,.14) !important; }
-}
-
-/* Taalgestuurd tonen/verbergen */
-html[lang="nl"] .seo-snippet--en { display: none; }
-html[lang="en"] .seo-snippet--nl { display: none; }
-
-/* Subtiele opmaak */
-.seo-snippet {
-  margin: 3rem auto;
-  max-width: 640px;
-  font-size: .95rem;
-  line-height: 1.55;
-  color: #444;
-  text-align: center;
-}
-.seo-snippet h2 {
-  font-size: 1.2rem;
-  margin-bottom: .5rem;
-  color: #222;
-}
-
-/* --
+/* End of updated styles.css */
