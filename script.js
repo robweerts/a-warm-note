@@ -23,6 +23,7 @@
  [T] MOBILE BOOT INTRO            – small mobile intro
  [U] AI SHEET GLUE				  -	AI Sheet 	
  ========================================================================== */
+/* Copyright (c) 2025 ShareNet b.v. */
 
 /* [A] CONFIG & CONSTANTEN --------------------------------------------------- */
 
@@ -56,6 +57,57 @@ function resolveLang() {
     return DEFAULT_LANG;
   }
 }
+
+/* ===== Country detection (lightweight + cached) ========================= */
+
+/** Probeer snel-synchroon een regio uit de browser te halen, bv. "en-US" -> "US" */
+function resolveCountrySync(){
+  // 1) navigator.language of Intl locale: "en-US", "nl-NL", "en-GB", etc.
+  try {
+    const cand =
+      (navigator.language || '') ||
+      (Intl.DateTimeFormat().resolvedOptions().locale || '');
+    const m = String(cand).match(/[-_](\w{2})$/);
+    if (m && m[1]) return m[1].toUpperCase();
+  } catch {}
+  // 2) fallback: geen idee → US
+  return 'US';
+}
+
+/** Async met sessionStorage cache + optionele /api/geo (Cloudflare Worker) */
+async function resolveCountry(){
+  try {
+    const cached = sessionStorage.getItem('awn_country');
+    if (cached) return cached;
+  } catch {}
+
+  // snelle gok uit browser
+  let country = resolveCountrySync();
+
+  // optioneel: probeer serverhint als je een Worker expose’t die CF-IPCountry doorgeeft
+  // Endpoint verwacht JSON: { country: "NL" }
+  try {
+    const res = await fetch('/api/geo', { cache: 'no-store' });
+    if (res.ok) {
+      const data = await res.json().catch(()=> ({}));
+      if (data && typeof data.country === 'string' && data.country.length === 2) {
+        country = data.country.toUpperCase();
+      }
+    }
+  } catch {}
+
+  try { sessionStorage.setItem('awn_country', country); } catch {}
+  return country;
+}
+
+/** Handige getter die de cache/beste gok geeft zonder await */
+function currentCountry(){
+  try { return sessionStorage.getItem('awn_country') || resolveCountrySync(); }
+  catch { return resolveCountrySync(); }
+}
+
+// === End Country detection ================
+
 
 (function initTextLangSwitcher(){
   const root = document;
@@ -792,65 +844,51 @@ function buildSentimentChips(){
   row.innerHTML = "";
 
   const isEn = (STATE?.lang === 'en');
-  const hasBirthday = Array.isArray(STATE?.allMessages) &&
-  STATE.allMessages.some(m => Array.isArray(m.sentiments) && m.sentiments.includes('birthday'));
 
-if (hasBirthday) {
-  row.appendChild(
-    makeChip('birthday', isEn ? 'Birthday 🎂' : 'Verjaardag 🎂')
-  );
-}
-  // --- Leo: korte coach bij eerste chip-klik (3x per sessie) ---------------
-  // --- Leo CTA: chip-klik → CTA (1x per sessie, debug-bypass) -------------
-  try {
-    const SESSION_KEY = 'awn_cta_chip_once';
-    const isDebug = getAppURL().searchParams.get('debug_leo') === '1' || window.AWN_FLAGS?.debugLeo;
-
-    const handler = (e) => {
-      const chip = e.target?.closest?.('.chip');
-      if (!chip) return;
-
-      if (!window.LeoCTA) return;                 // safety
-      if (!isDebug && sessionStorage.getItem(SESSION_KEY) === '1') return;
-
-      // laat de CTA-engine praten
-      window.LeoCTA.fire('chip');
-
-      if (!isDebug) sessionStorage.setItem(SESSION_KEY, '1');
-      // ontkoppelen na 1x (in debug laten we 'm zitten)
-      if (!isDebug) try { row.removeEventListener('click', handler, true); } catch {}
-    };
-
-    // capture=true voorkomt botsen met bestaande onclicks op .chip
-    row.addEventListener('click', handler, true);
-  } catch {}
-
+  // Thema-chips (ongewijzigd)
   const activeTheme = getActiveTheme();
   if (activeTheme === THEME.VALENTINE) {
     row.appendChild(makeThemeChip('valentine', isEn ? 'Valentine ❤️' : 'Valentijn ❤️'));
   } else if (activeTheme === THEME.NEWYEAR) {
-    row.appendChild(makeThemeChip('newyear', isEn ? 'New Year ✨'  : 'Nieuwjaar ✨'));
+    row.appendChild(makeThemeChip('newyear', isEn ? 'New Year ✨' : 'Nieuwjaar ✨'));
   } else if (activeTheme === THEME.EASTER) {
-    row.appendChild(makeThemeChip('easter', isEn ? 'Easter 🐣'    : 'Pasen 🐣'));
+    row.appendChild(makeThemeChip('easter', isEn ? 'Easter 🐣' : 'Pasen 🐣'));
   }
 
-  // “Alles / All” chip
+  // “Alles / All”
   row.appendChild(makeChip(null, isEn ? "All" : "Alles"));
 
-  // Data-gedreven chips (max 10)
-  (STATE.sentiments || []).slice(0,10).forEach(tag => {
-    const label = capitalize(tag);
-    row.appendChild(makeChip(tag, label));
+  // Data-gedreven chips, maar ZONDER 'birthday'
+  const allKeys = (STATE.sentiments || []).slice(0,10);
+  const keysNoBirthday = allKeys.filter(k => k !== 'birthday');
+  keysNoBirthday.forEach(tag => {
+    row.appendChild(makeChip(tag, capitalize(tag)));
   });
 
+  // Verjaardag als LAATSTE (alleen als dataset 'm echt heeft)
+  const hasBirthday =
+    Array.isArray(STATE?.allMessages) &&
+    STATE.allMessages.some(m => Array.isArray(m.sentiments) && m.sentiments.includes('birthday'));
+  if (hasBirthday) {
+    row.appendChild(makeChip('birthday', isEn ? 'Birthday 🎂' : 'Verjaardag 🎂'));
+  }
+  
   // Standaard: alles actief
   setActiveFilter({ sentiment: null, special: null });
 
-  // Affordance
+  // Affordance/hints (zonder CTA/Leo-calls hier!)
   setupChipsAffordance();
   showChipsHintOnce();
+  // CTA bij eerste chip-klik (Engine heeft al session-cooldown)
+  row.addEventListener('click', function onFirstChip(e){
+  if (!e.target.closest('.chip')) return;
+  window.LeoCTA?.fire('chip');               // laat de CTA-engine praten
+  row.removeEventListener('click', onFirstChip, true);
+  } , true);
 }
 
+
+ 
 function makeThemeChip(specialKey, label){
   const b = document.createElement("button");
   b.className = "chip chip--theme";
@@ -1307,8 +1345,11 @@ el.addEventListener("touchend", ()=>{
   if (Math.abs(dx) > 20 && Math.abs(dx) > Math.abs(dy)) {
     // Zorg dat er een navigator is
 	// binnen touchend:
+	    // ⬇︎ CTA: eerste swipe in deze sessie
+    try { window.LeoCTA?.fire('firstSwipe'); } catch {}
 if (!NAV) onSentimentChosen(STATE.lang, STATE.activeSentiment || null);
 if (!NAV) return;
+
 
 const nextMsg = (dx < 0) ? NAV.next() : NAV.prev();
 if (nextMsg) {
@@ -1453,6 +1494,7 @@ window.onAIGeneratedText = function onAIGeneratedText(msg){
   };
   window.onAIGeneratedText.__awn_ai_sink = true;
   // === AI ↔ Coach/CTA bridge (uniform gedrag) ===============================
+  
 (function(){
   const setStatus = (txtNL, txtEN) => {
     try {
@@ -1574,7 +1616,7 @@ function updateCoach(state, vars = {}, opts = {}){
   init:     themedInit || "Pick a feeling, select a message and send your note.",
   toFilled: `Nice! Click <button type="button" class="coach-inline">Send</button> to share your message.`,
   shared:   "Your 'warm note' has been sent.<br> Make another one?",
-  received: "You’ve received a warm note.<br> Send your own? Tap ‘New message’.",
+  received: "You’ve received a warm note,<br> because you are special.",
   error:    "Add who it’s for first",
   category: "Now pick 'a warm note' from the feeling {{category}}.",
   aiThinking: "Thinking… 💭",
@@ -1583,7 +1625,7 @@ function updateCoach(state, vars = {}, opts = {}){
   init:     themedInit || "Stuur een warm bericht met het juiste sentiment.",
   toFilled: `Mooi! Klik <button type="button" class="coach-inline">Verstuur</button> om je boodschap te delen.`,
   shared:   "Je boodschap is verstuurd<br>Nog eentje maken?",
-  received: "Je hebt een 'a warm note' ontvangen.<br>Zelf iemand verrassen? Klik ‘Kies bericht’.",
+  received: "Je hebt een 'a warm note' ontvangen, <br> omdat je bijzonder bent.",
   error:    "Vul eerst in voor wie dit is.",
   category: "Kies nu 'a warm note' uit {{categorie}}.",
   aiThinking: "Even denken… 💭",
@@ -1729,80 +1771,6 @@ function hideCoach(hide = true){
 
 // Starten na DOM ready (naast je bestaande init)
 document.addEventListener('DOMContentLoaded', installCoachOverlayBridge);
-/* [J-CTA] === LEO CTA ENGINE (centraal, met queue & boot) =================== */
-(function(){
-  // 1) Interne queue zodat fires vóór boot niet verloren gaan
-  const _queue = [];
-  let _ready = false;
-
-  // 2) Standaard handlers (kun je later overschrijven met LeoCTA.use({...}))
-  const handlers = {
-    idle(){
-      const isEN = (document.documentElement.lang||'nl').toLowerCase().startsWith('en');
-      const txt  = isEN
-        ? "Need a nudge? Try AI Compose to draft your note ✨"
-        : "Een zetje nodig? Probeer AI Compose voor een eerste versie ✨";
-      try { window.LeoFab?.say?.(txt); } catch(_){}
-    },
-    chip(){
-      const isEN = (document.documentElement.lang||'nl').toLowerCase().startsWith('en');
-      const txt  = isEN
-        ? "Nice choice 💛 See what message fits your mood!"
-        : "Mooie keuze 💛 Kijk welk bericht erbij past!";
-      try { window.LeoFab?.say?.(txt); } catch(_){}
-    },
-    aiStarted(){
-      const isEN = (document.documentElement.lang||'nl').toLowerCase().startsWith('en');
-      try { window.LeoFab?.say?.(isEN ? "Thinking… 💭" : "Even denken… 💭"); } catch(_){}
-    },
-    aiResult(){
-      const isEN = (document.documentElement.lang||'nl').toLowerCase().startsWith('en');
-      try { window.LeoFab?.say?.(isEN ? "AI draft ready ✨" : "AI-voorstel klaar ✨"); } catch(_){}
-    },
-    aiError(){
-      const isEN = (document.documentElement.lang||'nl').toLowerCase().startsWith('en');
-      try { window.LeoFab?.say?.(isEN ? "Hmm, something went wrong." : "Hmm, er ging iets mis."); } catch(_){}
-    }
-  };
-
-  function _deliver(type, payload){
-    try {
-      const fn = handlers[type];
-      if (typeof fn === 'function') fn(payload);
-    } catch(e){ console.warn('[LeoCTA] handler error', e); }
-  }
-
-  // 3) Publieke API (centraal & stabiel)
-  window.LeoCTA = {
-    fire(type, payload){
-      if (!_ready) { _queue.push([type,payload]); return; }
-      _deliver(type, payload);
-    },
-    use(map){ if (map && typeof map === 'object') Object.assign(handlers, map); },
-    _isReady(){ return _ready; }
-  };
-
-  // 4) Boot: mount Leo + flush queue + eerste bubble (welcome/received)
-  document.addEventListener('DOMContentLoaded', ()=>{
-    try { window.LeoFab?.mount?.(); } catch(_){}
-
-    _ready = true;
-    // flush events die vóór boot zijn afgevuurd
-    while(_queue.length){ const [t,p] = _queue.shift(); _deliver(t,p); }
-
-    // zachte intro-bubble, zodat engine zichtbaar actief is
-    try {
-      const isEN  = (document.documentElement.lang||'nl').toLowerCase().startsWith('en');
-      const hasMid= !!(window.getAppURL?.().searchParams.get('mid'));
-      const txt   = hasMid
-        ? (isEN ? "💛 You’ve received a warm note. Send one back?" :
-                  "💛 Je hebt een warm note ontvangen. Stuur er ook één terug?")
-        : (isEN ? "✨ Pick a feeling and try AI Compose to get started." :
-                  "✨ Kies een gevoel en probeer AI Compose om te beginnen.");
-      setTimeout(()=> { try { window.LeoFab?.say?.(txt); } catch(_){ } }, 2200);
-    } catch(_){}
-  });
-})();
 
 /* [K] === SHARE-SHEET (WA/E-mail/Download/Kopieer/Native) ============================== */
 let __lastFocusEl = null;
@@ -1956,6 +1924,7 @@ async function onCopyLink(){
   closeShareSheet();
   afterShareSuccess();
   showToast(i18n.toast);
+  try { LeoCTA.fire('afterCopy', { delayMs: 300 }); } catch {}
 }
 
 function onShareWhatsApp(){
@@ -2271,6 +2240,110 @@ function afterShareSuccess(){
   updateCoach('shared');
 }
 
+// === GENERIC SHEET SWIPE ==============================
+
+(function installDragToClose(){
+  const BACKDROP_IDS = ['sheet-backdrop','ai-backdrop','qr-backdrop','about-backdrop','msgr-help-backdrop'];
+
+  const CLOSE_ATTR_DELAY = 260;     // ms: match je sheet close animatie
+  const THRESHOLD_CLOSE  = 120;     // px: voorbij dit punt sluiten
+  const RUBBER           = 0.6;     // >0 en <1 geeft ‘rubber-band’ gevoel
+
+  function ensureHandle(sheet){
+    const header = sheet.querySelector('.sheet-header') || sheet.firstElementChild;
+    if (!header) return;
+    if (!header.querySelector('.drag-indicator')){
+      const h = document.createElement('div');
+      h.className = 'drag-indicator';
+      header.appendChild(h);
+    }
+  }
+
+  function attach(backdrop){
+    if (!backdrop) return;
+    const sheet = backdrop.querySelector('.sheet');
+    if (!sheet) return;
+
+    ensureHandle(sheet);
+
+    let startY=0, lastY=0, dragging=false, dy=0, pointerId=null;
+
+    const onStart = (e)=>{
+      const pt = (e.touches && e.touches[0]) || e;
+      startY = lastY = pt.clientY;
+      dragging = true; dy = 0; pointerId = e.pointerId ?? null;
+      sheet.classList.add('sheet--dragging');
+      sheet.style.setProperty('--dragY', '0px');
+
+      // capture move/end
+      if (e.type === 'pointerdown') sheet.setPointerCapture(pointerId);
+      document.addEventListener('pointermove', onMove, { passive:false });
+      document.addEventListener('pointerup', onEnd, { passive:true, once:true });
+      document.addEventListener('touchmove', onMove, { passive:false });
+      document.addEventListener('touchend', onEnd, { passive:true, once:true });
+    };
+
+    const onMove = (e)=>{
+      if (!dragging) return;
+      const pt = (e.touches && e.touches[0]) || e;
+      const y = pt.clientY;
+      const raw = y - startY;
+      // alleen naar beneden slepen; met rubber-band
+      dy = raw > 0 ? raw * RUBBER : raw * 0.2;
+      if (dy < 0) dy = 0;
+      sheet.style.setProperty('--dragY', dy + 'px');
+
+      // voorkomen dat de pagina scrolt terwijl je sleept
+      if (Math.abs(dy) > 4) e.preventDefault();
+      lastY = y;
+    };
+
+    const onEnd = ()=>{
+      if (!dragging) return;
+      dragging = false;
+      sheet.classList.remove('sheet--dragging');
+
+      if (dy > THRESHOLD_CLOSE) {
+        // nette close: .closing + backdrop verbergen
+        sheet.classList.add('closing');
+        setTimeout(()=>{
+          backdrop.classList.add('hidden');
+          backdrop.setAttribute('aria-hidden','true');
+          sheet.classList.remove('closing');
+          sheet.style.removeProperty('--dragY');
+        }, CLOSE_ATTR_DELAY);
+      } else {
+        // terugveren
+        sheet.style.setProperty('--dragY','0px');
+      }
+
+      try { if (pointerId!=null) sheet.releasePointerCapture(pointerId); } catch {}
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('touchmove', onMove);
+    };
+
+    // Start alleen bovenaan de sheet (header/handle)
+    const header = sheet.querySelector('.sheet-header') || sheet;
+    header.addEventListener('pointerdown', onStart);
+    header.addEventListener('touchstart', onStart, { passive:true });
+    // Bonus: swipe-down overal op de sheet mag ook
+    sheet.addEventListener('pointerdown', (e)=>{
+      // alleen wanneer dicht bij de bovenrand (bv. eerste 64px)
+      const bounds = sheet.getBoundingClientRect();
+      if (e.clientY - bounds.top <= 64) onStart(e);
+    });
+    sheet.addEventListener('touchstart', (e)=>{
+      const t = e.touches && e.touches[0]; if (!t) return;
+      const b = sheet.getBoundingClientRect();
+      if (t.clientY - b.top <= 64) onStart(e);
+    }, { passive:true });
+  }
+
+  document.addEventListener('DOMContentLoaded', ()=>{
+    BACKDROP_IDS.forEach(id => attach(document.getElementById(id)));
+  });
+})();
+
 /* ===== LEO: single-source-of-truth (mount + welcome/received + AI-nudge) === */
 (function(){
   // Idempotent guard
@@ -2333,198 +2406,315 @@ function installIdleCTA({ idleMs = 20000, cooldownMs = 120000 } = {}) {
   arm();
 }
 
-/* ===== LEO CTA ENGINE ===================================================== */
+/* === LeoFab bootstrap (robust) ========================================== */
 (function(){
-  if (window.LeoCTA) return;
+  if (window.LeoFab) return;
 
-  // Hulpjes
-  const langIsEN = () => (document.documentElement.lang || 'nl').toLowerCase().startsWith('en');
-  const now = () => Date.now();
-  const lsGet = k => { try { return localStorage.getItem(k); } catch { return null; } };
-  const lsSet = (k,v) => { try { localStorage.setItem(k,v); } catch {} };
-  const ssGet = k => { try { return sessionStorage.getItem(k); } catch { return null; } };
-  const ssSet = (k,v) => { try { sessionStorage.setItem(k,v); } catch {} };
-
-  // Cooldown helpers
-  function seenSession(key){ return ssGet(key) === '1'; }
-  function markSession(key){ ssSet(key,'1'); }
-  function seenTTL(key, ttlMs){
-    const t = +lsGet(key) || 0; return (now() - t) < ttlMs;
-  }
-  function markTTL(key){ lsSet(key, String(now())); }
-
-  // Universele spreker met zachte retry
-  function speak(txt, { autoDismissMs = 4200, maxRetry=5, retryMs=900 } = {}){
-    let left = maxRetry;
-    const step = ()=>{
-      // wacht tot LeoFab er is en geen sheet/coach zicht blokkeert (bubble zelf mag open)
-      const overlayOpen = (() => {
-        const ids = ['sheet-backdrop','ai-backdrop','msgr-help-backdrop','qr-backdrop','about-backdrop'];
-        const coachOpen = document.getElementById('coach-leo')?.classList.contains('show');
-        return ids.some(id=>{ const el = document.getElementById(id); return el && !el.classList.contains('hidden') && el.getAttribute('aria-hidden')!=='true'; }) || coachOpen;
-      })();
-      if (!window.LeoFab?.mounted || overlayOpen) {
-        if (left-- > 0) return setTimeout(step, retryMs);
-        return;
-      }
-      window.LeoFab?.say?.(txt);
-      if (autoDismissMs > 0) setTimeout(()=> window.LeoFab?.clear?.(), autoDismissMs);
-    };
-    step();
+  function q(id){ return document.getElementById(id); }
+  function haveNodes(){
+    return q('leo-fab') && q('leo-fab-bubble') && q('leo-fab-text');
   }
 
-  // **CONFIG** — voeg gerust meer keys toe
-  const CTA = {
-    idle: {
-      text: {
-        en: "Need a hand? ✨ Try AI Compose to draft your note.",
-        nl: "Hulp nodig? ✨ Probeer AI Compose voor een eerste versie."
-      },
-      cooldown: { type: 'session' }           // 1× per sessie
-    },
-    chip: {
-      text: {
-        en: "Nice choice 💛 See what fits your mood!",
-        nl: "Mooie keuze 💛 Kijk wat erbij past!"
-      },
-      cooldown: { type: 'session' }           // 1× per sessie
-    },
-    aiStarted: {
-      text: {
-        en: "Thinking… 💭",
-        nl: "Even denken… 💭"
-      },
-      cooldown: { type: 'none' },             // mag vaker
-      autoDismissMs: 0                        // niet auto-hide (engine die start)
-    },
-    aiResult: {
-      text: {
-        en: "AI note ready ✨",
-        nl: "AI-bericht klaar ✨"
-      },
-      cooldown: { type: 'ttl', ms: 15_000 },  // max 1× per 15s
-      autoDismissMs: 3000
-    },
-    aiError: {
-      text: {
-        en: "Something went wrong — try again later.",
-        nl: "Er ging iets mis — probeer het later nog eens."
-      },
-      cooldown: { type: 'ttl', ms: 15_000 },
-      autoDismissMs: 3200
-    },
-    postSend: {
-      text: {
-        en: "Shared 💛 Want to make another one?",
-        nl: "Gedeeld 💛 Nog eentje maken?"
-      },
-      cooldown: { type: 'ttl', ms: 30_000 },
-      autoDismissMs: 3600
-    },
-    returning: {
-      text: {
-        en: "Welcome back 💛 Who could use a smile today?",
-        nl: "Welkom terug 💛 Wie wil je vandaag laten glimlachen?"
-      },
-      cooldown: { type: 'ttl', ms: 24*60*60*1000 }, // 1× per dag
-      autoDismissMs: 3800
-    }
-  };
-
-  // Engine
-  const LeoCTA = {
-    fire(key, opts = {}){
-      const def = CTA[key];
-      if (!def) return;
-      const isEN = langIsEN();
-      const txt = (isEN ? def.text.en : def.text.nl) || '';
-      if (!txt) return;
-
-      // Cooldown gating
-      const baseKey = `awn_cta_${key}`;
-      const cd = def.cooldown || { type:'none' };
-      if (cd.type === 'session') {
-        if (seenSession(baseKey)) return;
-        speak(txt, { autoDismissMs: def.autoDismissMs, ...(opts||{}) });
-        markSession(baseKey);
-        return;
-      }
-      if (cd.type === 'ttl') {
-        const ttl = Math.max(0, cd.ms|0);
-        if (seenTTL(baseKey, ttl)) return;
-        speak(txt, { autoDismissMs: def.autoDismissMs, ...(opts||{}) });
-        markTTL(baseKey);
-        return;
-      }
-      // none
-      speak(txt, { autoDismissMs: def.autoDismissMs, ...(opts||{}) });
-    },
-
-    // Optioneel: runtime config uitbreiden/overschrijven
-    extend(partial){
-      Object.assign(CTA, partial || {});
-    }
-  };
-
-  window.LeoCTA = LeoCTA;
-})();
-  // Vind compose inputs (robust)
-  function getInputs(){
-    const toEl   = (window.els && els.toInput)   || document.getElementById('to-inline')   || document.querySelector('#to,[name="to"]');
-    const fromEl = (window.els && els.fromInput) || document.getElementById('from-inline') || document.querySelector('#from,[name="from"]');
-    return { toEl, fromEl };
-  }
-
-  // --- LeoFab (kleine API) -------------------------------------------------
-  const LeoFab = window.LeoFab || {
+  const LeoFab = {
     root:   null,
     bubble: null,
     textEl: null,
-    ava:    null,
-    mounted:false,
-    mount(){
-      if (this.mounted) return;
-      this.root   = document.getElementById('leo-fab');
-      this.bubble = document.getElementById('leo-fab-bubble');
-      this.textEl = document.getElementById('leo-fab-text');
-      this.ava    = this.root?.querySelector?.('.leo-fab__ava');
-      if (!this.root || !this.bubble || !this.textEl) return;
+    mounted: false,
 
-      const toggle = () => {
-        if (this.bubble.hidden) this._show(); else this.clear();
-      };
+    mount(){
+      // idempotent
+      if (this.mounted) return;
+      this.root   = q('leo-fab');
+      this.bubble = q('leo-fab-bubble');
+      this.textEl = q('leo-fab-text');
+
+      if (!this.root || !this.bubble || !this.textEl) {
+        console.warn('[LeoFab] DOM nodes missing (#leo-fab, #leo-fab-bubble, #leo-fab-text)');
+        return; // geen throw; we proberen later opnieuw
+      }
+
+      const toggle = () => { if (this.bubble.hidden) this._show(); else this.clear(); };
       this.root.addEventListener('click', toggle);
-      this.root.addEventListener('keydown', (e)=>{
+      this.root.addEventListener('keydown', e=>{
         if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
       });
 
-      // Sluit bubble wanneer overlay open gaat
-      const mo = new MutationObserver(() => { if (anyOverlayOpen()) this.clear(); });
-      ['sheet-backdrop','ai-backdrop','msgr-help-backdrop','qr-backdrop','about-backdrop'].forEach(id=>{
-        const el = document.getElementById(id);
-        if (el) mo.observe(el, { attributes:true, attributeFilter:['class','aria-hidden'] });
-      });
-
       this.mounted = true;
+      // ensure start state
+      this.bubble.hidden = true;
+      this.bubble.classList.remove('show');
+      // kleine log zodat je het in de console ziet
+      try{ console.debug('[LeoFab] mounted'); }catch(_){}
     },
+
     say(txt){
+      // lazy-mount als nodig
+      if (!this.mounted) this.mount();
       if (!txt || !this.textEl || !this.bubble) return;
       this.textEl.textContent = txt;
       this._show();
     },
+
     _show(){
+      if (!this.bubble) return;
       this.bubble.hidden = false;
       requestAnimationFrame(()=> this.bubble.classList.add('show'));
     },
+
     clear(){
       if (!this.bubble) return;
       this.bubble.classList.remove('show');
       setTimeout(()=>{ this.bubble.hidden = true; }, 180);
     },
-    setAvatar(url){ if (this.ava && url) this.ava.style.backgroundImage = `url('${url}')`; }
-  };
-  window.LeoFab = LeoFab; // export
 
+    setAvatar(url){
+      const ava = this.root?.querySelector?.('.leo-fab__ava');
+      if (ava && url) ava.style.backgroundImage = `url('${url}')`;
+    }
+  };
+
+  window.LeoFab = LeoFab;
+
+  // Auto-mount zodra DOM klaar is; zo niet → retry een paar keer
+  document.addEventListener('DOMContentLoaded', ()=>{
+    if (haveNodes()) return LeoFab.mount();
+
+    // probeer nog even (bv. als je HTML laater injecteert)
+    let left = 10;
+    const t = setInterval(()=>{
+      if (haveNodes()) {
+        clearInterval(t);
+        LeoFab.mount();
+      } else if (--left <= 0) {
+        clearInterval(t);
+        console.warn('[LeoFab] nodes not found after retries');
+      }
+    }, 150);
+  });
+})();
+
+/* ===== LEO CTA ENGINE (clean core) ======================================= */
+(function(){
+  if (window.LeoCTA) return;
+
+  // ---------- intern: state & helpers ----------
+  const __q = [];                 // queue voor fires vóór DOM ready
+  let   __ready = false;
+  const now   = () => Date.now();
+  const isEN  = () => (document.documentElement.lang || 'nl').toLowerCase().startsWith('en');
+  const lsGet = k => { try { return localStorage.getItem(k); } catch { return null; } };
+  const lsSet = (k,v)=> { try { localStorage.setItem(k,v); } catch {} };
+  const lsDel = k => { try { localStorage.removeItem(k); } catch {} };
+  const ssGet = k => { try { return sessionStorage.getItem(k); } catch { return null; } };
+  const ssSet = (k,v)=> { try { sessionStorage.setItem(k,v); } catch {} };
+  const ssDel = k => { try { sessionStorage.removeItem(k); } catch {} };
+
+  function anyOverlayOpen(){
+    const ids = ['sheet-backdrop','ai-backdrop','msgr-help-backdrop','qr-backdrop','about-backdrop'];
+    const over = ids.some(id=>{
+      const el = document.getElementById(id);
+      return el && !el.classList.contains('hidden') && el.getAttribute('aria-hidden')!=='true';
+    });
+    const coachOpen = !!document.getElementById('coach-leo')?.classList.contains('show');
+    return over || coachOpen;
+  }
+
+// === SIMPLE SPEAK (tokenized; respecteert delayMs + autoDismissMs + skipOverlay) ===
+
+function speak(txt, opts){
+  // als onze queued + cross-fade versie bestaat → gebruik die
+  if (typeof window.__LEO_SPEAK__ === 'function') {
+    return window.__LEO_SPEAK__(txt, opts);
+  }
+  // fallback (heel simpel) – zodat je nooit “niets” ziet
+  const { delayMs = 0, autoDismissMs = 4200 } = (opts || {});
+  const run = () => {
+    if (!window.LeoFab?.mounted) return setTimeout(run, 80);
+    window.LeoFab?.say?.(String(txt || ''));
+    if (autoDismissMs > 0) setTimeout(() => window.LeoFab?.clear?.(), autoDismissMs);
+  };
+  return delayMs > 0 ? setTimeout(run, delayMs) : run();
+}
+
+  // ---------- configuratie (je bestaande set — onveranderd behalve welcome/received aanwezig) ----------
+  const CTA = {
+    welcome: {
+      text: {
+        en: "✨ Give it a try — one small message can change someone’s day.",
+        nl: "✨ Probeer het eens — één klein berichtje kan iemands dag veranderen."
+      },
+      cooldown: { type: 'session' },
+      autoDismissMs: 12000
+    },
+    received: {
+      text: {
+        en: "💛 You’ve received a warm note. Want to send one back?",
+        nl: "💛 Je hebt een warm note ontvangen. Stuur er ook één terug?"
+      },
+      cooldown: { type: 'session' },
+      autoDismissMs: 12000
+    },
+    askRecipient: {
+      text: {
+        en: "Think of someone who could use a smile — add their name 💛",
+        nl: "Denk aan iemand die je wilt opvrolijken — vul alvast de naam in 💛"
+      },
+      cooldown: { type: 'session' },
+      autoDismissMs: 13000
+    },
+    idle: {
+      text: {
+        en: "Need a hand? ✨ Try AI Compose to draft your note.",
+        nl: "Hulp nodig? ✨ Probeer AI Compose voor een eerste versie."
+      },
+      cooldown: { type: 'session' },
+      autoDismissMs: 14000
+    },
+    chip: {
+      text: {
+        en: "Nice choice 💛 See what fits your mood! Swipe or scroll through the messages.",
+        nl: "Mooie keuze 💛 Kijk wat erbij past! Swipe of blader door de berichten."
+      },
+      cooldown: { type: 'session' }
+    },
+	  aiSheetOpen: {
+  		text: {
+    	  en: "Pick a tone and occasion, add a few keywords — I’ll help you write it ✨",
+    	  nl: "Kies een toon en aanleiding, voeg wat steekwoorden toe — ik help je schrijven ✨"
+  	},
+  		cooldown: { type: 'session' },  // 1× per sessie is genoeg
+  		autoDismissMs: 9000             // mag wat langer blijven staan
+	},
+    aiStarted: {
+      text: { en: "Thinking… 💭", nl: "Even denken… 💭" },
+      cooldown: { type: 'none' },
+      autoDismissMs: 12000
+    },
+    aiResult: {
+      text: { en: "Your AI note is ready. ✨ Share it.", nl: "Je AI bericht is klaar. ✨ Verstuur ‘m." },
+      cooldown: { type: 'ttl', ms: 15_000 },
+      autoDismissMs: 13000
+    },
+    aiError: {
+      text: { en: "Something went wrong — try again later.", nl: "Er ging iets mis — probeer het later nog eens." },
+      cooldown: { type: 'ttl', ms: 15_000 },
+      autoDismissMs: 3200
+    },
+    postSend: {
+      text: { en: "Shared 💛 Want to make another one?", nl: "Gedeeld 💛 Nog eentje maken?" },
+      cooldown: { type: 'ttl', ms: 30_000 },
+      autoDismissMs: 3600
+    },
+    afterCopy: {
+      text: {
+        en: "Link copied 📋 — open WhatsApp or Messages and paste to share.",
+        nl: "Link gekopieerd 📋 — open WhatsApp of Berichten en plak om te delen."
+      },
+      cooldown: { type: 'ttl', ms: 15_000 },
+      autoDismissMs: 8000
+    },
+    returning: {
+      text: { en: "Welcome back 💛 Who could use a smile today?", nl: "Welkom terug 💛 Wie wil je vandaag laten glimlachen?" },
+      cooldown: { type: 'ttl', ms: 24*60*60*1000 },
+      autoDismissMs: 8000
+    },
+    firstSwipe: {
+    text: {
+      en: "Nice! Swipe again to explore more warm notes 💛",
+      nl: "Lekker bezig! Swipe door voor meer warme berichtjes 💛"
+    },
+    cooldown: { type: 'session' },   // 1× per sessie
+    autoDismissMs: 6000
+   }
+  };
+
+  // ---------- fire (met cooldown + overrides + queue) ----------
+function __doFire(key, opts = {}){
+  const def = CTA[key];
+  if (!def) return;
+
+  const isEN = (document.documentElement.lang || 'nl').toLowerCase().startsWith('en');
+  const txt  = (isEN ? def.text?.en : def.text?.nl) || '';
+  if (!txt) return;
+
+  // cooldown
+  const baseKey = `awn_cta_${key}`;
+  const cd = def.cooldown || { type:'none' };
+  const now = Date.now();
+  const lsGet = k => { try { return localStorage.getItem(k); } catch { return null; } };
+  const lsSet = (k,v) => { try { localStorage.setItem(k,v); } catch {} };
+  const ssGet = k => { try { return sessionStorage.getItem(k); } catch { return null; } };
+  const ssSet = (k,v) => { try { sessionStorage.setItem(k,v); } catch {} };
+
+  if (cd.type === 'session') {
+    if (ssGet(baseKey) === '1') return;
+    ssSet(baseKey, '1');
+  } else if (cd.type === 'ttl') {
+    const ttl = Math.max(0, cd.ms|0);
+    const last = +(lsGet(baseKey) || 0);
+    if (now - last < ttl) return;
+    lsSet(baseKey, String(now));
+  }
+
+  // 👉 parametertoepassing: call-override > CTA-default > fallback
+  const delayMs      = (opts.delayMs != null)      ? opts.delayMs      : (def.delayMs ?? 0);
+  const autoDismissMs= (opts.autoDismissMs != null)? opts.autoDismissMs: (def.autoDismissMs ?? 4200);
+
+  // (optioneel) overlay-skippen als je wilt
+  const skipOverlay = !!opts.skipOverlay;
+
+  // kleine guard zodat we niet praten onder een overlay als skipOverlay=true
+  if (skipOverlay) {
+    const blocked = (()=>{
+      const ids = ['sheet-backdrop','ai-backdrop','msgr-help-backdrop','qr-backdrop','about-backdrop'];
+      return ids.some(id=>{
+        const el = document.getElementById(id);
+        return el && !el.classList.contains('hidden') && el.getAttribute('aria-hidden')!=='true';
+      });
+    })();
+    if (blocked) {
+      // zachtjes opnieuw proberen
+      return setTimeout(()=>__doFire(key, opts), 500);
+    }
+  }
+
+  speak(txt, { delayMs, autoDismissMs });
+}
+
+  function __fireBuffered(key, opts = {}){
+    // Delay vóór ready: we bewaren exact je intent
+    if (!__ready) { __q.push([key, opts]); return; }
+
+    // Delay ná ready: speak kan ‘m zelf uitstellen; we sturen alles in één keer door
+    __doFire(key, opts);
+  }
+
+  // ---------- publieke API ----------
+  const API = {
+    fire: __fireBuffered,
+    extend(partial){ Object.assign(CTA, partial || {}); },
+    clearCooldown(key){
+      const baseKey = `awn_cta_${key}`;
+      lsDel(baseKey); ssDel(baseKey);
+    },
+    resetCooldowns(){
+      Object.keys(CTA).forEach(k => { try {
+        const baseKey = `awn_cta_${k}`; lsDel(baseKey); ssDel(baseKey);
+      } catch {} });
+    }
+  };
+  window.LeoCTA = API;
+
+  // ---------- boot ----------
+  document.addEventListener('DOMContentLoaded', () => {
+    try { window.LeoFab?.mount?.(); } catch {}
+    __ready = true;
+    while (__q.length) {
+      const [k,o] = __q.shift();
+      try { __doFire(k,o); } catch {}
+    }
+  });
+})();
   // --- Safe speak (met zachte retry & campaign-flag) -----------------------
 function sayOnceWithRetry(text, { setFlag=false, max=RETRIES, delay=RETRY_MS } = {}){
   let left = max;
@@ -2544,6 +2734,33 @@ function sayOnceWithRetry(text, { setFlag=false, max=RETRIES, delay=RETRY_MS } =
   step();
 }
 
+(function installAISheetCTA(){
+  const fire = (ms=1800) => {
+    try { window.LeoCTA?.fire('aiSheetOpen', { delayMs: ms, skipOverlay: true }); } catch {}
+  };
+
+  // A) Mutations op de sheet-backdrop
+  const sheet = document.getElementById('ai-backdrop');
+  if (sheet) {
+    const isVisible = () =>
+      !sheet.classList.contains('hidden') &&
+      sheet.getAttribute('aria-hidden') !== 'true';
+
+    const mo = new MutationObserver(() => {
+      if (isVisible()) fire(1200);
+    });
+    mo.observe(sheet, { attributes: true, attributeFilter: ['class','aria-hidden'] });
+
+    // Als hij al open is bij load (zeldzaam), toch een zachte nudge geven
+    if (isVisible()) fire(1200);
+  }
+
+  // B) Safety: als iemand op de AI-knop klikt, plan een nudge
+  const aiBtn = document.getElementById('smart-compose');
+  if (aiBtn) {
+    aiBtn.addEventListener('click', () => fire(1200), { capture: true });
+  }
+})();
   // --- Campaign: AI Compose nudge ------------------------------------------
   function scheduleAINudge(){
     if (hasMid()) return; // niet in received-flow
@@ -2582,28 +2799,65 @@ function sayOnceWithRetry(text, { setFlag=false, max=RETRIES, delay=RETRY_MS } =
       chipRow.addEventListener('click', chipHandler, true);
     }
   }
+  
+  // --- Returning detector (lightweight) --------------------------------------
+(function installReturningDetector(){
+  try {
+    const now = Date.now();
+    const LS   = window.localStorage;
+    const KEY_LAST = 'awn_last_seen';
+    const KEY_FIRST = 'awn_first_seen';
+    const RETURNING_AFTER_MS = 12 * 60 * 60 * 1000; // 12 uur; pas aan indien gewenst
 
-  // --- Boot ---------------------------------------------------------------
-  document.addEventListener('DOMContentLoaded', ()=>{
-    LeoFab.mount();
+    // init first_seen
+    if (!LS.getItem(KEY_FIRST)) LS.setItem(KEY_FIRST, String(now));
 
-    // Welkom/Received
-    if (!hasMid()) {
-      const welcomeTxt = isEN()
-        ? "Give it a try — one small message can change someone’s day."
-        : "Probeer het eens — één klein berichtje kan iemands dag veranderen.";
-      setTimeout(()=> sayOnceWithRetry(welcomeTxt), WELCOME_DELAY);
-    } else {
-      const receivedTxt = isEN()
-        ? "💛 You’ve just received a warm note. Want to send one back?"
-        : "💛 Je hebt een warm note ontvangen. Stuur er zelf ook eentje terug?";
-      setTimeout(()=> sayOnceWithRetry(receivedTxt), RECEIVED_DELAY);
+    // helper om last_seen te updaten bij verlaten/pauzeren
+    const mark = () => { try { LS.setItem(KEY_LAST, String(Date.now())); } catch(_){} };
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') mark();
+    }, { passive:true });
+    window.addEventListener('pagehide',  mark, { passive:true });
+    window.addEventListener('beforeunload', mark);
+
+    // expose helper voor andere flows (optioneel)
+    window.__AWN_MARK_SEEN__ = mark;
+  } catch(_){}
+})();
+
+// --- Boot CTA ---------------------------------------------------------------
+// BEGIN Leo boot block
+(function(){
+document.addEventListener('DOMContentLoaded', async function () {
+  try { window.LeoFab?.mount?.(); } catch {}
+
+  // helpers
+  const wait = (ms)=> new Promise(r=> setTimeout(r, Math.max(0, ms|0)));
+  const hasMid = !!(window.getAppURL?.().searchParams.get('mid'));
+  const needRecipient = !(typeof getTo === 'function' ? getTo() : '');
+
+  if (hasMid) {
+    // ontvangen
+    LeoCTA.fire('received', { delayMs: 1200, autoDismissMs: 7000, skipOverlay: true });
+    // laat gebruiker daarna even zelf
+  } else {
+    // 1) welcome
+    LeoCTA.fire('welcome', { delayMs: 1200, autoDismissMs: 9000, skipOverlay: true });
+    await wait(1200 + 9000 + 600); // adem
+
+    // 2) askRecipient, alleen als 'to' leeg is
+    if (needRecipient) {
+      LeoCTA.fire('askRecipient', { delayMs: 0, autoDismissMs: 8000, skipOverlay: true });
+      await wait(8000 + 600);
     }
 
-    // AI-campagne nudge (alleen als geen mid)
-    scheduleAINudge();
-    installIdleCTA({ idleMs: 20000, cooldownMs: 120000 });
-  });
+    // 3) zachte idle nudge wat later
+    setTimeout(()=> {
+      LeoCTA.fire('idle', { autoDismissMs: 7000, skipOverlay: true });
+    }, 14000);
+  }
+});
+})(); // END Leo boot block
 })();
 
 /* [L] === CONFETTI & TOASTS ================================================== */
@@ -2636,7 +2890,7 @@ function showToast(msg){
   els.toast.textContent = msg;
   els.toast.classList.remove("hidden");
   clearTimeout(showToast.__t);
-  showToast.__t = setTimeout(()=> els.toast.classList.add("hidden"), 3600);
+  showToast.__t = setTimeout(()=> els.toast.classList.add("hidden"), 3800);
 }
 
 // Alleen te gebruiken voor echte toasts (deliberate user feedback)
@@ -2688,19 +2942,33 @@ function getFrom(){
 }
 
 function personalize(text){
-  const to = getTo();
-  const hasToken = typeof text === "string" && text.includes("{{name}}");
+  const src = String(text || '');
+  const to  = (typeof getTo === 'function' ? getTo() : '').trim();
+  const lang = (STATE?.lang || (document.documentElement.lang || 'nl')).toLowerCase();
+  const isEN = lang.startsWith('en');
 
+  // 1) Herken zowel {{name}} als {name}
+  const hasToken = /\{\{?\s*name\s*\}?\}/i.test(src);
+  const replaceToken = (s, name) =>
+    s.replace(/\{\{?\s*name\s*\}?\}/gi, name);
+
+  // 2) Als er een token staat → vul naam of taal-specifieke fallback
   if (hasToken) {
-    if (to) return text.replaceAll("{{name}}", to);
-    return text.replaceAll("{{name}}", "jou");
+    const fallback = isEN ? 'you' : 'jou';
+    const val = to || fallback;
+    return replaceToken(src, val);
   }
 
-  if (!to) return text;
+  // 3) Geen token → subtiele personalisatie als er een naam is
+  if (to) {
+    // 1/3 kans prefix “To, …” stijl; anders origineel laten
+    return (Math.random() < 0.34)
+      ? `${to}, ${lowerFirst(src)}`
+      : src;
+  }
 
-  return Math.random() < 0.34
-    ? `${to}, ` + lowerFirst(text)
-    : text;
+  // 4) Geen naam, geen token → ongewijzigd
+  return src;
 }
 
 function lowerFirst(s){ return s ? s.charAt(0).toLowerCase() + s.slice(1) : s; }

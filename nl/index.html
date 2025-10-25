@@ -51,10 +51,11 @@
 
   <meta name="theme-color" content="#FFE66D" />
 
-  <!-- Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Patrick+Hand&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+<link rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Patrick+Hand&display=swap">
 
   <!-- Styles & PWA -->
   <link rel="stylesheet" href="/styles.css" />
@@ -71,6 +72,11 @@
   <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="192x192" href="/assets/icons/android-chrome-192x192.png">
   <link rel="icon" type="image/png" sizes="512x512" href="/assets/icons/android-chrome-512x512.png">
+  
+  <link rel="canonical" href="https://awarmnote.com/" />
+  <link rel="alternate" href="https://awarmnote.com/" hreflang="nl" />
+  <link rel="alternate" href="https://awarmnote.com/en/" hreflang="en" />
+  <link rel="alternate" href="https://awarmnote.com/" hreflang="x-default" />
 
   <!-- App flags -->
   <meta name="theme-color" content="#000000">
@@ -83,6 +89,7 @@
     window.AWN_FLAGS.ai = { base: 'https://ai.awarmnote.com/ai', timeout: 20000 };
   </script>
 </head>
+
 <body class="has-bg">
 
   <!-- =================== TOPBAR =================== -->
@@ -195,7 +202,14 @@
       <span class="coach-text"></span>
       <p class="coach-text"><span class="coach-heart">💛</span></p>
     </div>
-    <div id="coach-avatar"></div>
+    <!-- Leo FAB  -->
+	<div id="leo-fab" class="leo-fab" role="button" tabindex="0" aria-label="Leo">
+  		<div class="leo-fab__ava" style="background-image:url('/assets/leo/leo-placeholder.jpg')"></div>
+  		<div class="leo-fab__bubble" id="leo-fab-bubble" hidden>
+    	<p id="leo-fab-text"></p>
+    	<span class="leo-fab__tail" aria-hidden="true"></span>
+  		</div>
+	</div>
   </main>
 
   <!-- =================== SHARE SHEET =================== -->
@@ -354,7 +368,7 @@
   <section class="sheet sheet--ai" role="dialog" aria-modal="true" aria-labelledby="ai-title">
     <header class="sheet-header">
       <div class="drag-indicator" aria-hidden="true"></div>
-      <h2 id="ai-title" data-i18n="ai.sheet.title">AI — maak een warm bericht</h2>
+      <h2 id="ai-title" data-i18n="ai.sheet.title">Maak samen met AI een warm bericht</h2>
       <button class="sheet-close" aria-label="Sluiten" id="ai-close-btn">✕</button>
     </header>
 
@@ -390,14 +404,6 @@
   <!-- =================== PERSISTENTE ABOUT FAB =================== 
   <button id="about-fab-fixed" class="btn about-fab" type="button" aria-label="Over deze App" title="Over deze App">ℹ︎</button>
   -->
-<!-- Leo FAB (neemt plek van About-FAB over) -->
-<div id="leo-fab" class="leo-fab" role="button" tabindex="0" aria-label="Coach">
-  <div class="leo-fab__ava" style="background-image:url('/assets/leo/leo-placeholder.jpg')"></div>
-  <div class="leo-fab__bubble" id="leo-fab-bubble" hidden>
-    <p id="leo-fab-text"></p>
-    <span class="leo-fab__tail" aria-hidden="true"></span>
-  </div>
-</div>
   <!-- =================== DIVERSE LAYERS =================== -->
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
   <div id="confetti-layer" class="vh" aria-live="polite">Viering: berichtje verstuurd.</div>

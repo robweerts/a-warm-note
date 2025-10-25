@@ -4,7 +4,7 @@
    - Alles in root: gebruik absolute paden
 */
 
-const SW_VERSION  = 'v2025-10-08-2';         // ← bump dit bij elke release
+const SW_VERSION  = 'v2025-10-21-1';         // ← bump dit bij elke release
 const CACHE_NAME  = 'awn-' + SW_VERSION; 
 
 // Alleen assets die écht bestaan in productie en same-origin zijn:
@@ -18,6 +18,8 @@ const PRECACHE_URLS = [
   '/whatsapp.js',
   '/data/messages.en.json',
   '/data/messages.nl.json',
+  '/data/strings.nl.json',
+  '/data/strings.en.json',
   // Voeg hier evt. icons/fonts/images toe, bv. '/favicon.ico', '/icon-192.png', etc.
 ];
 
