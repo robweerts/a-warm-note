@@ -336,6 +336,7 @@ function getSavedThemePref(){
 function setThemePref(next){           // aanroepen als je later een toggle maakt
   try { localStorage.setItem('awn_theme', next); } catch {}
   applyTheme(next);
+  syncNoteTabsColor(els?.note);
 }
 
 /* Volg systeemwijziging in 'auto' */
@@ -1086,6 +1087,22 @@ function setPaperLook(){
   const palette = (theme===THEME.VALENTINE) ? PAPER_PALETTES.valentine : PAPER_PALETTES.default;
   els.note.style.background = palette[Math.floor(Math.random()*palette.length)];
   els.note.style.transform  = `rotate(${(Math.random()*4-2).toFixed(2)}deg)`;
+  syncNoteTabsColor(els?.note || document.querySelector('.note'));
+}
+// --- sync tabs met note-appearance -----------------------------------------
+function syncNoteTabsColor(noteEl = document.querySelector('.note')){
+  if (!noteEl) return;
+  const cs    = getComputedStyle(noteEl);
+  const bg    = cs.background;              // incl. gradients/texture
+  const color = cs.color;                   // “inkt” van de note
+  // eventueel ook CSS vars zetten voor pure-CSS varianten:
+  noteEl.style.setProperty('--paper', cs.getPropertyValue('--paper') || '');
+  noteEl.style.setProperty('--ink',   color || '');
+
+  document.querySelectorAll('.note-tab').forEach(tab=>{
+    tab.style.background = bg;              // match papier
+    tab.style.color      = color;           // match inkt
+  });
 }
 
 function renderMessage({ newRandom = false, requestedIdx = null, wiggle = false, msg = null } = {}) {
@@ -2564,8 +2581,8 @@ function speak(txt, opts){
     },
     idle: {
       text: {
-        en: "Need a hand? ✨ Try AI Compose to draft your note.",
-        nl: "Hulp nodig? ✨ Probeer AI Compose voor een eerste versie."
+        en: "Need a hand? ✨ Try AI Magic to draft your note.",
+        nl: "Hulp nodig? ✨ Probeer AI Magic voor een eerste versie."
       },
       cooldown: { type: 'session' },
       autoDismissMs: 14000
@@ -2767,12 +2784,12 @@ function sayOnceWithRetry(text, { setFlag=false, max=RETRIES, delay=RETRY_MS } =
     try { if (localStorage.getItem(AI_NUDGE_KEY) === '1') return; } catch {}
 
     const textWelcome = isEN()
-      ? "✨ New: AI Compose helps you find just the right words."
-      : "✨ Nieuw: AI Compose helpt je om precies de juiste woorden te vinden.";
+      ? "✨ New: AI Magic helps you find just the right words."
+      : "✨ Nieuw: AI Magic helpt je om precies de juiste woorden te vinden.";
 
     const textIntent = isEN()
-      ? "✨ Try AI Compose to draft your note."
-      : "✨ Probeer AI Compose voor een eerste versie.";
+      ? "✨ Try AI Magic to draft your note."
+      : "✨ Probeer AI Magic voor een eerste versie.";
 
     // (1) passieve nudge na kleine delay
     const tIdle = setTimeout(()=>{
@@ -3141,7 +3158,7 @@ function refreshUIStrings() {
   // === AI-knop + status (indien aanwezig) ===
   const aiBtn = document.getElementById('smart-compose');
   if (aiBtn) {
-    const lbl = t('ai.button') || ((STATE?.lang)==='en' ? 'AI compose' : 'AI-bericht');
+    const lbl = t('ai.button') || ((STATE?.lang)==='en' ? 'AI Magic' : 'AI Magic');
     aiBtn.setAttribute('aria-label', lbl);
     const span = aiBtn.querySelector('.btn-label');
     if (span) span.textContent = lbl;
@@ -4139,7 +4156,7 @@ function ensureQuickSplashEl(){
 
 /* === Minimal Note Splash (gebruikt CSS .splash-overlay / .splash-stage) === */
 
-function openNoteSplashSimple({ holdMs = 4800, force = false, stickUntilEsc = false } = {}) {
+function openNoteSplashSimple({ holdMs = 5800, force = false, stickUntilEsc = false } = {}) {
   // Eén-keer-per-mid guard (tenzij force:true)
   if (!force) {
     const mid = getAppURL().searchParams.get('mid');
@@ -4335,6 +4352,7 @@ function quickSplashMaybeForReceived(sharedMid){
   const key  = `qs:${sharedMid}`;
   showQuickSplash(snap, { hold: 1200, sessionKey: key });
 }
+
 
 /* --------------------- B) BUTTONS (expand + about) ---------------------- */
 (function WireExpandAndAbout(){
@@ -4926,6 +4944,108 @@ function hasNoteOnScreen() {
     if (hiddenNow) resetAIThinking();
   });
   mo.observe(wrap, { attributes:true, attributeFilter:['class','aria-hidden'] });
+})();
+
+
+/* ====== NOTE OVERLAY ACTIONS: Download (PNG) + Reply (swap To/From) ====== */
+
+(function AWN_NoteOverlayActions(){
+  // --- Selectors (pak wat je hebt) ----------------------------------------
+  const SEL_REPLY = [
+    '#note-reply',                // <button id="note-reply">
+    '[data-action="reply"]',      // <button data-action="reply">
+    '#reply-btn',                 // fallback
+  ].join(',');
+
+  const SEL_DOWNLOAD = [
+    '#note-download',             // <button id="note-download">
+    '[data-action="download"]',   // <button data-action="download">
+    '#download-btn',              // fallback
+  ].join(',');
+
+  // --- Helpers uit jouw app -----------------------------------------------
+  function safe(fn, ...args){ try { return fn?.(...args); } catch(_){} }
+
+  function downloadCurrentNotePNG(){
+    // JOUW “waarheid”: downloadNoteAsImage(...)
+    if (typeof window.downloadNoteAsImage === "function") {
+      safe(window.downloadNoteAsImage,
+        els.note, els.msg, els.icon,            // canvas-bron
+        (STATE?.lang || 'nl'),                  // taal
+        (_l,n)=> n ? `Voor ${n}` : "",          // to-label
+        (_l,n)=> n ? `Van ${n}`  : "",          // from-label
+        getTo, getFrom
+      );
+      safe(showToastI18n, 'toast.downloadStart', 'Afbeelding wordt opgeslagen ⬇️');
+      safe(afterShareSuccess);                  // indien aanwezig
+    } else {
+      console.warn('[AWN] downloadNoteAsImage() ontbreekt.');
+      safe(showToastI18n, 'toast.downloadUnavailable', 'Download niet beschikbaar');
+    }
+  }
+
+  function replySwapNames(){
+    const curTo   = safe(getTo)   || '';
+    const curFrom = safe(getFrom) || '';
+
+    // Wissel: setTo / setFrom prefereren (bestaat in jouw project)
+    if (typeof setTo === 'function' && typeof setFrom === 'function') {
+      setTo(curFrom || '');
+      setFrom(curTo || '');
+    } else {
+      // Hard fallback op inline velden
+      const toEl   = document.getElementById('to-inline');
+      const fromEl = document.getElementById('from-inline');
+      if (toEl && fromEl) {
+        toEl.value   = curFrom || '';
+        fromEl.value = curTo   || '';
+      }
+    }
+
+    // UI syncen (lijnen + message-personalisatie)
+    safe(renderToFrom);
+    if (els?.msg){
+      const raw = els.msg.getAttribute('data-raw') || els.msg.textContent || '';
+      els.msg.textContent = safe(personalize, raw) || raw;
+    }
+
+    // Focus op “Voor wie?”
+    const toEl = document.getElementById('to-inline') || els?.toInput;
+    safe(()=> toEl?.focus());
+
+    // Coach/CTA (optioneel)
+    safe(updateCoachTimed, 'replyHint', {}, 1200);    // bv. “Naam even checken en versturen?”
+    safe(window.LeoCTA?.fire, 'chip', { delayMs: 900, autoDismissMs: 6000, skipOverlay: true });
+  }
+
+  // --- Wiring één keer ------------------------------------------------------
+  function wireOnce(){
+    const replyBtn    = document.querySelector(SEL_REPLY);
+    const downloadBtn = document.querySelector(SEL_DOWNLOAD);
+
+    if (replyBtn && !replyBtn.dataset.awnBind){
+      replyBtn.dataset.awnBind = '1';
+      replyBtn.addEventListener('click', (e)=>{ e.preventDefault(); replySwapNames(); });
+    }
+    if (downloadBtn && !downloadBtn.dataset.awnBind){
+      downloadBtn.dataset.awnBind = '1';
+      downloadBtn.addEventListener('click', (e)=>{ e.preventDefault(); downloadCurrentNotePNG(); });
+    }
+  }
+
+  // Init & op route/splash wissels nog eens proberen
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', wireOnce, { once:true });
+  } else {
+    wireOnce();
+  }
+  ['hashchange','popstate','pageshow'].forEach(evt=>{
+    window.addEventListener(evt, ()=> setTimeout(wireOnce, 0));
+  });
+
+  // Exports (handig in console)
+  window.__awnReply    = replySwapNames;
+  window.__awnDownload = downloadCurrentNotePNG;
 })();
 /* ========================================================================
    DEBUG HARNESS — NIET PRODUCTIE, HELPT ZIEN WAT ER WEL/NIET TRIGGERT

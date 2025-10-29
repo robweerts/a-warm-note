@@ -194,8 +194,16 @@ function nextVersionedFilename(){
   // Versieteller per base (zonder .vNNN)
   DB.versionCounters[base] = (DB.versionCounters[base]||0) + 1;
   const v = String(DB.versionCounters[base]).padStart(3,'0');
-  return { filename: `${base}.v${v}.json`, base, v };
-}
+  const dt = new Date();
+      const stamp = [
+      dt.getFullYear(),
+      String(dt.getMonth()+1).padStart(2,'0'),
+      String(dt.getDate()).padStart(2,'0'),
+      String(dt.getHours()).padStart(2,'0'),
+      String(dt.getMinutes()).padStart(2,'0')
+    ].join('');
+  return { filename: `${base}.v${v}.${stamp}.json`, base, v };
+} 
 
 function exportActive(){
   const data = currentLangData(); if (!data){ setStatus('Geen actieve dataset/taal.'); return; }
@@ -220,6 +228,28 @@ function exportActive(){
   a.remove();
   setStatus(`⬇️ Geëxporteerd: ${vmeta.filename}`);
   saveLocal();
+    // --- NA EXPORT: loskoppelen (reset state + UI) ---
+  try {
+    // Maak admin-state leeg (geen datasets of talen meer in memory)
+    DB.data.clear();
+    DB.originalName.clear();
+    DB.activeDataset = 'messages';
+    DB.activeLang = null;
+      // --- extra: volledig loskoppelen ook uit localStorage ---
+  try {
+    localStorage.removeItem('awn_admin_datasets');
+    localStorage.removeItem('awn_admin_original_names');
+  } catch(e){ console.warn('Kon localStorage niet legen:', e); }
+
+    // UI resetten
+    renderAll();                  // tabs/tables leeg
+    setStatus('Bestanden geëxporteerd en losgekoppeld.');
+
+    // Knoppen tijdelijk uitschakelen tot nieuwe import
+    if (els.exportBtn) els.exportBtn.disabled = true;
+    if (els.addMsgBtn) els.addMsgBtn.disabled = true;
+    if (els.delMsgBtn) els.delMsgBtn.disabled = true;
+  } catch(_){}
 }
 
 /* ========= Rendering ========= */

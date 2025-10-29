@@ -92,6 +92,7 @@
 
 <body class="has-bg">
 
+
   <!-- =================== TOPBAR =================== -->
   <header class="topbar" data-topbar>
     <h1 class="brand">
@@ -105,13 +106,13 @@
       </button>
 	  
 	  <!-- AI Button -->
-	  <button id="smart-compose" class="btn btn--ai" type="button" aria-haspopup="dialog" aria-controls="ai-backdrop">
+	  <button id="smart-compose" class="btn" type="button" aria-haspopup="dialog" aria-controls="ai-backdrop">
   		<span class="btn-ico" aria-hidden="true">✨</span>
   		<span class="btn-label">AI</span>
 	  </button>
 
       <!-- Verstuur -->
-      <button id="btn-share" class="btn btn-ico" type="button" aria-label="Verstuur">
+      <button id="btn-share" class="btn" type="button" aria-label="Verstuur">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" id="Paper-Plane" aria-hidden="true">
           <path fill="#fff" fill-rule="evenodd" d="M12 23c6.075 0 11 -4.925 11 -11S18.075 1 12 1 1 5.925 1 12s4.925 11 11 11ZM4.982 11.175c0 -0.102 0.067 -0.198 0.162 -0.234l12.324 -4.697a0.254 0.254 0 0 1 0.254 0.046c0.068 0.06 0.1 0.157 0.078 0.246l-2.458 10.338a0.254 0.254 0 0 1 -0.156 0.177 0.253 0.253 0 0 1 -0.234 -0.032l-2.619 -1.895 -0.1 0.066a157.1 157.1 0 0 1 -1.196 0.788 46.23 46.23 0 0 1 -0.943 0.6 9.536 9.536 0 0 1 -0.352 0.207 2.277 2.277 0 0 1 -0.14 0.072 0.93 0.93 0 0 1 -0.078 0.033 0.716 0.716 0 0 1 -0.722 -0.165 0.775 0.775 0  0 1 -0.202 -0.394l-0.001 -0.005 -0.803 -3.949 -2.652 -0.968a0.255 0.255 0 0 1 -0.162 -0.234Zm3.792 0.993 0.727 3.577 0.81 -2.463 4.142 -3.715a0.154 0.154 0 0 0 0.023 -0.196 0.154 0.154 0 0 0 -0.19 -0.05l-5.512 2.847Z" clip-rule="evenodd" stroke-width="1"></path>
         </svg>
@@ -137,20 +138,6 @@
     </nav>
   </header>
 
-  <!-- =================== MOBILE BOOT INTRO =================== -->
-  <div id="intro-boot" class="intro-boot" aria-live="polite" role="status" aria-label="App wordt geladen">
-    <div class="intro-boot__center">
-      <div class="intro-boot__logo" aria-hidden="true">
-        <img src="/assets/icons/logo_transparent_64px.png"
-             srcset="/assets/icons/logo_transparent_64px.png 1x, /assets/icons/logo_transparent_128px.png 2x"
-             alt="" class="intro-logo-img" decoding="async" fetchpriority="high"/>
-      </div>
-      <div class="intro-boot__brand" aria-hidden="true">a warm note</div>
-      <div class="intro-boot__tagline" aria-hidden="true">to someone You care about</div>
-      <div class="intro-boot__spinner" aria-hidden="true"></div>
-    </div>
-  </div>
-
   <!-- =================== APP =================== -->
   <main class="page" role="main">
 
@@ -158,14 +145,32 @@
     <section class="chips-wrap" aria-label="Kies gevoel">
       <div id="chip-row" class="chip-row" role="tablist" aria-label="Gevoelsfilters"></div>
     </section>
+    
+        <!-- Compose -->
+    <section id="compose-strip" class="compose" aria-label="Personaliseer">
+      <div class="compose-row">
+        <input id="to-inline" class="compose-to" type="text" placeholder="Voor wie?" aria-required="true" aria-label="Voor wie is dit?">
+        <input id="from-inline" class="compose-from" type="text" placeholder="Van jou (optioneel)" aria-label="Van wie is dit?">
+      </div>
+
+      <!-- Debug sink voor AI (onzichtbaar, maar aanwezig voor integratie) -->
+      <textarea id="message-textarea" hidden></textarea>
+    </section>
 
     <!-- Note -->
     <section class="note-wrap" aria-labelledby="note-title">
       <h2 id="note-title" class="vh">Jouw warme note</h2>
 
       <div id="note" class="note" role="region" aria-label="Notitie met boodschap">
+        <div class="paper-crumple"></div>
+
         <div class="tape tape--tl"></div>
-        <div class="tape tape--tr"></div>
+        <div class="tape tape--tr"></div>  
+        <!-- Tape Tabs -->
+		<div class="note-tabs">
+  			<button class="note-tab" data-action="reply" title="Reply" aria-label="Reply">↩︎</button>
+  			<button class="note-tab" data-action="download" title="Download" aria-label="Download">⤓</button>
+		</div>
         <div id="toline"></div>
         <p id="message" class="message"></p>
         <div id="iconline"></div>
@@ -184,17 +189,6 @@
           <span class="sr-only">Volgende</span>
         </button>
       </div>
-    </section>
-
-    <!-- Compose -->
-    <section id="compose-strip" class="compose" aria-label="Personaliseer">
-      <div class="compose-row">
-        <input id="to-inline" class="compose-to" type="text" placeholder="Voor wie?" aria-required="true" aria-label="Voor wie is dit?">
-        <input id="from-inline" class="compose-from" type="text" placeholder="Van jou (optioneel)" aria-label="Van wie is dit?">
-      </div>
-
-      <!-- Debug sink voor AI (onzichtbaar, maar aanwezig voor integratie) -->
-      <textarea id="message-textarea" hidden></textarea>
     </section>
 
     <!-- Coach -->
