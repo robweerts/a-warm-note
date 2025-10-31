@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>AWN Split-Flap — Matrix 25×5</title>
+<style>
+  :root{
+    /* Deze waarden worden dynamisch gezet via JS om altijd te passen */
+    --cell-w: 28px;       /* breedte per cel */
+    --cell-h: 40px;       /* hoogte per cel */
+    --gap: 5px;           /* ruimte tussen cellen */
+    --flip-ms: 140;       /* duur van flap-tik (per halve flap) */
+    --txt: #fff6e6;
+    --cell: #17130f;
+    --frame: #0e0c0a;
+    --glass: rgba(20,18,15,.55);
+  }
+
+  body{margin:0;background:linear-gradient(180deg,#0c0b09,#080807);color:#e9e0d0;
+       font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;}
+
+  /* Demo UI (verwijder dit blok in productie als je wil) */
+  .demo{max-width:980px;margin:20px auto;padding:16px}
+  .row{display:flex;gap:8px;flex-wrap:wrap;margin:.5rem 0}
+  input,textarea,button{
+    background:#15130f;color:#ffeeda;border:1px solid rgba(255,255,255,.10);
+    border-radius:10px;padding:10px 12px;font-weight:600
+  }
+  textarea{min-width:320px;min-height:70px}
+  .btn{cursor:pointer}
+  .btn.primary{background:#1d1812;border-color:#2b231a}
+
+  /* Overlay & dialog */
+  .sf-overlay[hidden]{display:none!important}
+  .sf-overlay{
+    position:fixed; inset:0; z-index:9999; display:grid; place-items:center; padding:16px;
+    background:var(--glass); backdrop-filter:saturate(1.1) blur(6px);
+  }
+  .sf-dialog{
+    width:min(1200px, 98vw); height:min(760px, 94vh);
+    background:linear-gradient(#0f0e0b,#0b0a08); color:var(--txt);
+    border:1px solid rgba(255,255,255,.08); border-radius:16px;
+    box-shadow:0 22px 70px rgba(0,0,0,.55);
+    display:grid; grid-template-rows:auto 1fr auto;
+  }
+  .sf-header,.sf-footer{
+    padding:10px 12px; display:flex; align-items:center; gap:10px
+  }
+  .sf-header{justify-content:space-between; border-bottom:1px solid rgba(255,255,255,.06)}
+  .sf-footer{border-top:1px solid rgba(255,255,255,.06)}
+  .sf-tools{display:flex; align-items:center; gap:12px}
+  .sf-toggle{display:inline-flex; align-items:center; gap:6px; font-size:.95rem; opacity:.95}
+  .icon-btn{display:inline-grid; place-items:center; width:36px; height:36px; border-radius:10px;
+    border:1px solid rgba(255,255,255,.12); background:#17130f; color:var(--txt)}
+  .icon-btn:hover{border-color:rgba(255,255,255,.22)}
+
+  /* Board container */
+  .sf-board-wrap{
+    display:grid; place-items:center; padding:14px;
+  }
+  .sf-board{
+    display:grid; gap:var(--gap);
+    /* Grid wordt in JS gezet: grid-template-columns: repeat(25, var(--cell-w)) etc. */
+    background:linear-gradient(#14110c,#0f0d0a);
+    border-radius:14px; padding:14px;
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.06);
+  }
+
+  /* Cellen (groot & leesbaar) */
+  .sf-cell{
+    position:relative; width:var(--cell-w); height:var(--cell-h); border-radius:5px; overflow:hidden;
+    background:var(--cell); color:var(--txt);
+    box-shadow:
+      inset 0 -1px 0 rgba(0,0,0,.55),
+      inset 0  1px 0 rgba(255,255,255,.06);
+  }
+  .sf-line{
+    position:absolute; left:0; right:0; top:50%; height:1px; background:rgba(0,0,0,.62); z-index:3
+  }
+  .sf-flap{
+    position:absolute; left:0; right:0; height:50%;
+    display:flex; align-items:center; justify-content:center;
+    /* Grote, extra-contrast monospace */
+    font:800 20px/1.02 ui-monospace, Menlo, Consolas, "SF Mono", monospace;
+    letter-spacing:.6px; text-rendering:optimizeLegibility;
+    -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+    user-select:none; backface-visibility:hidden; transform-style:preserve-3d; color:inherit;
+  }
+  .sf-top{top:0; transform-origin:bottom}
+  .sf-bot{bottom:0; transform-origin:top}
+  .sf-shade{position:absolute; inset:0; background:linear-gradient(to bottom, rgba(255,255,255,.07), rgba(0,0,0,.35))}
+  .sf-bot .sf-shade{background:linear-gradient(to top, rgba(255,255,255,.07), rgba(0,0,0,.45))}
+  .sf-cell.is-flipping .sf-top{animation:sfFlipTop var(--flip-ms)ms ease-in forwards}
+  .sf-cell.is-flipping .sf-bot{animation:sfFlipBot var(--flip-ms)ms ease-out var(--flip-ms)ms forwards}
+  @keyframes sfFlipTop{from{transform:rotateX(0)} to{transform:rotateX(-90deg)}}
+  @keyframes sfFlipBot{from{transform:rotateX(90deg)} to{transform:rotateX(0)}}
+
+  .sf-note{opacity:.8; font-size:.92rem; margin-left:auto}
+</style>
+</head>
+<body>
+  <!-- Demo invoer (optioneel) -->
+  <div class="demo">
+    <div class="row">
+      <input id="demoTo" placeholder="To (bv. Ria)" />
+      <input id="demoFrom" placeholder="From (bv. Rob)" />
+    </div>
+    <div class="row">
+      <textarea id="demoMsg" placeholder="Je warme bericht — max past ~75 tekens over 3 regels (wrap automatisch)"></textarea>
+    </div>
+    <div class="row">
+      <button id="btnSplitFlap" class="btn primary">Toon als Split-Flap (25×5)</button>
+      <small>In je app: <code>openSplitFlap({to, from, message})</code></small>
+    </div>
+  </div>
+
+  <!-- Overlay -->
+  <div id="splitflapOverlay" class="sf-overlay" role="dialog" aria-modal="true" aria-labelledby="sfTitle" hidden>
+    <div class="sf-dialog">
+      <header class="sf-header">
+        <h2 id="sfTitle" style="margin:0;font-size:1rem;opacity:.95">Split-Flap 25×5</h2>
+        <div class="sf-tools">
+          <label class="sf-toggle"><input id="sfSound" type="checkbox" /><span>🔈 Sound</span></label>
+          <label class="sf-toggle"><input id="sfVibrate" type="checkbox" /><span>📳 Vibrate</span></label>
+          <button id="sfClose" class="icon-btn" title="Sluiten (Esc)">
+            <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <div class="sf-board-wrap">
+        <section id="splitflapBoard" class="sf-board" aria-label="Split-flap bord"></section>
+      </div>
+
+      <footer class="sf-footer">
+        <span class="sf-note">Regels: 1=TO, 2=FROM, 3–5=message (wrap). Te lang → …</span>
+      </footer>
+    </div>
+  </div>
+
+<script>
+/* ======================================================
+   Split-Flap MATRIX (25 kolommen × 5 regels)
+   Public API: openSplitFlap({to, from, message})
+   ====================================================== */
+(function(){
+  const COLS = 25;
+  const ROWS = 5;
+  const TOTAL = COLS * ROWS;
+
+  // Ruime charset incl. bullet/heart/€; niet-ondersteunde chars → spatie
+  const CHARSET = " ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.,!?-:/@#&()'\"+*=€$%♥•";
+  const TICK_MS = 16; // sneller tikje
+  const boardEl  = document.getElementById('splitflapBoard');
+  const $overlay = document.getElementById('splitflapOverlay');
+  const $close   = document.getElementById('sfClose');
+  const $sound   = document.getElementById('sfSound');
+  const $vibe    = document.getElementById('sfVibrate');
+
+  // === Grid & cells =================================================
+  // Maak grid-structuur 25×5
+  boardEl.style.gridTemplateColumns = `repeat(${COLS}, var(--cell-w))`;
+  boardEl.style.gridTemplateRows    = `repeat(${ROWS}, var(--cell-h))`;
+
+  const Cells = [];
+  function makeCell(initial=' '){
+    const cell = document.createElement('div'); cell.className='sf-cell';
+    const line = document.createElement('div'); line.className='sf-line';
+    const top  = document.createElement('div'); top.className='sf-flap sf-top';
+    const bot  = document.createElement('div'); bot.className='sf-flap sf-bot';
+    const tshade = document.createElement('div'); tshade.className='sf-shade';
+    const bshade = document.createElement('div'); bshade.className='sf-shade';
+    top.appendChild(tshade); bot.appendChild(bshade);
+    const setGlyph=(g)=>{ top.textContent=g; bot.textContent=g; top.appendChild(tshade); bot.appendChild(bshade); };
+    setGlyph(initial);
+    cell.append(top,bot,line);
+    return { el:cell, setGlyph, glyph:initial };
+  }
+  function buildMatrix(){
+    for(let i=0;i<TOTAL;i++){
+      const c = makeCell(' ');
+      boardEl.appendChild(c.el);
+      Cells.push(c);
+    }
+  }
+  buildMatrix();
+
+  // === Audio & haptics =============================================
+  let audioCtx = null;
+  function tick(){
+    if(!$sound.checked) return;
+    if(!audioCtx){ try{ audioCtx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ return; } }
+    const t = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator(); const g = audioCtx.createGain();
+    osc.type='square'; osc.frequency.value = 220 + Math.random()*60;
+    g.gain.setValueAtTime(0.0001,t);
+    g.gain.exponentialRampToValueAtTime(0.28,t+0.002);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+0.038);
+    osc.connect(g).connect(audioCtx.destination);
+    osc.start(t); osc.stop(t+0.045);
+  }
+  function vibe(pattern=[10,18,10]){ if($vibe.checked && navigator.vibrate) navigator.vibrate(pattern); }
+
+  // === Helpers ======================================================
+  const nextChar = g => {
+    const i = CHARSET.indexOf(g);
+    return i<0 ? ' ' : CHARSET[(i+1)%CHARSET.length];
+  };
+  function flipTo(cellObj, target){
+    return new Promise(res=>{
+      cellObj.el.classList.add('is-flipping'); tick();
+      const dur = (parseInt(getComputedStyle(document.documentElement).getPropertyValue('--flip-ms'))||140) * 2;
+      setTimeout(()=>{
+        cellObj.setGlyph(target);
+        cellObj.el.classList.remove('is-flipping');
+        res();
+      }, dur);
+    });
+  }
+  function sanitizeToCharset(s){
+    let out = '';
+    for (const ch of s) out += CHARSET.includes(ch) ? ch : ' ';
+    return out;
+  }
+
+  // Fit: maak de cellen zo groot mogelijk binnen de dialog
+  function fitBoard(){
+    const wrap = boardEl.parentElement; // .sf-board-wrap
+    const pad = 28 + 28; // board padding approx
+    const wAvail = wrap.clientWidth  - pad;
+    const hAvail = wrap.clientHeight - pad;
+
+    const cellW = Math.floor((wAvail - (COLS-1)*5) / COLS); // 5px gap
+    const cellH = Math.floor((hAvail - (ROWS-1)*5) / ROWS);
+
+    // Houd aspect iets hoger (klassieke splitflap)
+    const size = Math.max(18, Math.min(cellW, cellH));
+    const cw = size, ch = Math.round(size * 1.42);
+
+    document.documentElement.style.setProperty('--cell-w', cw + 'px');
+    document.documentElement.style.setProperty('--cell-h', ch + 'px');
+
+    // Font-size meeschalen en extra vet voor leesbaarheid
+    const f = Math.max(14, Math.min(28, Math.round(cw * 0.78)));
+    let sty = document.getElementById('sf-fontsize');
+    if (!sty){ sty = document.createElement('style'); sty.id='sf-fontsize'; document.head.appendChild(sty); }
+    sty.textContent = `.sf-flap{font:800 ${f}px/1.02 ui-monospace, Menlo, Consolas, "SF Mono", monospace}`;
+  }
+  window.addEventListener('resize', ()=>{ if(!$overlay.hidden) fitBoard(); });
+
+  // === Tekst zetten in matrix ======================================
+  // lines: array met 5 strings van exact COLS (pad met spaties)
+  async function setBoardLines(lines){
+    vibe();
+    const targets = lines.join('').slice(0, TOTAL).padEnd(TOTAL, ' ');
+    const promises = [];
+    for (let i=0;i<TOTAL;i++){
+      const cell = Cells[i];
+      const t = targets[i];
+      if (cell.glyph === t) continue;
+
+      // aantal stappen tot target
+      const steps = [];
+      let cur = cell.glyph, guard=0;
+      while(cur!==t && guard<CHARSET.length+2){
+        cur = nextChar(cur);
+        steps.push(cur); guard++;
+      }
+
+      const p=(async()=>{
+        for(let s=0;s<steps.length;s++){
+          await new Promise(r=>setTimeout(r, TICK_MS));
+          await flipTo(cell, steps[s]);
+        }
+        cell.glyph = t;
+      })();
+
+      // kleine diagonale wave over de matrix (kolom+rij offset)
+      const row = Math.floor(i / COLS), col = i % COLS;
+      const offset = (row*COLS + col) * 1.2; // ms
+      promises.push(new Promise(r => setTimeout(()=>p.then(r), offset)));
+    }
+    await Promise.all(promises);
+  }
+
+  // Bouw 5 regels: 1=TO, 2=FROM, 3–5=message (wrap 25)
+  function composeLines({to, from, message}){
+    const L = COLS;
+    const up = (s)=> sanitizeToCharset(String(s||'').toUpperCase().trim());
+
+    const line1 = up(to)    ? centerOrPad(`TO ${up(to)}`, L)    : ' '.repeat(L);
+    const line2 = up(from)  ? centerOrPad(`FROM ${up(from)}`, L): ' '.repeat(L);
+
+    const msg = up(message || '');
+    const chunks = wrap25(msg, L, 3); // 3 regels voor message
+    const [l3,l4,l5] = chunks;
+
+    return [
+      line1.padEnd(L,' '),
+      line2.padEnd(L,' '),
+      (l3||'').padEnd(L,' '),
+      (l4||'').padEnd(L,' '),
+      (l5||'').padEnd(L,' ')
+    ];
+  }
+
+  function centerOrPad(text, L){
+    if (text.length >= L) return text.slice(0, L-1) + '…';
+    const left = Math.floor((L - text.length)/2);
+    return ' '.repeat(left) + text + ' '.repeat(L - left - text.length);
+    // (kies pad i.p.v. perfect center als je wilt: return text.padEnd(L,' '))
+  }
+
+  function wrap25(s, L, maxLines){
+    // simpele word-wrap: breek op spaties, vul max 'maxLines' regels van L
+    const words = s.split(/\s+/).filter(Boolean);
+    const lines = [];
+    let cur = '';
+    while (words.length && lines.length < maxLines){
+      const w = words.shift();
+      const candidate = cur ? (cur + ' ' + w) : w;
+      if (candidate.length > L){
+        // push current en start nieuwe
+        lines.push(cur);
+        cur = w;
+      } else {
+        cur = candidate;
+      }
+    }
+    if (lines.length < maxLines){
+      if (cur) lines.push(cur);
+      while (lines.length < maxLines) lines.push('');
+    } else if (words.length || cur.length > L){
+      // nog content over → ellipsis op laatste lijn
+      lines[maxLines-1] = lines[maxLines-1].slice(0, Math.max(0, L-1)) + '…';
+    }
+    return lines.map(x => x || '');
+  }
+
+  // === Overlay controls ============================================
+  function openOverlay(){ $overlay.hidden=false; $overlay.focus(); fitBoard(); }
+  function closeOverlay(){ $overlay.hidden=true; }
+  function keyNav(e){ if(e.key==='Escape') closeOverlay(); }
+  window.addEventListener('keydown', keyNav);
+  $overlay.addEventListener('click', (e)=>{ if(e.target === $overlay) closeOverlay(); });
+  $close.addEventListener('click', closeOverlay);
+
+  // === Public API ===================================================
+  async function openSplitFlap(payload){
+    openOverlay();
+    const lines = composeLines(payload || {});
+    await setBoardLines(lines);
+  }
+  window.openSplitFlap = openSplitFlap;
+
+  // === Demo knop (optioneel) =======================================
+  document.getElementById('btnSplitFlap')?.addEventListener('click', ()=>{
+    const to   = document.getElementById('demoTo')?.value || '';
+    const from = document.getElementById('demoFrom')?.value || '';
+    const msg  = document.getElementById('demoMsg')?.value || '';
+    openSplitFlap({to, from, message: msg});
+  });
+
+})();
+</script>
+</body>
+</html>

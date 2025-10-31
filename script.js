@@ -1632,7 +1632,7 @@ function updateCoach(state, vars = {}, opts = {}){
   const copy = isEn ? {
   init:     themedInit || "Pick a feeling, select a message and send your note.",
   toFilled: `Nice! Click <button type="button" class="coach-inline">Send</button> to share your message.`,
-  shared:   "Your 'warm note' has been sent.<br> Make another one?",
+  shared:   "Your 'warm note' is on his way.<br> Make another one?",
   received: "You’ve received a warm note,<br> because you are special.",
   error:    "Add who it’s for first",
   category: "Now pick 'a warm note' from the feeling {{category}}.",
@@ -1641,7 +1641,7 @@ function updateCoach(state, vars = {}, opts = {}){
   } : {
   init:     themedInit || "Stuur een warm bericht met het juiste sentiment.",
   toFilled: `Mooi! Klik <button type="button" class="coach-inline">Verstuur</button> om je boodschap te delen.`,
-  shared:   "Je boodschap is verstuurd<br>Nog eentje maken?",
+  shared:   "Je boodschap is onderweg.<br>Nog eentje maken?",
   received: "Je hebt een 'a warm note' ontvangen, <br> omdat je bijzonder bent.",
   error:    "Vul eerst in voor wie dit is.",
   category: "Kies nu 'a warm note' uit {{categorie}}.",
@@ -2257,7 +2257,7 @@ function afterShareSuccess(){
   updateCoach('shared');
 }
 
-// === GENERIC SHEET SWIPE ==============================
+// === [P] GENERIC SHEET SWIPE ==============================
 
 (function installDragToClose(){
   const BACKDROP_IDS = ['sheet-backdrop','ai-backdrop','qr-backdrop','about-backdrop','msgr-help-backdrop'];
@@ -2360,6 +2360,41 @@ function afterShareSuccess(){
     BACKDROP_IDS.forEach(id => attach(document.getElementById(id)));
   });
 })();
+
+// ===== UNIFIED SWIPE-CLOSE HANDLER =====
+(function(){
+  const sheets = document.querySelectorAll('[data-sheet], .sheet-backdrop');
+  let startY = 0, deltaY = 0;
+  const THRESH = 60; // minimale veegafstand
+
+  sheets.forEach(sheet => {
+    sheet.addEventListener('touchstart', e => {
+      startY = e.touches[0].clientY;
+    }, { passive: true });
+
+    sheet.addEventListener('touchmove', e => {
+      deltaY = e.touches[0].clientY - startY;
+      if (deltaY > 0) sheet.style.transform = `translateY(${deltaY * 0.4}px)`;
+    }, { passive: true });
+
+    sheet.addEventListener('touchend', e => {
+      if (deltaY > THRESH) {
+        sheet.style.transition = 'transform .25s ease';
+        sheet.style.transform = `translateY(100%)`;
+        setTimeout(() => {
+          sheet.classList.add('hidden');
+          sheet.setAttribute('aria-hidden','true');
+          sheet.style.transform = '';
+          sheet.style.transition = '';
+        }, 250);
+      } else {
+        sheet.style.transform = '';
+      }
+      startY = deltaY = 0;
+    }, { passive: true });
+  });
+})();
+
 
 /* ===== LEO: single-source-of-truth (mount + welcome/received + AI-nudge) === */
 (function(){
@@ -2496,7 +2531,7 @@ function installIdleCTA({ idleMs = 20000, cooldownMs = 120000 } = {}) {
   document.addEventListener('DOMContentLoaded', ()=>{
     if (haveNodes()) return LeoFab.mount();
 
-    // probeer nog even (bv. als je HTML laater injecteert)
+    // probeer nog even (bv. als je HTML later injecteert)
     let left = 10;
     const t = setInterval(()=>{
       if (haveNodes()) {
@@ -2509,6 +2544,134 @@ function installIdleCTA({ idleMs = 20000, cooldownMs = 120000 } = {}) {
     }, 150);
   });
 })();
+
+/* ===== AUTO-PLAY DEMO (idle ⇒ automatisch bladeren) ======================= */
+(function(){
+  if (window.AWN_AutoPlay) return;
+
+  // Tweakbare settings
+  const CFG = {
+    idleMs: 20000,          // na 20s inactiviteit starten
+    showMs: 6000,           // toon elk bericht ~6s
+    bounceClass: 'note--autoplay-bounce',
+    leoCtaKey: 'idle',      // Leo hint die je al hebt
+  };
+
+  let idleTimer = null;
+  let loopTimer = null;
+  let running = false;
+
+  // ——— Helpers ——————————————————————————————————————————————
+  const $ = sel => document.querySelector(sel);
+  const anyOverlayOpen = () => {
+    const ids = ['sheet-backdrop','ai-backdrop','msgr-help-backdrop','qr-backdrop','about-backdrop'];
+    return ids.some(id=>{
+      const el = document.getElementById(id);
+      return el && !el.classList.contains('hidden') && el.getAttribute('aria-hidden')!=='true';
+    });
+  };
+
+  // [GUARD] — bepaal of auto-play toegestaan is
+  function shouldAutoBrowse() {
+    try {
+      const u = new URL(window.location.href);
+      const hasMid   = u.searchParams.has('mid');
+      const hasAITxt = u.searchParams.has('aitxt');
+      const hasAII   = u.searchParams.has('aii');
+      if (hasMid || hasAITxt || hasAII) {
+        console.debug('[autoPlay] skipped – shared or AI note detected');
+        return false;
+      }
+    } catch(e) {
+      console.warn('[autoPlay] guard check failed', e);
+    }
+    return true;
+  }
+
+  function setDeckAllIfNeeded(){
+    const chipAll = document.querySelector('.chip[data-sentiment="all"]')
+                  || [...document.querySelectorAll('.chip')].find(c=>{
+                        const t = (c.textContent||'').trim().toLowerCase();
+                        return t === 'alle' || t === 'all' || t === 'alles';
+                     });
+    if (chipAll && !chipAll.classList.contains('active')){
+      chipAll.click?.();
+    }
+  }
+
+  function nextMessage(){
+    const btn = document.querySelector('.nav-btn--next, .chev--right');
+    if (btn) { btn.click(); return true; }
+    if (typeof window.showNextMessage === 'function'){ window.showNextMessage(); return true; }
+    if (typeof window.onNavNext === 'function'){ window.onNavNext(); return true; }
+    return false;
+  }
+
+  function bounceNote(){
+    const note = document.querySelector('.note');
+    if (!note) return;
+    note.classList.remove(CFG.bounceClass);
+    void note.offsetWidth;
+    note.classList.add(CFG.bounceClass);
+  }
+
+  function step(){
+    if (!running) return;
+    if (anyOverlayOpen()){ scheduleNext(); return; }
+
+    setDeckAllIfNeeded();
+    try { window.LeoCTA?.fire?.(CFG.leoCtaKey, { skipOverlay:true }); } catch {}
+    const ok = nextMessage();
+    if (ok) bounceNote();
+    scheduleNext();
+  }
+
+  function scheduleNext(){
+    clearTimeout(loopTimer);
+    loopTimer = setTimeout(step, CFG.showMs);
+  }
+
+  function start(){
+    if (running) return;
+    // [GUARD] Skip autoplay bij gedeelde of AI notes
+    if (!shouldAutoBrowse()) return;
+    running = true;
+    step();
+  }
+
+  function stop(){
+    running = false;
+    clearTimeout(loopTimer);
+  }
+
+  function resetIdleWatch(){
+    clearTimeout(idleTimer);
+    stop();
+    // [GUARD] Skip reset/start bij gedeelde of AI notes
+    if (!shouldAutoBrowse()) return;
+    idleTimer = setTimeout(start, CFG.idleMs);
+  }
+
+  // ——— User activity → reset ——————————————————————————————
+  const ACT_EVT = ['pointerdown','keydown','wheel','touchstart','mousemove','scroll'];
+  ACT_EVT.forEach(ev => window.addEventListener(ev, resetIdleWatch, { passive:true }));
+
+  const mo = new MutationObserver(resetIdleWatch);
+  ['sheet-backdrop','ai-backdrop','msgr-help-backdrop','qr-backdrop','about-backdrop'].forEach(id=>{
+    const el = document.getElementById(id);
+    if (el) mo.observe(el, { attributes:true, attributeFilter:['class','aria-hidden'] });
+  });
+
+  // Boot
+  document.addEventListener('DOMContentLoaded', resetIdleWatch);
+
+  // Exporteer voor debug/tuning
+  window.AWN_AutoPlay = {
+    start, stop, reset: resetIdleWatch,
+    config: CFG
+  };
+})();
+
 
 /* ===== LEO CTA ENGINE (clean core) ======================================= */
 (function(){
@@ -2573,8 +2736,8 @@ function speak(txt, opts){
     },
     askRecipient: {
       text: {
-        en: "Think of someone who could use a smile — add their name 💛",
-        nl: "Denk aan iemand die je wilt opvrolijken — vul alvast de naam in 💛"
+        en: "Think of someone who could use a smile. Add their name 💛",
+        nl: "Denk aan iemand die je wilt opvrolijken. Vul alvast de naam in 💛"
       },
       cooldown: { type: 'session' },
       autoDismissMs: 13000
@@ -2596,8 +2759,8 @@ function speak(txt, opts){
     },
 	  aiSheetOpen: {
   		text: {
-    	  en: "Pick a tone and occasion, add a few keywords — I’ll help you write it ✨",
-    	  nl: "Kies een toon en aanleiding, voeg wat steekwoorden toe — ik help je schrijven ✨"
+    	  en: "Pick a tone and occasion, add a few keywords. I’ll help you write it ✨",
+    	  nl: "Selecteer een toon en aanleiding, voeg wat steekwoorden toe. Ik help je schrijven ✨"
   	},
   		cooldown: { type: 'session' },  // 1× per sessie is genoeg
   		autoDismissMs: 9000             // mag wat langer blijven staan
@@ -2613,7 +2776,7 @@ function speak(txt, opts){
       autoDismissMs: 13000
     },
     aiError: {
-      text: { en: "Something went wrong — try again later.", nl: "Er ging iets mis — probeer het later nog eens." },
+      text: { en: "Something went wrong, try again later.", nl: "Er ging iets mis, probeer het later nog eens." },
       cooldown: { type: 'ttl', ms: 15_000 },
       autoDismissMs: 3200
     },
@@ -2624,8 +2787,8 @@ function speak(txt, opts){
     },
     afterCopy: {
       text: {
-        en: "Link copied 📋 — open WhatsApp or Messages and paste to share.",
-        nl: "Link gekopieerd 📋 — open WhatsApp of Berichten en plak om te delen."
+        en: "Link copied 📋 — Open WhatsApp or Messages and paste to share.",
+        nl: "Link gekopieerd 📋 — Open WhatsApp of Messenger en plak om te delen."
       },
       cooldown: { type: 'ttl', ms: 15_000 },
       autoDismissMs: 8000
@@ -2638,7 +2801,7 @@ function speak(txt, opts){
     firstSwipe: {
     text: {
       en: "Nice! Swipe again to explore more warm notes 💛",
-      nl: "Lekker bezig! Swipe door voor meer warme berichtjes 💛"
+      nl: "Nice! Swipe door voor meer warme berichtjes 💛"
     },
     cooldown: { type: 'session' },   // 1× per sessie
     autoDismissMs: 6000
@@ -2752,9 +2915,6 @@ function sayOnceWithRetry(text, { setFlag=false, max=RETRIES, delay=RETRY_MS } =
 }
 
 (function installAISheetCTA(){
-  const fire = (ms=1800) => {
-    try { window.LeoCTA?.fire('aiSheetOpen', { delayMs: ms, skipOverlay: true }); } catch {}
-  };
 
   // A) Mutations op de sheet-backdrop
   const sheet = document.getElementById('ai-backdrop');
@@ -2777,7 +2937,12 @@ function sayOnceWithRetry(text, { setFlag=false, max=RETRIES, delay=RETRY_MS } =
   if (aiBtn) {
     aiBtn.addEventListener('click', () => fire(1200), { capture: true });
   }
+  
+    const fire = (ms=3600) => {
+    try { window.LeoCTA?.fire('aiSheetOpen', { delayMs: ms, skipOverlay: true }); } catch {}
+  };
 })();
+
   // --- Campaign: AI Compose nudge ------------------------------------------
   function scheduleAINudge(){
     if (hasMid()) return; // niet in received-flow
@@ -2899,7 +3064,7 @@ function celebrate(){
     setTimeout(()=> piece.remove(), 3600);
   }
   const live = $("confetti-layer");
-  if (live) live.textContent = "Viering: note verstuurd.";
+  if (live) live.textContent = "Note is on his way.";
 }
 
 function showToast(msg){
@@ -4101,6 +4266,36 @@ function bindArrowPreviewBridge() {
   }
 }
 
+// ===== INPUT FOCUS AUTO-SCROLL (mobile) =====
+(function(){
+  const inputs = ['#to-inline', '#from-inline'];
+  const opts = { block: 'center', behavior: 'smooth' };
+
+  function ensureVisible(e) {
+    const el = e.target;
+    if (!el || window.innerWidth > 768) return; // enkel mobiel
+    setTimeout(() => {
+      try {
+        el.scrollIntoView(opts);
+        document.body.style.scrollBehavior = 'smooth';
+        // extra marge onderaan bij iOS safe area
+        document.documentElement.style.scrollPaddingBottom = 'env(safe-area-inset-bottom, 20px)';
+      } catch {}
+    }, 250);
+  }
+
+  function resetPadding() {
+    document.documentElement.style.scrollPaddingBottom = '';
+  }
+
+  inputs.forEach(sel => {
+    const el = document.querySelector(sel);
+    if (!el) return;
+    el.addEventListener('focus', ensureVisible, { passive: true });
+    el.addEventListener('blur', resetPadding, { passive: true });
+  });
+})();
+
 /* -------------------------- A) SPLASH (overlay) -------------------------- */
 /* ============================================================
    QUICK SPLASH (lean) — geen clones, geen observers
@@ -4720,6 +4915,62 @@ function bindAISheetGlue(){
     };
   };
 
+/* ===========================================================
+   [U+] AI AUTOPLAY GUARD & PERSISTENCE
+   Beschermt AI-resultaten tegen overschrijven door autoload
+   =========================================================== */
+
+(function installAIAutoplayGuard(){
+
+  // Stop elke bestaande autoplay zodra AI actief is
+  function stopAutoload() {
+    if (window.AWN_FLAGS?.autoPlayTimer) {
+      clearTimeout(window.AWN_FLAGS.autoPlayTimer);
+      window.AWN_FLAGS.autoPlayTimer = null;
+    }
+    STATE.aiMessageActive = true;
+  }
+
+  // Herstart autoplay alleen als AI niet actief is
+  function scheduleNextAutoload(delay = 8000) {
+    if (STATE.aiMessageActive) return;
+    if (window.AWN_FLAGS?.autoPlayTimer) clearTimeout(window.AWN_FLAGS.autoPlayTimer);
+    window.AWN_FLAGS.autoPlayTimer = setTimeout(() => {
+      try { showNextMessage?.(); } catch {}
+    }, delay);
+  }
+
+  // Luister naar AI-resultaten
+  document.addEventListener('ai:result', () => {
+    stopAutoload();
+    try {
+      // Laatst gegenereerde bericht wordt al toegevoegd via onAIGeneratedText()
+      // Hier markeren we extra de toestand
+      STATE.aiMessageActive = true;
+    } catch {}
+  });
+
+  // Zodra de AI-sheet sluit → autoplay hervatten
+  document.addEventListener('ai:closed', () => {
+    STATE.aiMessageActive = false;
+    scheduleNextAutoload(60000);
+  });
+
+  // Optioneel: als je close-knop al een id heeft (#ai-close-btn)
+  const aiClose = document.getElementById('ai-close-btn');
+  if (aiClose) {
+    aiClose.addEventListener('click', () => {
+      document.dispatchEvent(new Event('ai:closed'));
+    });
+  }
+
+  // Expose helper globally
+  window.AWNAI = window.AWNAI || {};
+  window.AWNAI.stopAutoload = stopAutoload;
+  window.AWNAI.resumeAutoload = () => { STATE.aiMessageActive = false; scheduleNextAutoload(6000); };
+
+})();
+
   // ---------- UI binds ----------
   // Open-knop: eerst 'Voor wie?' check; dan sheet + korte coach-intro
   els.openBtn.addEventListener('click', () => {
@@ -4729,7 +4980,6 @@ function bindAISheetGlue(){
       return requireTo(); // highlight + focus
     }
     openSheet();
-    window.updateCoachTimed?.('aiThinking', {}, 900); // subtiel hintje mag hier ook (“Even denken… 💭”)
   });
 
   els.close?.addEventListener('click', closeSheet);
@@ -5047,6 +5297,8 @@ function hasNoteOnScreen() {
   window.__awnReply    = replySwapNames;
   window.__awnDownload = downloadCurrentNotePNG;
 })();
+
+
 /* ========================================================================
    DEBUG HARNESS — NIET PRODUCTIE, HELPT ZIEN WAT ER WEL/NIET TRIGGERT
    - activeer via ?debug=1
