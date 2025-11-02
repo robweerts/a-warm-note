@@ -934,9 +934,12 @@ function makeChip(value, label){
   b.title = label || '';
   b.textContent = label;
   b.onclick = () => {
-  STATE.activeSentiment = value;
-  activateChip(value);
-  onSentimentChosen(STATE.lang, value); // bouw deck + nav + toon eerste via NAV
+  // Map 'all', lege string of null/undefined naar null (alle berichten)
+  const sent = (value === 'all' || value === '' || value == null) ? null : value;
+
+  STATE.activeSentiment = sent;
+  activateChip(sent);
+  onSentimentChosen(STATE.lang, (STATE.activeSentiment === 'all' ? null : STATE.activeSentiment)); 
   scrollChipIntoCenter(b);
 };
   return b;
@@ -1103,6 +1106,32 @@ function syncNoteTabsColor(noteEl = document.querySelector('.note')){
     tab.style.background = bg;              // match papier
     tab.style.color      = color;           // match inkt
   });
+}
+
+// -----------------------------------------
+// Dedup van eerste Next/Prev render
+STATE.lastRenderedId = STATE.lastRenderedId || null;
+
+function safeRenderMessage(msgObjOrMsg){
+  const msg = (msgObjOrMsg && msgObjOrMsg.msg) ? msgObjOrMsg.msg : msgObjOrMsg;
+  if (!msg) return;
+
+  if (msg.id && STATE.lastRenderedId && msg.id === STATE.lastRenderedId) {
+    // Dubbel: probeer 1 stap verder (of terug) te gaan zodat eerste klik niet herhaalt
+    const NAV = (typeof window !== 'undefined') ? window.NAV : null;
+    if (NAV && typeof NAV.next === 'function') {
+      const m2 = NAV.next();
+      if (m2 && m2.id !== msg.id) {
+        renderMessage({ msg: m2 });
+        STATE.lastRenderedId = m2.id || null;
+        return;
+      }
+    }
+    // Fallback: render niets extra's
+    return;
+  }
+  renderMessage({ msg });
+  STATE.lastRenderedId = msg.id || null;
 }
 
 function renderMessage({ newRandom = false, requestedIdx = null, wiggle = false, msg = null } = {}) {
@@ -1284,12 +1313,6 @@ function buildDeckFromState() {
   });
 }
 
-// Context wissel (bij kiezen van sentiment):
-function onSentimentChosen(lang, sentiment){
-  const deck = AWNDeck.buildDeckFor({ messagesByLang: AWN_MESSAGES, lang, sentiment, limit: 30 });
-  NAV = AWNDeck.createNavigator({ lang, sentiment, deck });
-  const first = NAV.next(); if (first) renderMessage(first);
-}
 
 // 1x na DOM ready: knoppen + swipe binden
 const detachNavUI = AWNDeck.UI.attachNav({
@@ -1308,7 +1331,7 @@ const detachNavUI = AWNDeck.UI.attachNav({
 // Als user handmatig een message kiest uit een lijst:
 function onUserPickedMessage(msg){
   if (!NAV) return;
-  const cur = NAV.push(msg, { mark:true, advance:true });
+  const cur = window.NAV.push(msg, { mark:true, advance:true });
   if (cur) renderMessage(cur);
 }
 
@@ -1364,11 +1387,11 @@ el.addEventListener("touchend", ()=>{
 	// binnen touchend:
 	    // ⬇︎ CTA: eerste swipe in deze sessie
     try { window.LeoCTA?.fire('firstSwipe'); } catch {}
-if (!NAV) onSentimentChosen(STATE.lang, STATE.activeSentiment || null);
+if (!NAV) onSentimentChosen(STATE.lang, (STATE.activeSentiment === 'all' ? null : STATE.activeSentiment));
 if (!NAV) return;
 
 
-const nextMsg = (dx < 0) ? NAV.next() : NAV.prev();
+const nextMsg = (dx < 0) ? window.NAV.next() : window.NAV.prev();
 if (nextMsg) {
   const idx = STATE.allMessages.findIndex(m => m && m.id === nextMsg.id);
   if (idx >= 0) {
@@ -2729,7 +2752,7 @@ function speak(txt, opts){
     received: {
       text: {
         en: "💛 You’ve received a warm note. Want to send one back?",
-        nl: "💛 Je hebt een warm note ontvangen. Stuur er ook één terug?"
+        nl: "💛 Je hebt een warm note ontvangen. Stuur er ook één terug met reply ↩︎"
       },
       cooldown: { type: 'session' },
       autoDismissMs: 12000
@@ -2781,9 +2804,9 @@ function speak(txt, opts){
       autoDismissMs: 3200
     },
     postSend: {
-      text: { en: "Shared 💛 Want to make another one?", nl: "Gedeeld 💛 Nog eentje maken?" },
+      text: { en: "Warm note is on his way. 💛 Want to make another one?", nl: "Berichtje is onderweg. 💛 Nog eentje maken?" },
       cooldown: { type: 'ttl', ms: 30_000 },
-      autoDismissMs: 3600
+      autoDismissMs: 4600
     },
     afterCopy: {
       text: {
@@ -2937,10 +2960,9 @@ function sayOnceWithRetry(text, { setFlag=false, max=RETRIES, delay=RETRY_MS } =
   if (aiBtn) {
     aiBtn.addEventListener('click', () => fire(1200), { capture: true });
   }
-  
-    const fire = (ms=3600) => {
+  const fire = (ms=3600) => {
     try { window.LeoCTA?.fire('aiSheetOpen', { delayMs: ms, skipOverlay: true }); } catch {}
-  };
+  }
 })();
 
   // --- Campaign: AI Compose nudge ------------------------------------------
@@ -4126,8 +4148,7 @@ window.actuallyOpenMessenger = actuallyOpenMessenger;
 function ensureBrowseStart() {
   if (!NAV) {
     // sentiment kan null zijn → deck 'Alles'
-    onSentimentChosen(STATE.lang, STATE.activeSentiment || null);
-  }
+	onSentimentChosen(STATE.lang, (STATE.activeSentiment === 'all' ? null : STATE.activeSentiment));}
 }
 
 function wireGlobalUI(){
@@ -4236,7 +4257,7 @@ function bindArrowPreviewBridge() {
         e.preventDefault();
         e.stopImmediatePropagation?.();
         ensureBrowseStart();               // simuleert "Kies bericht" → bouwt NAV
-        const first = NAV && NAV.next();   // pak eerste item van 'Alles'
+        const first = NAV && window.NAV.next();   // pak eerste item van 'Alles'
         if (first) {
           // render op basis van id → STATE.currentIdx zetten
           const idx = STATE.allMessages.findIndex(m => m && m.id === first.id);
@@ -4255,7 +4276,7 @@ function bindArrowPreviewBridge() {
         e.preventDefault();
         e.stopImmediatePropagation?.();
         ensureBrowseStart();
-        const first = NAV && NAV.next();
+        const first = NAV && window.NAV.next();
         if (first) {
           const idx = STATE.allMessages.findIndex(m => m && m.id === first.id);
           if (idx >= 0) renderMessage({ requestedIdx: idx, wiggle: false, msg: first });
@@ -4668,104 +4689,161 @@ function buildDeckFromState() {
   return list.slice();
 }
 
-// Maak één navigator per (lang+sentiment) wanneer de user een sentiment kiest:
-let nav = null;
-let NAV = null;
+// Eén navigator-singleton, globaal bereikbaar
+window.NAV = window.NAV || null;
 
-function onSentimentChosen(lang, sentiment) {
-  // — language & sentiment ---------------------------------------------------
+
+
+/* [DECK CACHE] — persistente kaartvolgorde per (lang, sentiment) */
+STATE.deckCache ??= new Map();
+
+function deckKey(lang, sentiment){
+  return `${(lang||'nl').toLowerCase()}|${sentiment ? String(sentiment) : 'all'}`;
+}
+
+function shuffleOnce(arr){
+  const a = Array.isArray(arr) ? arr.slice() : [];
+  for (let i=a.length-1; i>0; i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// Definitieve stabiele implementatie; ook aangeroepen door de vroege delegator
+window.__onSentimentChosenStable = function (lang, sentiment) {
+  // --- lokale helpers zodat we geen globale deps nodig hebben ---
+  STATE.deckCache = STATE.deckCache || new Map();
+
+  function deckKey(langX, sentX) {
+    return `${(langX || 'nl').toLowerCase()}|${(sentX ? String(sentX) : 'all')}`;
+  }
+
+  function shuffleOnce(arr) {
+    const a = Array.isArray(arr) ? arr.slice() : [];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  // Normaliseer 'all' -> null
+  const sent = (sentiment === 'all' || sentiment === '' || sentiment == null) ? null : sentiment;
+
+  // 1) Language & sentiment
   try {
     STATE.lang = lang || STATE.lang || (typeof resolveLang === 'function' ? resolveLang() : 'nl');
   } catch { STATE.lang = STATE.lang || 'nl'; }
-  STATE.activeSentiment = (sentiment == null ? null : sentiment);
+  STATE.activeSentiment = sent;
 
-  // — deck opbouwen met veilige fallback ------------------------------------
-  let deck = [];
+  // 2) Deck opbouwen via bestaande filters (GEEN limiet 30, GEEN weging)
+  let filtered = [];
   try {
-    // jouw bestaande filterfunctie
-    deck = (typeof buildDeckFromState === 'function')
+    filtered = (typeof buildDeckFromState === 'function')
       ? buildDeckFromState()
       : (Array.isArray(STATE.allMessages) ? STATE.allMessages.slice() : []);
   } catch {
-    deck = Array.isArray(STATE.allMessages) ? STATE.allMessages.slice() : [];
+    filtered = Array.isArray(STATE.allMessages) ? STATE.allMessages.slice() : [];
   }
 
-  // — lichte variatie: roteer deck 1x zodat de start niet voorspelbaar is ----
-  if (Array.isArray(deck) && deck.length > 1) {
-    const key = String(STATE.activeSentiment ?? 'all') + ':' + String(STATE.lang || 'nl');
-    const hash = Array.from(key).reduce((h, ch) => ((h << 5) - h + ch.charCodeAt(0)) | 0, 0);
-    const base = (Date.now() & 0xffff);
-    const offset = Math.abs(base ^ hash) % deck.length;
-    if (offset) deck = deck.slice(offset).concat(deck.slice(0, offset));
+  // 3) Cache: éénmalig schudden per (lang|sentiment), daarna vaste volgorde
+  const key = deckKey(STATE.lang, STATE.activeSentiment || null);
+  if (!STATE.deckCache.has(key)) {
+    STATE.deckCache.set(key, shuffleOnce(filtered));
   }
 
-  // — navigator (AWNDeck of een simpele fallback) ---------------------------
+  // Projecteer zonder volgorde te verliezen; nieuwe items achteraan random toevoegen
+  const cached = STATE.deckCache.get(key);
+  const allowedIds = new Set((filtered || []).map(m => m && m.id));
+  const projected = cached.filter(m => allowedIds.has(m && m.id));
+
+  const existing = new Set(projected.map(m => m && m.id));
+  const newcomers = (filtered || []).filter(m => !existing.has(m && m.id));
+  const stableDeck = projected.concat(shuffleOnce(newcomers));
+
+  // Terug in cache
+  STATE.deckCache.set(key, stableDeck);
+
+  // 4) Navigator opzetten met de STABIELE volgorde
   const g = (typeof window !== 'undefined') ? window : globalThis;
-  if (!g) return;
+  if (!g) return null;
 
   if (g.AWNDeck && typeof g.AWNDeck.createNavigator === 'function') {
     g.NAV = g.AWNDeck.createNavigator({
       lang: STATE.lang,
       sentiment: STATE.activeSentiment || 'all',
-      deck
+      deck: stableDeck
     });
   } else {
-    // minimale navigator zodat next/prev blijft werken
+    // fallback navigator
     (function makeFallbackNav() {
       let i = -1;
-      const arr = Array.isArray(deck) ? deck : [];
+      const arr = Array.isArray(stableDeck) ? stableDeck : [];
       g.NAV = {
         next() { if (!arr.length) return null; i = (i + 1) % arr.length; return arr[i]; },
         prev() { if (!arr.length) return null; i = (i - 1 + arr.length) % arr.length; return arr[i]; },
-        push(msg) {
-          if (!msg) return null;
-          const j = arr.findIndex(m => m && m.id === msg.id);
-          if (j >= 0) i = j; else { arr.unshift(msg); i = 0; }
-          return arr[i];
-        }
+        size: arr.length
       };
     })();
   }
 
-  // — eerste kaart renderen (met id → index mapping naar allMessages) -------
-  const first = (g.NAV && typeof g.NAV.next === 'function') ? g.NAV.next() : (deck[0] || null);
-  if (first) {
-    const list = Array.isArray(STATE.allMessages) ? STATE.allMessages : [];
-    const idx = list.findIndex(m => m && m.id === first.id);
-    if (idx >= 0) {
-      STATE.currentIdx = idx;
-      renderMessage({ requestedIdx: idx, wiggle: false, msg: first });
-    } else {
-      renderMessage({ msg: first });
-    }
-  } else {
-    // laatste redmiddel: pak een random uit allMessages
-    const list = Array.isArray(STATE.allMessages) ? STATE.allMessages : [];
-    if (list.length) {
-      const ridx = Math.floor(Math.random() * list.length);
-      STATE.currentIdx = ridx;
-      renderMessage({ requestedIdx: ridx, wiggle: false });
-    }
+  // 5) Eerste kaart ophalen en DIRECT tonen (cursor in sync; geen TDZ)
+  STATE.lastRenderedId = null;
+
+  let firstMsg = null;
+  if (g.NAV && typeof g.NAV.next === 'function') {
+    // prime: verplaats cursor naar eerste kaart en krijg die terug
+    firstMsg = g.NAV.next();
+  } else if (Array.isArray(stableDeck) && stableDeck.length > 0) {
+    firstMsg = stableDeck[0];
   }
+
+  if (firstMsg) {
+    // Zoek index in de volledige messages-lijst (veel renderers gebruiken dit)
+    const all = Array.isArray(STATE.allMessages) ? STATE.allMessages : [];
+    let idx = all.findIndex(m => m && m.id === firstMsg.id);
+    if (idx < 0) idx = 0;
+
+    // Meteen renderen — geen wacht op user input
+    // Gebruik, waar mogelijk, dezelfde signatuur als elders in je app:
+    // requestedIdx helpt UI-state (tellers, dot/stepper) direct kloppen.
+    renderMessage({ requestedIdx: idx, wiggle: false, msg: firstMsg });
+
+    STATE.lastRenderedId = firstMsg.id || null;
+  }
+
+  return firstMsg;
+};  
+
+// Houd een publieke naam aan voor bestaande aanroepen
+function onSentimentChosen(lang, sentiment){
+  return window.__onSentimentChosenStable(lang, sentiment);
 }
 
 // Als user uit de lijst een specifieke message kiest:
 function onUserPickedMessage(msg){
   if (!nav) return;
-  const cur = nav.push(msg, {mark:true, advance:true});
+  const cur = window.NAV.push(msg, {mark:true, advance:true});
   renderMessage(cur);
 }
 
-// Knoppen “Vorige” / “Volgende”:
+function getNAV(){
+  if (typeof window !== 'undefined' && window.NAV) return window.NAV;
+  return null;
+}
+
 function handlePrev(){
-  if (!nav) return;
-  const m = nav.prev();
-  if (m) renderMessage(m);
+  const NAV = getNAV();
+  if (!NAV || typeof NAV.prev !== 'function') return;
+  const m = NAV.prev();
+  if (m) safeRenderMessage(m);
 }
 function handleNext(){
-  if (!nav) return;
-  const m = nav.next(); // pakt volgende bekeken of uit deck
-  if (m) renderMessage(m);
+  const NAV = getNAV();
+  if (!NAV || typeof NAV.next !== 'function') return;
+  const m = NAV.next();
+  if (m) safeRenderMessage(m);
 }
 
 // Voorbeeld: bind UI

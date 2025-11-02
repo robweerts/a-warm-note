@@ -254,6 +254,7 @@ button.btn .icon svg { width: 100% !important; height: 100% !important; }
 .chip.active{ background:#222; color:#fff; box-shadow:0 0 0 1px rgba(0,0,0,.12), 0 6px 12px rgba(0,0,0,.16) }
 .chip--theme{ background:rgba(255,0,85,.1); color:#b0003a; border:1px solid rgba(255,0,85,.25); font-weight:700 }
 .chip--theme.active{ background:#b0003a; color:#fff; border-color:#b0003a }
+
 @media (max-width:360px){ .chip{padding:4px 8px; font-size:.8rem} }
 
 .chip-chevron{
@@ -521,6 +522,14 @@ button.btn .icon svg { width: 100% !important; height: 100% !important; }
 }
 .note--autoplay-bounce {
   animation: awn-bounce-in .52s cubic-bezier(.22,.61,.36,1) both;
+}
+
+.note.deck-shuffle { animation: deck-shuffle 0.6s cubic-bezier(.6,-0.28,.74,.05); }
+@keyframes deck-shuffle {
+  0% { transform: scale(1) rotate(-2deg);}
+  30% { transform: scale(1.04) rotate(8deg);}
+  70% { transform: scale(0.98) rotate(-10deg);}
+  100% { transform: scale(1) rotate(0);}
 }
 
 /* Chevrons */
@@ -1310,6 +1319,58 @@ input[name="from"] {
   .sheet--ai .sheet-actions .btn.primary{ transition:none; }
 }
 
+/* AI Sheet — fancy select */
+:root{
+  --ai-glass: rgba(255,255,255,.75);
+  --ai-glass-b: #e5e7eb;
+  --ai-ink: #0f172a;
+  --ai-muted: #64748b;
+  --ai-accent1: #ff7a18;
+  --ai-accent2: #d97706;
+}
+.ai-sheet .field {
+  display:flex; flex-direction:column; gap:6px; margin-bottom:14px;
+}
+.ai-sheet .label {
+  font-size:12px; font-weight:700; color:var(--ai-muted); letter-spacing:.02em;
+}
+.ai-sheet select.ai-select {
+  appearance:none; -webkit-appearance:none; -moz-appearance:none;
+  width:100%;
+  padding:12px 44px 12px 14px;
+  font-size:16px; line-height:1.2; font-weight:600; color:var(--ai-ink);
+  border-radius:14px;
+  border:1px solid var(--ai-glass-b);
+  background:
+    linear-gradient(135deg, var(--ai-glass), #fff) padding-box,
+    linear-gradient(135deg, rgba(255,255,255,.8), rgba(255,255,255,.4)) border-box;
+  box-shadow: 0 10px 28px rgba(2,6,23,.08);
+  backdrop-filter: blur(8px);
+  transition: box-shadow .2s, transform .06s, border-color .2s;
+  position:relative;
+}
+.ai-sheet select.ai-select:focus {
+  outline:none; border-color: color-mix(in oklab, var(--ai-accent1) 60%, var(--ai-accent2));
+  box-shadow: 0 14px 34px rgba(2,6,23,.12);
+}
+.ai-sheet .select-wrap { position:relative; }
+.ai-sheet .select-caret {
+  position:absolute; right:12px; top:50%; translate:0 -50%;
+  width:22px; height:22px; pointer-events:none;
+  background: conic-gradient(from 230deg, var(--ai-accent1), var(--ai-accent2));
+  -webkit-mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="black"><path d="M7 10l5 5 5-5z"/></svg>') center/contain no-repeat;
+          mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="black"><path d="M7 10l5 5 5-5z"/></svg>') center/contain no-repeat;
+  opacity:.9;
+}
+@media (hover:hover){
+  .ai-sheet select.ai-select:hover { transform: translateY(-1px); }
+}
+
+/* iOS zoom fix voor 16px+ input */
+@supports (-webkit-touch-callout: none) {
+  .ai-sheet select.ai-select { font-size:16px; }
+}
+
 /* Share specifics */
 .qr-box{ display:grid; place-items:center; gap:12px; padding:14px 0 20px; }
 #qr-canvas{ display:none; }
@@ -1607,69 +1668,6 @@ button[data-action="expand-note"].is-hot::after{
   :root{ --icon: 16px; }   /* was 18px */
 }
 
-/* [ADD] Split-Flap button, past bij bestaande .btn */
-.btn.splitflap-btn {
-  display:inline-flex; align-items:center; gap:.5rem; font-weight:600;
-}
-
-/* [ADD] Overlay */
-.sf-overlay[hidden]{ display:none !important; }
-.sf-overlay{
-  position:fixed; inset:0; z-index:9999;
-  background:rgba(10,12,16,.55); backdrop-filter:saturate(1.1) blur(6px);
-  display:grid; place-items:center; padding:16px;
-}
-.sf-dialog{
-  width:min(960px, 96vw); max-height:90vh; overflow:hidden;
-  background:linear-gradient(#0f0e0b, #0c0b08); color:#ffeeda;
-  border:1px solid rgba(255,255,255,.08);
-  border-radius:16px; box-shadow:0 20px 60px rgba(0,0,0,.45);
-  display:flex; flex-direction:column; gap:0;
-}
-.sf-header, .sf-footer{ padding:12px 14px; display:flex; align-items:center; gap:10px; }
-.sf-header{ justify-content:space-between; border-bottom:1px solid rgba(255,255,255,.06); }
-.sf-footer{ justify-content:flex-start; border-top:1px solid rgba(255,255,255,.06); }
-.sf-tools{ display:flex; align-items:center; gap:10px; }
-.sf-toggle{ display:inline-flex; align-items:center; gap:6px; font-size:.92rem; opacity:.9; }
-.icon-btn{ display:inline-grid; place-items:center; width:34px; height:34px;
-  border-radius:10px; border:1px solid rgba(255,255,255,.08); background:#15130f; color:#ffeeda; }
-.icon-btn:hover{ border-color:rgba(255,255,255,.16); }
-
-.sf-board{
-  padding:14px; overflow:auto;
-  display:inline-flex; flex-wrap:wrap; gap:4px;
-  align-self:center; justify-content:center;
-  background:linear-gradient(#14110c,#0f0d0a);
-  border-radius:12px; margin:10px;
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.05);
-}
-
-/* cell/flip styling – warm thema */
-.sf-cell{
-  position:relative; width:26px; height:36px; border-radius:4px; overflow:hidden;
-  background:#1a1510; color:#ffeeda;
-  box-shadow:inset 0 -1px 0 rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.06);
-}
-.sf-line{ position:absolute; left:0; right:0; top:50%; height:1px; background:rgba(0,0,0,.6); z-index:3; }
-.sf-flap{
-  position:absolute; left:0; right:0; height:50%;
-  display:flex; align-items:center; justify-content:center;
-  font:600 18px/1 ui-monospace, Menlo, Consolas, monospace;
-  letter-spacing:.5px; user-select:none; backface-visibility:hidden; transform-style:preserve-3d; color:inherit;
-}
-.sf-top{ top:0; transform-origin:bottom; }
-.sf-bot{ bottom:0; transform-origin:top; }
-.sf-shade{ position:absolute; inset:0; background:linear-gradient(to bottom, rgba(255,255,255,.06), rgba(0,0,0,.35)); }
-.sf-bot .sf-shade{ background:linear-gradient(to top, rgba(255,255,255,.06), rgba(0,0,0,.45)); }
-
-.sf-cell.is-flipping .sf-top{ animation:sfFlipTop 160ms ease-in forwards; }
-.sf-cell.is-flipping .sf-bot{ animation:sfFlipBot 160ms ease-out 160ms forwards; }
-@keyframes sfFlipTop{ from{transform:rotateX(0)} to{transform:rotateX(-90deg)} }
-@keyframes sfFlipBot{ from{transform:rotateX(90deg)} to{transform:rotateX(0)} }
-
-.sf-hint{ opacity:.75; font-size:.9rem; margin-left:auto; }
-.btn.ghost{ background:#15130f; border:1px solid rgba(255,255,255,.08); color:#ffeeda; }
-.btn.ghost:hover{ border-color:rgba(255,255,255,.16); }
 /* 12) AUTHORITATIEVE OVERRIDES — houd dit blok als laatste */
 .topbar{ z-index:var(--z-topbar) !important; }
 #lang-dd{ z-index:var(--z-lang-dd) !important; }
