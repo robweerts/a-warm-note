@@ -503,7 +503,81 @@ function refreshAISheetStrings(){
   if (bApp) bApp.textContent = tx('ai.sheet.apply','Apply','Plaatsen');
   if (bCan) bCan.textContent = tx('ai.sheet.cancel','Cancel','Annuleren');
   if (stat) stat.textContent = tx('ai.status.ready','Ready','Klaar');
-}
+  }
+  
+  // === Typing Dots over de note ==============================================
+(function installTypingDots(){
+  let root = null;
+  let mounted = false;
+  let pending = false;   // AI-request onderweg?
+
+  function ensure(){
+    if (mounted) return;
+    const note = document.querySelector('.note');
+    if (!note) return;
+
+    root = document.createElement('div');
+    root.className = 'typing-dots';
+    root.innerHTML = `
+      <div class="typing-dots__wrap" aria-hidden="true">
+        <span class="typing-dots__dot"></span>
+        <span class="typing-dots__dot"></span>
+        <span class="typing-dots__dot"></span>
+      </div>
+    `;
+    note.appendChild(root);
+    mounted = true;
+  }
+
+  function show(){
+    ensure();
+    if (!mounted) return;
+    pending = true;
+    root.classList.add('show');
+  }
+
+  function hide(){
+    pending = false;
+    if (mounted) root.classList.remove('show');
+  }
+
+  // Exporteer kleine API (handig als je 'm handmatig wilt aanroepen)
+  window.TypingDots = { show, hide };
+
+  // --- Auto-wiring ---------------------------------------------------------
+  // A) Start bij AI-generate klik (robust selectors, capture om vroeg te zijn)
+  document.addEventListener('click', (e)=>{
+    const btn = e.target.closest?.('[data-ai-generate], #ai-generate, #smart-compose-generate, #ai-generate-btn, button[data-role="ai-generate"]');
+    if (!btn) return;
+
+    // Wacht net na het sluiten van de sheet (waarbij user iets ziet gebeuren)
+    setTimeout(()=> { show(); }, 280);
+  }, true);
+
+  // B) Stop bij AI-resultaat of -error (je code dispatcht 'ai:result' al)
+  document.addEventListener('ai:result', hide);
+  document.addEventListener('ai:error', hide);
+
+  // Safety: als AI-sheet weer opent, dots weg (user annuleert of iets anders)
+  const aiBackdrop = document.getElementById('ai-backdrop');
+  if (aiBackdrop){
+    const mo = new MutationObserver(()=>{
+      const open = !aiBackdrop.classList.contains('hidden') && aiBackdrop.getAttribute('aria-hidden') !== 'true';
+      if (open) hide();
+    });
+    mo.observe(aiBackdrop, { attributes:true, attributeFilter:['class','aria-hidden'] });
+  }
+
+  // C) Als je eigen code een custom 'ai:started' event gebruikt, haak daarop in
+  document.addEventListener('ai:started', ()=>{
+    setTimeout(()=> { show(); }, 200);
+  });
+
+  // D) Verberg ook bij navigatie naar een andere note
+  document.addEventListener('click', (e)=>{
+    if (e.target.closest?.('.nav-btn,.chip')) hide();
+  }, true);
+})();
 
 /* [D] === INIT (lifecycle) ================================================== */
 
@@ -2782,8 +2856,8 @@ function speak(txt, opts){
     },
 	  aiSheetOpen: {
   		text: {
-    	  en: "Pick a tone and occasion, add a few keywords. I’ll help you write it ✨",
-    	  nl: "Selecteer een toon en aanleiding, voeg wat steekwoorden toe. Ik help je schrijven ✨"
+    	  en: "Pick a Tone and Occasion of the note, add a few keywords. I’ll help you write it ✨",
+    	  nl: "Selecteer de Toon en Aanleiding van bericht, voeg wat steekwoorden toe. Ik help je schrijven ✨"
   	},
   		cooldown: { type: 'session' },  // 1× per sessie is genoeg
   		autoDismissMs: 9000             // mag wat langer blijven staan
@@ -2936,34 +3010,6 @@ function sayOnceWithRetry(text, { setFlag=false, max=RETRIES, delay=RETRY_MS } =
   };
   step();
 }
-
-(function installAISheetCTA(){
-
-  // A) Mutations op de sheet-backdrop
-  const sheet = document.getElementById('ai-backdrop');
-  if (sheet) {
-    const isVisible = () =>
-      !sheet.classList.contains('hidden') &&
-      sheet.getAttribute('aria-hidden') !== 'true';
-
-    const mo = new MutationObserver(() => {
-      if (isVisible()) fire(1200);
-    });
-    mo.observe(sheet, { attributes: true, attributeFilter: ['class','aria-hidden'] });
-
-    // Als hij al open is bij load (zeldzaam), toch een zachte nudge geven
-    if (isVisible()) fire(1200);
-  }
-
-  // B) Safety: als iemand op de AI-knop klikt, plan een nudge
-  const aiBtn = document.getElementById('smart-compose');
-  if (aiBtn) {
-    aiBtn.addEventListener('click', () => fire(1200), { capture: true });
-  }
-  const fire = (ms=3600) => {
-    try { window.LeoCTA?.fire('aiSheetOpen', { delayMs: ms, skipOverlay: true }); } catch {}
-  }
-})();
 
   // --- Campaign: AI Compose nudge ------------------------------------------
   function scheduleAINudge(){
@@ -4933,6 +4979,7 @@ function bindAISheetGlue(){
   function openSheet(){
     els.backdrop.classList.remove('hidden');
     els.backdrop.setAttribute('aria-hidden','false');
+    try { window.LeoCTA?.fire('aiSheetOpen',{ delayMs: 1600})} catch {};
     try { (els.tone || els.context || els.length || els.panel)?.focus(); } catch(_) {}
   }
   function closeSheet(){
@@ -5031,7 +5078,7 @@ function bindAISheetGlue(){
   // Zodra de AI-sheet sluit → autoplay hervatten
   document.addEventListener('ai:closed', () => {
     STATE.aiMessageActive = false;
-    scheduleNextAutoload(60000);
+    scheduleNextAutoload(90000);
   });
 
   // Optioneel: als je close-knop al een id heeft (#ai-close-btn)

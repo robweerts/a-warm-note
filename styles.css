@@ -1319,58 +1319,6 @@ input[name="from"] {
   .sheet--ai .sheet-actions .btn.primary{ transition:none; }
 }
 
-/* AI Sheet — fancy select */
-:root{
-  --ai-glass: rgba(255,255,255,.75);
-  --ai-glass-b: #e5e7eb;
-  --ai-ink: #0f172a;
-  --ai-muted: #64748b;
-  --ai-accent1: #ff7a18;
-  --ai-accent2: #d97706;
-}
-.ai-sheet .field {
-  display:flex; flex-direction:column; gap:6px; margin-bottom:14px;
-}
-.ai-sheet .label {
-  font-size:12px; font-weight:700; color:var(--ai-muted); letter-spacing:.02em;
-}
-.ai-sheet select.ai-select {
-  appearance:none; -webkit-appearance:none; -moz-appearance:none;
-  width:100%;
-  padding:12px 44px 12px 14px;
-  font-size:16px; line-height:1.2; font-weight:600; color:var(--ai-ink);
-  border-radius:14px;
-  border:1px solid var(--ai-glass-b);
-  background:
-    linear-gradient(135deg, var(--ai-glass), #fff) padding-box,
-    linear-gradient(135deg, rgba(255,255,255,.8), rgba(255,255,255,.4)) border-box;
-  box-shadow: 0 10px 28px rgba(2,6,23,.08);
-  backdrop-filter: blur(8px);
-  transition: box-shadow .2s, transform .06s, border-color .2s;
-  position:relative;
-}
-.ai-sheet select.ai-select:focus {
-  outline:none; border-color: color-mix(in oklab, var(--ai-accent1) 60%, var(--ai-accent2));
-  box-shadow: 0 14px 34px rgba(2,6,23,.12);
-}
-.ai-sheet .select-wrap { position:relative; }
-.ai-sheet .select-caret {
-  position:absolute; right:12px; top:50%; translate:0 -50%;
-  width:22px; height:22px; pointer-events:none;
-  background: conic-gradient(from 230deg, var(--ai-accent1), var(--ai-accent2));
-  -webkit-mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="black"><path d="M7 10l5 5 5-5z"/></svg>') center/contain no-repeat;
-          mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="black"><path d="M7 10l5 5 5-5z"/></svg>') center/contain no-repeat;
-  opacity:.9;
-}
-@media (hover:hover){
-  .ai-sheet select.ai-select:hover { transform: translateY(-1px); }
-}
-
-/* iOS zoom fix voor 16px+ input */
-@supports (-webkit-touch-callout: none) {
-  .ai-sheet select.ai-select { font-size:16px; }
-}
-
 /* Share specifics */
 .qr-box{ display:grid; place-items:center; gap:12px; padding:14px 0 20px; }
 #qr-canvas{ display:none; }
@@ -1666,6 +1614,44 @@ button[data-action="expand-note"].is-hot::after{
 /* Houd iconen klein zodat tekst niet naar een 2e rij dwingt */
 @media (max-width: 560px){
   :root{ --icon: 16px; }   /* was 18px */
+}
+
+/* Typing dots overlay (bovenop de note-content, maar klik-proof) */
+.typing-dots {
+  position: absolute;
+  inset: 0;
+  display: none;                  /* default uit */
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 3;                     /* boven message/icon, onder tape-tabs */
+}
+
+.typing-dots.show { display: flex; }
+
+.typing-dots__wrap {
+  display: inline-flex;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 999px;
+  background: rgba(0,0,0,.06);    /* subtiel, blijft leesbaar op papierkleur */
+  backdrop-filter: blur(2px);
+}
+
+.typing-dots__dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--ink, #222);
+  opacity: .2;
+  animation: awn-typing 1.2s infinite ease-in-out;
+}
+
+.typing-dots__dot:nth-child(2){ animation-delay: .15s; }
+.typing-dots__dot:nth-child(3){ animation-delay: .30s; }
+
+@keyframes awn-typing {
+  0%, 80%, 100% { transform: translateY(0);   opacity: .25; }
+  40%           { transform: translateY(-3px); opacity: .95; }
 }
 
 /* 12) AUTHORITATIEVE OVERRIDES — houd dit blok als laatste */
