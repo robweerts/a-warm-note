@@ -1,0 +1,32 @@
+[
+  {
+    "id": "en_ny_b3n7qs",
+    "sentiments": ["newyear", "hope", "warm"],
+    "text": "For {name}: new year, same heart — even fuller.",
+    "icons": "✨🥂"
+  },
+  {
+    "id": "en_ny_t8p2jw",
+    "sentiments": ["newyear", "hope", "affection"],
+    "text": "May 2026 kiss you awake gently, {name}.",
+    "icons": "🌅✨"
+  },
+  {
+    "id": "en_ny_f1k9hd",
+    "sentiments": ["newyear", "encouragement", "joy"],
+    "text": "More laughs, more rest, more you — cheers, {name}!",
+    "icons": "😊🥂"
+  },
+  {
+    "id": "en_ny_w4r6lm",
+    "sentiments": ["newyear", "support", "encouragement"],
+    "text": "Small steps, big smile. I’ll walk with you, {name}.",
+    "icons": "👣💛"
+  },
+  {
+    "id": "en_ny_p0c5ua",
+    "sentiments": ["newyear", "warm", "affection"],
+    "text": "Let’s choose light this year. I choose you, too, {name}.",
+    "icons": "✨💛"
+  }
+]

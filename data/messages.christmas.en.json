@@ -1,0 +1,32 @@
+[
+  {
+    "id": "en_xmas_u8b3za",
+    "sentiments": ["christmas", "warm", "gratitude"],
+    "text": "A warm Christmas hug for {name} — you’re my favorite little light.",
+    "icons": "✨🎄"
+  },
+  {
+    "id": "en_xmas_m1k7qp",
+    "sentiments": ["christmas", "warm", "encouragement"],
+    "text": "Small note, big feeling: merry Christmas, {name}.",
+    "icons": "🎄💌"
+  },
+  {
+    "id": "en_xmas_j0v6rn",
+    "sentiments": ["christmas", "comfort", "warm"],
+    "text": "For {name}: may today be gentle, with lights inside.",
+    "icons": "🕯️✨"
+  },
+  {
+    "id": "en_xmas_c9t5we",
+    "sentiments": ["christmas", "affection", "warm"],
+    "text": "Christmas shines brighter with you on my mind, {name}.",
+    "icons": "🎄💛"
+  },
+  {
+    "id": "en_xmas_s5n2ld",
+    "sentiments": ["christmas", "encouragement", "warm"],
+    "text": "A cup of warmth and a pinch of hope — just for {name}.",
+    "icons": "☕✨"
+  }
+]

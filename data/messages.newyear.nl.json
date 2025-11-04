@@ -1,0 +1,32 @@
+[
+  {
+    "id": "nl_ny_h4e7mk",
+    "sentiments": ["newyear", "hope", "warm"],
+    "text": "Voor {name}: nieuw jaar, zelfde hart — nog voller.",
+    "icons": "✨🥂"
+  },
+  {
+    "id": "nl_ny_q9r3bw",
+    "sentiments": ["newyear", "hope", "affection"],
+    "text": "Mag 2026 je zacht wakker kussen, {name}.",
+    "icons": "🌅✨"
+  },
+  {
+    "id": "nl_ny_v2c8tn",
+    "sentiments": ["newyear", "encouragement", "joy"],
+    "text": "Meer lachen, meer rust, meer jij — proost, {name}!",
+    "icons": "😊🥂"
+  },
+  {
+    "id": "nl_ny_a7x1pf",
+    "sentiments": ["newyear", "support", "encouragement"],
+    "text": "Kleine stap, grote glimlach. Ik loop mee, {name}.",
+    "icons": "👣💛"
+  },
+  {
+    "id": "nl_ny_k6m4zd",
+    "sentiments": ["newyear", "warm", "affection"],
+    "text": "Laten we dit jaar kiezen voor licht. Ik kies ook voor jou, {name}.",
+    "icons": "✨💛"
+  }
+]

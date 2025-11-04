@@ -1,8 +1,8 @@
 /* Copyright (c) 2025 ShareNet b.v. */
+
 /* ============================================================
    STRUCTUUR: herordende style.css
    Secties:
-   [0]	LIGHT RESET
    [00] Vars & Base
    [01] Topbar
    [02] Intro
@@ -28,6 +28,7 @@ a{ color:inherit; text-decoration:none; }
 :focus{ outline:none; }
 :focus-visible{ outline:2px solid #5b9dff; outline-offset:2px; }
 
+/* THEME TOKENS */
 /* =================== [00] Vars & Base =================== */
 :root{
   --ink:#00008B;
@@ -356,9 +357,414 @@ button.btn svg,
 }
 
 /* =================== [04] Note (paper) =================== */
-/* is eigen note.css geworden */
+.note-wrap{display:grid; place-items:center; padding:20px 0}
+.note{
+  width:min(360px,88vw); min-height:320px; padding:clamp(18px,3vw,28px);
+  background:var(--paper); color:var(--ink); border-radius:8px; box-shadow:var(--shadow);
+  position:relative; transform:rotate(-1.2deg);
+  background-image:
+    radial-gradient(100% 100% at 50% 0%, rgba(255,255,255,.55), transparent 60%),
+    repeating-linear-gradient(0deg, rgba(0,0,0,0.015) 0 2px, rgba(255,255,255,0.02) 2px 4px),
+    linear-gradient(180deg, rgba(0,0,0,0.03), rgba(255,255,255,0.03));
+  animation: note-drop .6s var(--ease) both;
+}
+.note--welcome{ outline:2px solid rgba(0,0,0,.06); outline-offset:2px; }
+@keyframes note-drop{
+  from{transform:translateY(-12px) rotate(-2deg); opacity:0}
+  60%{transform:translateY(2px) rotate(1.2deg); opacity:1}
+  to{transform:translateY(0) rotate(-1.2deg)}
+}
+.message{left:16px; top:55px; font-family:var(--hand); color:var(--ink); font-size:clamp(26px,3.2vw,38px); line-height:1.2; white-space:pre-wrap}
+#iconline{margin-top:12px; text-align:center; font-size:clamp(36px,6vw,46px)}
+#toline,#fromline{position:absolute; font-family:var(--hand); font-size:22px; opacity:.9}
+/* was: bottom:46px; */
+#from-symbol{ bottom:52px; }
 
-/* =================== [05] Compose & Coach =================== */
+.tape{width:86px; height:28px; position:absolute; top:-12px;
+  background:linear-gradient(180deg, rgba(255,255,255,.55), rgba(255,255,255,.25));
+  box-shadow:0 3px 8px rgba(0,0,0,.18); border-radius:3px}
+.tape--tl{left:22px; transform:rotate(-12deg)}
+.tape--tr{right:22px; transform:rotate(8deg)}
+
+/* Handgetekend symbool (JS vult #from-symbol met SVG) */
+#from-symbol{
+  position:absolute; right:16px; bottom:46px;
+  width:28px; height:28px; opacity:.9; pointer-events:none;
+  animation:handsketch 5s ease-in-out infinite;
+}
+#from-symbol svg{width:100%; height:100%; stroke:#FF5757; fill:none; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round}
+@keyframes handsketch{0%{transform:rotate(-1deg)} 50%{transform:rotate(1deg)} 100%{transform:rotate(-1deg)}}
+
+.note{
+  /* meer top-padding zodat #toline niet tegen de message aan zit */
+  padding-top: clamp(56px, 7vw, 72px);
+  padding-right: clamp(20px, 3.2vw, 32px);
+  padding-bottom: clamp(22px, 3.2vw, 34px);
+  min-height: 340px; /* iets ruimer zodat onderin ook lucht blijft */
+  --msgSize: clamp(24px, 3vw, 34px);
+  background: linear-gradient(135deg, rgba(0,0,0,0.1) 0%, transparent 50%, rgba(0,0,0,0.1) 100%);
+  mix-blend-mode: multiply; /* Geeft een meer realistische diepte */;
+}
+
+#toline,
+#fromline{
+  font-size: calc(var(--msgSize) * 0.78);
+  font-family: var(--hand);
+}
+
+#toline{ top: 28px; left: 16px; }
+
+.message{
+  position: relative;   /* ipv absolute */
+  top: 0;               /* reset oude top */
+  left: 0;              /* reset oude left */
+  display: block;
+  margin-top: clamp(10px, 2vw, 18px); 
+  line-height: 1.25;
+  font-size: var(--msgSize);
+}
+
+#iconline{
+  position: relative;   /* in de flow, onder .message */
+  margin-top: 10px;
+  text-align: center;
+  font-size: clamp(36px, 6vw, 46px);
+}
+
+/* From-regel: kleine interne buffer + veilige breedte */
+#fromline{
+  position: absolute;
+  bottom: 10px;
+  right: 18px;                 /* iets van de rand af */
+  padding-right: 4px;          /* mini buffer tegen clipping */
+  max-width: calc(100% - 52px);/* respecteer padding + symbolruimte */
+  white-space: nowrap;         /* geen onverwachte afbreking */
+  text-align: right;
+  opacity: .9;
+}
+
+/* From-symbool iets erboven (zodat het mooi naast 'From' valt) */
+#from-symbol {
+  position: absolute;
+  right: 16px;
+  bottom: 54px;
+  width: 28px;
+  height: 28px;
+  opacity: .9;
+  pointer-events: none;
+}
+
+/* Mobiel: 'To' staat al als block boven de note—maak de message flow-gebonden */
+@media (max-width: 500px){
+  #toline{
+    position: static !important;
+    display: block;
+    margin: 0 0 14px;
+    left: auto; top: auto;
+  }
+  .message{
+    position: relative;
+    top: 0; left: 0;   /* laat tekst normaal doorstromen onder 'To' */
+  }
+}
+
+/* === Note Actions (Reply / Download) ==================================== */
+.note-actions{
+  position:absolute;
+  left:14px;
+  bottom:10px;
+  display:flex;
+  gap:8px;
+  z-index:var(--z-note-ctl);
+  opacity:.95;
+}
+
+.note-action{
+  appearance:none;
+  border:0;
+  background:rgba(0,0,0,.08);
+  color:#111;
+  width:34px; height:34px;
+  border-radius:8px;
+  display:grid; place-items:center;
+  cursor:pointer;
+  box-shadow:0 2px 6px rgba(0,0,0,.15);
+  transition:transform .15s ease, background .15s ease;
+}
+.note-action:hover{ background:rgba(0,0,0,.12); transform:translateY(-1px); }
+.note-action:active{ transform:scale(.96); }
+
+:root.dark .note-action{
+  background:rgba(255,255,255,.12);
+  color:#fff;
+}
+
+/* === Note overlay actions (linksonder, AWN-style) ======================= */
+.note { position: relative; } /* verzeker anker voor absolute pos. */
+
+.note-actions{
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  display: flex;
+  gap: 8px;
+  z-index: 3;                  /* boven note content, onder nav-chevrons indien nodig */
+  pointer-events: auto;
+}
+
+/* basis-knopje */
+.note-act{
+  appearance: none;
+  border: 2px solid #FFE66D;                 /* AWN geel */
+  background: rgba(17,17,17,.70);            /* semi-transparant donker (match sheet) */
+  width: 38px; 
+  height: 38px;
+  border-radius: 10px;                       /* vierkant met zachte hoeken */
+  display: grid; 
+  place-items: center;
+  font-size: 18px;                           /* emoji/ico goed leesbaar */
+  line-height: 1;
+  box-shadow: 0 6px 16px rgba(0,0,0,.18);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform .12s ease, box-shadow .18s ease, background .18s ease;
+}
+
+.note-act:hover,
+.note-act:focus-visible{
+  background: rgba(17,17,17,.85);
+  box-shadow: 0 8px 24px rgba(0,0,0,.26);
+  outline: none;
+}
+
+.note-act:active{
+  transform: translateY(1px) scale(.98);
+}
+
+/* Note tab: tape-strook meekleuren met tab (en dus met de note) */
+.note-tab::after{
+  background: inherit;          /* neemt exact dezelfde bg als de tab */
+  opacity: .65;                 /* subtiele schaduw */
+  filter: blur(.3px);           /* zacht randje */
+}
+
+/* heel kleine schermen: iets compacter */
+@media (max-width: 360px){
+  .note-act{ width: 34px; height: 34px; font-size: 16px; }
+}
+
+/* dark/light thema harmonie (optioneel) */
+:root.light .note-act{
+  background: rgba(255,255,255,.82);
+  color: #111;
+  border-color: #FFC93A;                     /* iets warmer in light */
+}
+:root.light .note-act:hover,
+:root.light .note-act:focus-visible{
+  background: rgba(255,255,255,.94);
+}
+
+/* AutoPlay: subtiele bounce bij binnenkomst */
+@keyframes awn-bounce-in {
+  0%   { transform: translateY(-8px) rotate(-1.2deg); opacity: .0; }
+  60%  { transform: translateY(3px)  rotate( 1.0deg); opacity: 1; }
+  100% { transform: translateY(0)    rotate(-1.2deg); }
+}
+.note--autoplay-bounce {
+  animation: awn-bounce-in .52s cubic-bezier(.22,.61,.36,1) both;
+}
+
+.note.deck-shuffle { animation: deck-shuffle 0.6s cubic-bezier(.6,-0.28,.74,.05); }
+@keyframes deck-shuffle {
+  0% { transform: scale(1) rotate(-2deg);}
+  30% { transform: scale(1.04) rotate(8deg);}
+  70% { transform: scale(0.98) rotate(-10deg);}
+  100% { transform: scale(1) rotate(0);}
+}
+
+/* Chevrons */
+.chev{
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: grid; place-items: center;
+  width: 44px; height: 44px; border-radius: 999px;
+  font-size: 24px; line-height: 1;
+  background: rgba(0,0,0,.06);
+  color: #222;
+  border: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,.08);
+  opacity: 0; pointer-events: none; transition: opacity .15s ease;
+  -webkit-tap-highlight-color: transparent;
+  z-index: 3; /* boven tape etc. */
+}
+
+/* Hangen net *in* de note-rand */
+.chev--left  { left: 16px;  }
+.chev--right { right: 16px; }
+
+/* Zichtbaar bij intentie:*/
+
+.note-wrap:hover .chev,
+.note-wrap:focus-within .chev,
+.chev:hover,
+.chev:focus-visible{
+  opacity: 1; pointer-events: auto;
+}
+
+/* Mobile: altijd subtiel zichtbaar */
+@media (max-width: 480px){
+  .chev{ opacity: .9; pointer-events: auto; }
+}
+
+/* A11Y helper */
+.sr-only{
+  position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden;
+  clip:rect(0,0,0,0); white-space:nowrap; border:0;
+  
+.note-wrap { position: relative; }
+#note { position: relative; }  /* <<< belangrijk: anker voor de chevrons */
+
+}
+
+/* ============ NOTE TAPE-TABS (Reply / Download) ============ */
+.note {
+  --tilt: -1.2deg;
+  position: relative;
+  transform: rotate(var(--tilt));
+}
+
+/* Tabs bovenin, vlak onder tape, corrigeren de scheefheid van de note */
+.note-tabs {
+  position: absolute;
+  top: 24px;                  /* iets lager dan -12 → net onder tape */
+  right: 22px;
+  display: flex;
+  gap: 6px;
+  transform: rotate(calc(-1 * var(--tilt))); /* ogen recht, volgen note */
+  z-index: 40; /* boven note inhoud, onder Leo */
+}
+
+.note-tab {
+  appearance: none;
+  border: none;
+  cursor: pointer;
+  background: var(--paper);
+  color: var(--ink);
+  width: 28px;
+  height: 22px;
+  border-radius: 4px 4px 0 0;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.18);
+  border: 1px solid rgba(0,0,0,.06); 
+  display: grid;
+  place-items: center;
+  font-size: 15px;
+  font-weight: bold;
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+}
+
+/* Hover & Active states */
+.note-tab:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0,0,0,.25);
+  background: color-mix(in srgb, var(--paper) 96%, #fff 4%);
+}
+
+.note-tab:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+/* Kleinere tab op mobiel */
+@media (max-width: 480px) {
+  .note-tab {
+    width: 26px;
+    height: 24px;
+    font-size: 14px;
+  }
+}
+
+/* Donker thema: inkt blijft leesbaar, papier blijft leading kleur */
+:root.dark .note-tab{
+  border-color: rgba(255,255,255,.08);
+  box-shadow: 0 3px 10px rgba(0,0,0,.28);
+}
+
+/* Nav overlay boven de note */
+.nav-ctl{
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3; /* boven note, onder Leo/coach */
+}
+
+/* Transparante vierkante knoppen met radius */
+.nav-btn{
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 42px;
+  height: 42px;
+  border: none;
+  border-radius: 10px;            /* <-- geen rondjes meer */
+  display: grid;
+  place-items: center;
+  background: rgba(0,0,0,.06);    /* licht transparant */
+  backdrop-filter: blur(2px);
+  box-shadow: 0 2px 8px rgba(0,0,0,.10);
+  color: #222;
+  pointer-events: auto;
+  opacity: 0;
+  transition: opacity .15s ease, transform .12s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Dark mode tint */
+:root.dark .nav-btn{
+  background: rgba(255,255,255,.10);
+  color: #f5f5f5;
+  box-shadow: 0 2px 8px rgba(0,0,0,.25);
+}
+
+/* Posities */
+.nav-btn--prev { left: 6px; }
+.nav-btn--next { right: 6px; }
+
+/* Chevron via pseudo */
+.nav-btn--prev::before { content: '‹'; font-size: 24px; line-height: 1; }
+.nav-btn--next::before { content: '›'; font-size: 24px; line-height: 1; }
+
+/* Hover/focus tonen */
+.note-wrap:hover .nav-btn,
+.note-wrap:focus-within .nav-btn,
+.nav-btn:hover,
+.nav-btn:focus-visible { opacity: 1; }
+
+/* Tap feedback */
+.nav-btn:active { transform: translateY(-50%) scale(.97); }
+
+/* Op touch devices altijd zichtbaar (geen hover) */
+@media (pointer: coarse){
+  .nav-btn { opacity: 1; }
+}
+
+/* Respecteer reduce-motion */
+@media (prefers-reduced-motion: reduce){
+  .nav-btn{ transition: opacity .15s ease; }
+}
+
+/* Desktop: nav-knoppen iets van de rand af */
+@media (min-width: 900px){
+  .nav-btn--prev{ left: 24px; }  /* was 6px */
+  .nav-btn--next{ right: 24px; } /* was 6px */
+}
+
+/* Extra: op heel brede schermen nog wat ruimer */
+@media (min-width: 1400px){
+  .nav-btn--prev{ left: 38px; }
+  .nav-btn--next{ right: 38px; }
+}
+/* =================== Compose & Coach =================== */
 .compose{
   background:var(--bar); color:#fff; border-radius:14px; box-shadow:0 10px 26px rgba(0,0,0,.28);
   backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
@@ -391,6 +797,7 @@ input[name="from"] {
   max-width: var(--compose-max);
   margin-inline: auto;          /* center op desktop */
 }
+
 
 /* Mobiel: stapel en laat de strip 100% breed worden */
 @media (max-width: 560px){
@@ -513,11 +920,15 @@ input[name="from"] {
 }
 
 /* Subtiele pulse */
+@keyframes awn-pulse {
+  0%   { box-shadow: 0 0 0 0 color-mix(in srgb, var(--attn) 45%, transparent); }
   70%  { box-shadow: 0 0 0 6px color-mix(in srgb, var(--attn) 0%, transparent); }
   100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--attn) 0%, transparent); }
 }
 
 /* Heel lichte shake (vriendelijk) */
+@keyframes awn-shake-x {
+  0%,100% { transform: translateX(0); }
   20%     { transform: translateX(-3px); }
   40%     { transform: translateX( 3px); }
   60%     { transform: translateX(-2px); }
@@ -1182,12 +1593,9 @@ button[data-action="expand-note"].is-hot::after{
 /* 10) CONFETTI (z: 9600) */
 .confetti{ position:fixed; width:10px; height:10px; border-radius:2px; z-index:var(--z-confetti) !important; }
 @keyframes confetti{0%{transform:translateY(-20vh) rotate(0); opacity:0}10%{opacity:1}100%{transform:translateY(100vh) rotate(720deg); opacity:0}}
-.confetti{position:fixed; top:-20vh; left:0; width:8px; height:12px; pointer-events:none; animation:confetti 1.2s linear forwards}
-
-
+.confetti{position:fixed; top:-20vh; left:0; width:8px; height:12px; z-index:1400; pointer-events:none; animation:confetti 1.2s linear forwards}
 
 /* =================== Motion preferences =================== */
-
 @media (prefers-reduced-motion:reduce){
   *{animation:none!important; transition:none!important}
   .confetti{display:none!important}
@@ -1253,10 +1661,47 @@ button[data-action="expand-note"].is-hot::after{
   .lang-menu{ padding: .5rem; }
   .lang-item{ padding: .5rem .55rem; }
 }
-
 /* Houd iconen klein zodat tekst niet naar een 2e rij dwingt */
 @media (max-width: 560px){
   :root{ --icon: 16px; }   /* was 18px */
+}
+
+/* Typing dots overlay (bovenop de note-content, maar klik-proof) */
+.typing-dots {
+  position: absolute;
+  inset: 0;
+  display: none;                  /* default uit */
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 3;                     /* boven message/icon, onder tape-tabs */
+}
+
+.typing-dots.show { display: flex; }
+
+.typing-dots__wrap {
+  display: inline-flex;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 999px;
+  background: rgba(0,0,0,.06);    /* subtiel, blijft leesbaar op papierkleur */
+  backdrop-filter: blur(2px);
+}
+
+.typing-dots__dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--ink, #222);
+  opacity: .2;
+  animation: awn-typing 1.2s infinite ease-in-out;
+}
+
+.typing-dots__dot:nth-child(2){ animation-delay: .15s; }
+.typing-dots__dot:nth-child(3){ animation-delay: .30s; }
+
+@keyframes awn-typing {
+  0%, 80%, 100% { transform: translateY(0);   opacity: .25; }
+  40%           { transform: translateY(-3px); opacity: .95; }
 }
 
 /* 12) AUTHORITATIEVE OVERRIDES — houd dit blok als laatste */
@@ -1264,6 +1709,8 @@ button[data-action="expand-note"].is-hot::after{
 #lang-dd{ z-index:var(--z-lang-dd) !important; }
 #lang-dd-menu{ z-index:calc(var(--z-lang-dd) + 1) !important; }
 #coach-tip{ z-index:var(--z-coach) !important; isolation:isolate; }
+.nav-btn,.chev{ z-index:var(--z-note-ctl) !important; }
+.splash-overlay{ z-index:var(--z-splash) !important; }
 .sheet-backdrop,
 #sheet-backdrop,#about-backdrop,#ai-backdrop,#qr-backdrop,#msgr-help-backdrop{ z-index:var(--z-backdrop) !important; }
 .sheet{ z-index:var(--z-sheet) !important; }
@@ -1271,6 +1718,5 @@ button[data-action="expand-note"].is-hot::after{
 #leo-fab-bubble,.leo-fab__bubble{ z-index:var(--z-leo-bubble) !important; }
 #toast{ z-index:var(--z-toast) !important; }
 .confetti{ z-index:var(--z-confetti) !important; }
-.splash-overlay{ z-index:var(--z-splash) !important; }
 
 /* EOF */

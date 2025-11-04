@@ -1,0 +1,32 @@
+i[
+  {
+    "id": "nl_xmas_9t2hcm",
+    "sentiments": ["christmas", "warm", "gratitude"],
+    "text": "Warme kerstknuffel voor {name} — jij bent mijn lievelingslichtje.",
+    "icons": "✨🎄"
+  },
+  {
+    "id": "nl_xmas_fq6v1k",
+    "sentiments": ["christmas", "warm", "encouragement"],
+    "text": "Kleine noot, groot gevoel: fijne kerstdagen, {name}.",
+    "icons": "🎄💌"
+  },
+  {
+    "id": "nl_xmas_r1m8ze",
+    "sentiments": ["christmas", "comfort", "warm"],
+    "text": "laat vandaag zacht zijn, met lichtjes vanbinnen.",
+    "icons": "🕯️✨"
+  },
+  {
+    "id": "nl_xmas_p4s7qx",
+    "sentiments": ["christmas", "affection", "warm"],
+    "text": "Kerst is mooier met jou in mijn gedachten, {name}.",
+    "icons": "🎄💛"
+  },
+  {
+    "id": "nl_xmas_wu3b9n",
+    "sentiments": ["christmas", "encouragement", "warm"],
+    "text": "Een kopje warmte + een snufje hoop — speciaal voor {name}.",
+    "icons": "☕✨"
+  }
+]

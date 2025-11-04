@@ -236,6 +236,27 @@ function getActiveTheme(now = new Date()){
   if (sameYMD(now, easter)) return THEME.EASTER;
   return THEME.NONE;
 }
+
+// Christmas theme lazy loader
+function loadChristmasTheme(){
+  const now = new Date();
+  const url = getAppURL();
+  const force = url.searchParams.has('xmas');   // ?xmas=1 in de URL
+
+  // Alleen in december OF als je ?xmas=1 meegeeft
+  if (!force && now.getMonth() !== 11) return;
+
+  if (document.documentElement.classList.contains('theme-christmas')) return;
+
+  const el = document.createElement('link');
+  el.rel  = 'stylesheet';
+  el.href = '/themes/christmas.css';
+  el.id   = 'theme-css';
+  document.head.appendChild(el);
+
+  document.documentElement.classList.add('theme-christmas');
+}
+
 function computeEaster(y){
   const f=Math.floor,a=y%19,b=f(y/100),c=y%100,d=f(b/4),e=b%4,g=f((8*b+13)/25),
         h=(19*a+b-d-g+15)%30,i=f(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=f((a+11*h+22*l)/451),
@@ -585,7 +606,8 @@ function refreshAISheetStrings(){
 function init() {
   try { applyInboundToken?.(); } catch {}
   try { setThemePref?.('auto'); } catch {}
-
+  try { loadChristmasTheme?.() } catch {}
+  
   // 1) Taal & basis
   STATE.lang = resolveLang();
   document.documentElement.setAttribute('lang', STATE.lang);
@@ -1968,12 +1990,14 @@ function openMessengerSmart(shareUrl, { timeout = 1400 } = {}) {
 function openShareSheet(){
   // Centrale korte hint voor share-sheet
   updateCoachTimed('shareIntro', {}, 1600);
-  // Précompute share links zodra de sheet opent (géén await tijdens klik)
-STATE._shareLinks = STATE._shareLinks || {};
+// Précompute share links zodra de sheet opent (géén await tijdens klik)
+STATE._shareLinks = {};
 (async () => {
-  try {
-    STATE._shareLinks.whatsapp = await getShareUrlForChannel('whatsapp');
-  } catch { /* stil falen */ }
+  try { STATE._shareLinks.copy     = await getShareUrlForChannel('copy');     } catch {}
+  try { STATE._shareLinks.whatsapp = await getShareUrlForChannel('whatsapp'); } catch {}
+  try { STATE._shareLinks.email    = await getShareUrlForChannel('email');    } catch {}
+  try { STATE._shareLinks.native   = await getShareUrlForChannel('native');   } catch {}
+  try { STATE._shareLinks.messenger= await getShareUrlForChannel('messenger');} catch {}
 })();
 
   renderShareSheetPairsInline();
@@ -2024,7 +2048,68 @@ function renderShareSheetPairsInline(){
   if (els.pairToVal)   els.pairToVal.textContent   = nameTo   || "—";
   if (els.pairFromVal) els.pairFromVal.textContent = nameFrom || "—";
 }
+// === COPY-LINK REPAIR ======================================================
+(function restoreCopyLinkBehavior(){
 
+  // Robuuste selector(s)
+  const copyBtns = document.querySelectorAll('#share-copy, button[data-action="copy"], .btn-copy-link');
+  if (!copyBtns.length) return;
+
+  async function handleCopyClick(e){
+  e.preventDefault();
+  e.stopPropagation();
+
+  // 1) Pak precomputed short link als die er al is
+  let shareURL = STATE?._shareLinks?.copy;
+
+  // 2) Zo niet: probeer snel te minten (met korte timeout),
+  //    maar val direct terug op long URL om de user gesture te behouden.
+  if (!shareURL) {
+    const buildLong = () => {
+      let u = (typeof buildSharedURL === 'function') ? buildSharedURL() : new URL(location.href);
+      // optioneel UTM / content-tagging — laat staan als je dit al doet
+      return u.toString();
+    };
+
+    const race = (p, ms=900) => Promise.race([
+      p.catch(()=>null),
+      new Promise(res=> setTimeout(()=>res(null), ms))
+    ]);
+
+    // probeer short; anders long
+    shareURL = await race(getShareUrlForChannel?.('copy') || Promise.resolve(null), 900);
+    if (!shareURL) shareURL = buildLong();
+  }
+
+  try {
+    await navigator.clipboard.writeText(shareURL);
+    if (typeof showToast === 'function') showToast('Link gekopieerd 📋');
+    try { window.LeoCTA?.fire?.('afterCopy', { delayMs: 800 }); } catch {}
+  } catch(err){
+    // Fallback: tekst-selectie
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = shareURL;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.focus(); ta.select();
+      document.execCommand('copy');
+      ta.remove();
+      if (typeof showToast === 'function') showToast('Link gekopieerd 📋');
+    } catch {
+      alert('Kopieer deze link handmatig:\n' + shareURL);
+    }
+  }
+}
+  
+ 
+  // Bind click direct — geen async of event delegation (browser eist directe gesture)
+  copyBtns.forEach(btn => {
+    btn.addEventListener('click', handleCopyClick, { capture: true });
+  });
+
+})();
 async function onCopyLink(){
   const url = await getShareUrlForChannel('copy');
   const lang = (STATE?.lang) || resolveLang();

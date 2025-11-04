@@ -17,6 +17,7 @@
 
   <!-- Styles & PWA -->
   <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/note.css" />  
   <link rel="manifest" href="/site.webmanifest">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -32,7 +33,7 @@
   <link rel="icon" type="image/png" sizes="512x512" href="/assets/icons/android-chrome-512x512.png">
   
   <link rel="canonical" href="https://awarmnote.com/" />
-  <link rel="alternate" href="https://awarmnote.com/" hreflang="nl" />
+  <link rel="alternate" href="https://awarmnote.com/nl/" hreflang="nl" />
   <link rel="alternate" href="https://awarmnote.com/en/" hreflang="en" />
   <link rel="alternate" href="https://awarmnote.com/" hreflang="x-default" />
 
@@ -64,10 +65,19 @@
       </button>
 	  
 	  <!-- AI Button -->
-	  <button id="smart-compose" class="btn" type="button" aria-haspopup="dialog" aria-controls="ai-backdrop">
-  		<span class="btn-ico" aria-hidden="true">✨</span>
-  		<span class="btn-label">AI</span>
-	  </button>
+<button id="smart-compose" class="btn btn--ai">
+  <svg class="ai-ico" viewBox="0 0 24 24" aria-hidden="true">
+    <!-- kern-ster -->
+    <path class="core" d="M12 3l1.6 3.6L17 8.2l-3.4 1.5L12 13l-1.6-3.3L7 8.2l3.4-1.6L12 3z"
+          fill="currentColor"/>
+
+    <!-- extra sparkles (kleine twinkles rondom) -->
+    <g class="spark s1"><circle cx="18.6" cy="5.2" r="1.15" fill="currentColor"/></g>
+    <g class="spark s2"><circle cx="7.0"  cy="4.8" r="0.9"  fill="currentColor"/></g>
+    <g class="spark s3"><circle cx="16.4" cy="12.8" r="0.95" fill="currentColor"/></g>
+  </svg>
+  <span class="btn-label">AI Magic</span>
+</button>
 
       <!-- Verstuur -->
       <button id="btn-share" class="btn" type="button" aria-label="Verstuur">
