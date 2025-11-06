@@ -113,6 +113,13 @@
       "tag": "Iets kleins, veel betekenis",
       "fabLabel": "Over deze App"
     },
+    "feedback": {
+  	  "sheetTitle": "Hoe helpt A Warm Note je?",
+  	  "sheetSubtitle": "Deel kort wat goed werkt en wat beter kan.",
+  	  "placeholder": "Wat werkte goed, wat kan beter?",
+  	  "submitLabel": "Verstuur feedback",
+  	  "skipLabel": "Overslaan"
+	},
     "intro": {
       "hint": "Tip: swipe door de Gevoelens & Boodschap →"
     }

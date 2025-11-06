@@ -112,6 +112,13 @@
       "tag": "Something small, lots of meaning",
       "fabLabel": "About this App"
     },
+    "feedback": {
+  	  "sheetTitle": "How is A Warm Note helping you?",
+  	  "sheetSubtitle": "Share briefly what works well and what could be better.",
+  	  "placeholder": "What worked well, what could be better?",
+  	  "submitLabel": "Send feedback",
+  	  "skipLabel": "Skip for now"
+	},
     "intro": {
       "hint": "Tip: swipe through Feelings & Message →"
     }

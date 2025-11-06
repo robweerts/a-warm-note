@@ -772,6 +772,92 @@ input[name="from"] {
 @media (prefers-reduced-motion: reduce){
   .sheet{ transition: none !important; transform: translateY(0) !important; opacity: 1 !important; }
 }
+
+/* ===== FEEDBACK SHEET =========================================== */
+
+.sheet--feedback {
+  background: rgba(20,20,20,.85);
+  color: #fff;
+  border-top: 1px solid rgba(255,255,255,.12);
+}
+
+/* subtitel onder de titel */
+#feedback-subtitle,
+.sheet--feedback .sheet-subtitle {
+  font-size: .9rem;
+  opacity: .8;
+  margin-top: 4px;
+  text-align: center;
+}
+
+/* rij met smilies */
+.feedback-rating {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  margin: 12px 0 10px;
+}
+
+/* basis smiley-knoppen */
+.feedback-rating .rate {
+  cursor: pointer;
+  font-size: 1.8rem;
+  line-height: 1;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  border: none;
+  background: transparent;
+  display: grid;
+  place-items: center;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    background-color 0.18s ease,
+    filter 0.18s ease,
+    opacity 0.18s ease;
+  opacity: .7;
+}
+
+/* hover / focus */
+.feedback-rating .rate:hover,
+.feedback-rating .rate:focus-visible {
+  transform: translateY(-1px) scale(1.08);
+  background-color: rgba(255,230,109,0.15);
+  opacity: 1;
+  outline: none;
+}
+
+/* Geselecteerd – blijft zichtbaar na klik */
+.feedback-rating .rate.active,
+.feedback-rating .rate[aria-pressed="true"] {
+  background-color: rgba(255,230,109,0.25);
+  box-shadow: 0 0 0 2px #ffe66d;
+  transform: translateY(-1px) scale(1.1);
+  filter: drop-shadow(0 3px 6px rgba(0,0,0,0.25));
+  opacity: 1;
+}
+
+/* Tekstveld */
+#feedback-text {
+  width: 100%;
+  background: rgba(255,255,255,.05);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,.15);
+  border-radius: 8px;
+  padding: 10px;
+  resize: none;
+  font: inherit;
+}
+
+/* Primaire knop in feedbacksheet */
+.sheet--feedback .sheet-actions .btn.primary {
+  background: linear-gradient(135deg, #ffe66d, #facc15);
+  color: #111;
+  border: 0;
+  border-radius: 12px;
+}
+
 /* ===== Share Sheet – layout ================================================== */
 /* Tiles */
 .share-grid{

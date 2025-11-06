@@ -5,7 +5,7 @@
   ],
   "messages": [
     {
-      "id": "nl_s4j0a5",
+      "id": "nl_z64nr9",
       "icon": "💩",
       "text": "Kak ... te laat! Hopelijk heb je leuke dag gehad. Alsnog gefeliciteerd. 🥳",
       "sentiments": [
@@ -15,7 +15,7 @@
       "weight": 1
     },
     {
-      "id": "nl_jptx9r",
+      "id": "nl_5rcijq",
       "icon": "🎊",
       "text": "Hopelijk is je verjaardag net zoals jij, helemaal geweldig dus.🫶🏼",
       "sentiments": [
@@ -25,7 +25,7 @@
       "weight": 1
     },
     {
-      "id": "nl_mfzp72",
+      "id": "nl_qbqsml",
       "icon": "🎊",
       "text": "Fijne verjaardag voor de meest bijzondere persoon die ik ken.",
       "sentiments": [
@@ -35,7 +35,7 @@
       "weight": 1
     },
     {
-      "id": "nl_lln2t3",
+      "id": "nl_2b1nw6",
       "icon": "🎁",
       "text": "Gevoel dat je oud(er) wordt? Nee hoor, je krijgt vooral meer aanzien! 🪩 Gefeliciteerd!",
       "sentiments": [
@@ -45,7 +45,7 @@
       "weight": 1
     },
     {
-      "id": "nl_7znx4w",
+      "id": "nl_zlfgyw",
       "icon": "🍷",
       "text": "Gefeliciteerd! Jij bent als een goede wijn: hoe ouder, hoe beter.🍇",
       "sentiments": [
@@ -55,7 +55,7 @@
       "weight": 1
     },
     {
-      "id": "nl_eq0pav",
+      "id": "nl_61a8ke",
       "icon": "🎉",
       "text": "Hoera {{name}}! Vandaag ben jij de slinger om alles mooier te maken 🎊",
       "sentiments": [
@@ -66,9 +66,9 @@
       "weight": 2
     },
     {
-      "id": "nl_7lorjc",
+      "id": "nl_771e0t",
       "icon": "🥳",
-      "text": "Hiep hiep {{name}}! Toeter aan, puntmuts op — feestje! 🎺🎈",
+      "text": "Hiep hiep {{name}}! Toeter aan, puntmuts op — feestje! 🎺",
       "sentiments": [
         "birthday",
         "humor",
@@ -78,9 +78,9 @@
       "weight": 1
     },
     {
-      "id": "nl_fd600p",
+      "id": "nl_auk4cv",
       "icon": "🎂",
-      "text": "Lieve {{name}}, gefeliciteerd! Een jaar vol stralende lichtjes voor jou 💛🕯️",
+      "text": "Lieve {{name}}, gefeliciteerd! Een jaar vol stralende lichtjes voor jou 🕯️",
       "sentiments": [
         "birthday",
         "friendship"
@@ -89,7 +89,7 @@
       "weight": 2
     },
     {
-      "id": "nl_fyv34l",
+      "id": "nl_ocy1md",
       "icon": "🍾",
       "text": "Pop die kurk, {{name}} — vandaag klinken we op jou! 🥂",
       "sentiments": [
@@ -101,9 +101,9 @@
       "weight": 1
     },
     {
-      "id": "nl_ptmhe4",
+      "id": "nl_2ly4wz",
       "icon": "🎁",
-      "text": "Het mooiste cadeau? Jij. Fijne verjaardag, {{name}} 🎁💫",
+      "text": "Het mooiste cadeau? Jij. Fijne verjaardag, {{name}} 💫",
       "sentiments": [
         "birthday",
         "friendship"
@@ -112,9 +112,9 @@
       "weight": 2
     },
     {
-      "id": "nl_h2v3b9",
+      "id": "nl_95uo5i",
       "icon": "🎈",
-      "text": "Meer wensen, meer lachen, meer jij. Gefeliciteerd {{name}}! 🎈",
+      "text": "Meer wensen, meer lachen, meer jij. Gefeliciteerd {{name}}! ",
       "sentiments": [
         "birthday",
         "joy"
@@ -123,7 +123,7 @@
       "weight": 1
     },
     {
-      "id": "nl_1sqadb",
+      "id": "nl_stmmge",
       "icon": "🎊",
       "text": "Confetti in de lucht en warmte in je hart — proost, {{name}}! 🥂🎊",
       "sentiments": [
@@ -134,7 +134,7 @@
       "weight": 1
     },
     {
-      "id": "nl_2umeok",
+      "id": "nl_u3r811",
       "icon": "🧁",
       "text": "Een extra zoete dag voor {{name}} — met sprinkles en al 🧁✨",
       "sentiments": [
@@ -145,7 +145,7 @@
       "weight": 1
     },
     {
-      "id": "nl_fwpm14",
+      "id": "nl_yw318b",
       "icon": "💛",
       "text": "Vandaag vieren we jou, {{name}} — precies goed zoals je bent 💛",
       "sentiments": [
@@ -157,7 +157,7 @@
       "weight": 2
     },
     {
-      "id": "nl_ez8uud",
+      "id": "nl_0uq0c7",
       "icon": "🍰",
       "text": "Een stukje taart en een berg geluk voor jou, {{name}} 🎂",
       "sentiments": [
@@ -168,9 +168,9 @@
       "weight": 1
     },
     {
-      "id": "nl_06egdm",
+      "id": "nl_bzxh3j",
       "icon": "🎺",
-      "text": "Toetertooooet voor {{name}}! Nog een rondje zon te vieren ☀️🎺",
+      "text": "Toetertooooet voor {{name}}! Nog een rondje zon te vieren ☀️",
       "sentiments": [
         "birthday",
         "humor",
@@ -180,7 +180,7 @@
       "weight": 1
     },
     {
-      "id": "nl_4ek82c",
+      "id": "nl_1ut0xc",
       "icon": "🎉",
       "text": "Slingers omhoog, zorgen omlaag — fijne dag, {{name}}! 🎉",
       "sentiments": [
@@ -192,9 +192,9 @@
       "weight": 1
     },
     {
-      "id": "nl_oj72bw",
+      "id": "nl_9a6h3m",
       "icon": "🥂",
-      "text": "Op jou, {{name}} — op warmte, liefde en kleine wondertjes 🥂✨",
+      "text": "Op jou, {{name}} — op warmte, liefde en kleine wondertjes 🍾",
       "sentiments": [
         "birthday",
         "gratitude",
@@ -204,9 +204,9 @@
       "weight": 1
     },
     {
-      "id": "nl_s6cbsd",
+      "id": "nl_9gt8l1",
       "icon": "🎈",
-      "text": "Blaas zacht en wens groots, {{name}} — vandaag mag alles 🎈",
+      "text": "Blaas zacht en wens groots, {{name}} — vandaag mag alles ",
       "sentiments": [
         "birthday"
       ],
@@ -214,7 +214,7 @@
       "weight": 1
     },
     {
-      "id": "nl_nvh0oe",
+      "id": "nl_52nc7l",
       "icon": "🎊",
       "text": "Puntmuts scheef, glimlach recht — gefeliciteerd {{name}}! 🥳",
       "sentiments": [
@@ -225,7 +225,7 @@
       "weight": 1
     },
     {
-      "id": "nl_1622yj",
+      "id": "nl_7lgweg",
       "icon": "🍾",
       "text": "Klink! Op nieuwe kansen en gezonde dagen, {{name}} 🥂",
       "sentiments": [
@@ -236,9 +236,9 @@
       "weight": 1
     },
     {
-      "id": "nl_b2izq4",
+      "id": "nl_y9o19h",
       "icon": "🎂",
-      "text": "Kaarsjes aan, wens aan — jij straalt, {{name}} 🕯️🎂",
+      "text": "Kaarsjes aan, wens aan — jij straalt, {{name}} 🕯️",
       "sentiments": [
         "birthday",
         "proud"
@@ -247,7 +247,7 @@
       "weight": 1
     },
     {
-      "id": "nl_eh55sm",
+      "id": "nl_29ew66",
       "icon": "💫",
       "text": "Nieuwe ronde, nieuwe glans. Fijne verjaardag, {{name}} 💫",
       "sentiments": [

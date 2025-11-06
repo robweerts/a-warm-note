@@ -1,7 +1,7 @@
 /* ==========================================================================
  === SECTION INDEX (A…T) ===
  [A] CONFIG & CONSTANTS           – toggles, paths, defaults
- [A+] THEME & COLORS              – theme detection (Valentine/NewYear/Easter)
+ [A+] THEME & COLORS              – theme detection (Valentine/NewYear/Easter/Christmas)
  [B] DOM CACHE & HELPERS          – cache elements & micro-helpers
  [C] APP STATE                    – central state (lang, messages, filters, deck)
  [D] INIT (LIFECYCLE)             – bootstrap: wiring, load, welcome, first render
@@ -2987,7 +2987,22 @@ function speak(txt, opts){
     },
     cooldown: { type: 'session' },   // 1× per sessie
     autoDismissMs: 6000
-   }
+   },
+   feedbackThanks: {
+   text: {
+    nl: "Dankjewel voor je feedback 💛",
+    en: "Thanks for your feedback 💛"
+  },
+  cooldown: { type: 'session' },
+  autoDismissMs: 4000
+  },
+  thanksContribution: {
+  text: {
+    nl: "Dankjewel voor je mooie bijdrage 💛",
+    en: "Thanks for sharing your warm words 💛"
+  },
+  autoDismissMs: 4000
+}
   };
 
   // ---------- fire (met cooldown + overrides + queue) ----------
@@ -4503,7 +4518,7 @@ function ensureQuickSplashEl(){
 
 /* === Minimal Note Splash (gebruikt CSS .splash-overlay / .splash-stage) === */
 
-function openNoteSplashSimple({ holdMs = 5800, force = false, stickUntilEsc = false } = {}) {
+function openNoteSplashSimple({ holdMs = 6000, force = false, stickUntilEsc = false } = {}) {
   // Eén-keer-per-mid guard (tenzij force:true)
   if (!force) {
     const mid = getAppURL().searchParams.get('mid');
@@ -4771,7 +4786,7 @@ function quickSplashMaybeForReceived(sharedMid){
     if (expand && !expand.dataset.wired){
       expand.dataset.wired = '1';
 	expand.addEventListener('click', () => {
-  		openNoteSplashSimple({ holdMs: 4800, force: true });
+  		openNoteSplashSimple({ holdMs: 6000, force: true });
 	});
     }
     const about = document.getElementById(ABOUT_FAB_ID);
@@ -4792,6 +4807,160 @@ function quickSplashMaybeForReceived(sharedMid){
     window.addEventListener(evt, ()=> setTimeout(applyHotState, 0));
   });
 })();
+
+// ================= FEEDBACK SHEET =================
+(function installFeedbackSheet(){
+  const backdrop   = document.getElementById('feedback-backdrop');
+  if (!backdrop) return; // niets te doen
+
+  const sheet      = backdrop.querySelector('.sheet');
+  const btnClose   = backdrop.querySelector('.sheet-close');
+  const btnSubmit  = document.getElementById('feedback-submit');
+  const btnSkip    = document.getElementById('feedback-skip');
+  const textArea   = document.getElementById('feedback-text');
+  const rateBtns   = backdrop.querySelectorAll('.rate');
+
+  let rating = 0;
+
+  // --- i18n hook: tekst uit strings.{lang}.json via i18n() -----------------
+  (function hydrateFeedbackTexts(){
+    if (typeof window.i18n !== 'function') return;
+
+    const setText = (id, key, { asPlaceholder = false } = {}) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      let txt = "";
+      try { txt = window.i18n(key); } catch(_) {}
+      if (!txt) return;
+
+      if (asPlaceholder && ("placeholder" in el)) {
+        el.placeholder = txt;
+      } else {
+        el.textContent = txt;
+      }
+    };
+
+    setText('feedback-title',     'feedback.title');
+    setText('feedback-subtitle',  'feedback.subtitle');
+    setText('feedback-submit',    'feedback.submit');
+    setText('feedback-skip',      'feedback.skip');
+    setText('feedback-text',      'feedback.placeholder', { asPlaceholder:true });
+  })();
+
+  // --- open / close helpers -----------------------------------------------
+  function openFeedbackSheet(){
+    backdrop.classList.remove('hidden');
+    backdrop.setAttribute('aria-hidden', 'false');
+  }
+
+  function closeFeedbackSheet(){
+    backdrop.classList.add('hidden');
+    backdrop.setAttribute('aria-hidden', 'true');
+
+    // reset state
+    rating = 0;
+    rateBtns.forEach(btn => {
+      btn.classList.remove('active');
+      btn.setAttribute('aria-pressed', 'false');
+    });
+    if (textArea) textArea.value = '';
+  }
+
+  // Globaal beschikbaar zodat je elders window.openFeedbackSheet() kunt aanroepen
+  window.openFeedbackSheet  = openFeedbackSheet;
+  window.closeFeedbackSheet = closeFeedbackSheet;
+
+  // --- Emoji / rating: 1, 3, 5 uit data-val -------------------------------
+  rateBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const val = parseInt(btn.getAttribute('data-val'), 10) || 0; // verwacht 1 / 3 / 5
+      rating = val;
+
+      rateBtns.forEach(b => {
+        const isActive = (b === btn);
+        b.classList.toggle('active', isActive);
+        b.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+      });
+    });
+  });
+
+  // --- Close-knop ---------------------------------------------------------
+  if (btnClose){
+    btnClose.addEventListener('click', (e)=>{
+      e.preventDefault();
+      closeFeedbackSheet();
+    });
+  }
+
+  // --- Skip-knop ----------------------------------------------------------
+  if (btnSkip){
+    btnSkip.addEventListener('click', (e)=>{
+      e.preventDefault();
+      closeFeedbackSheet();
+      try { window.LeoCTA?.fire('feedbackSkip', { delayMs: 600 }); } catch {}
+    });
+  }
+
+  // Klik naast de sheet sluit ook
+  backdrop.addEventListener('click', (e)=>{
+    if (e.target === backdrop) {
+      closeFeedbackSheet();
+    }
+  });
+
+  // Kliks binnen de sheet niet laten bubbelen
+  if (sheet){
+    sheet.addEventListener('click', (e)=> e.stopPropagation());
+  }
+
+  // --- Submit → POST naar /api/feedback.php -------------------------------
+  if (btnSubmit){
+    btnSubmit.addEventListener('click', async (e)=>{
+      e.preventDefault();
+
+      const payload = {
+        rating: rating,                                 // 1 / 3 / 5
+        text:   textArea ? textArea.value.trim() : '',
+        lang:   document.documentElement.lang || 'nl',
+        ua:     navigator.userAgent
+      };
+
+      // Niks ingevuld? Gewoon dicht.
+      if (!payload.rating && !payload.text) {
+        closeFeedbackSheet();
+        return;
+      }
+
+      // Eerst UI afronden
+      closeFeedbackSheet();
+      try { window.LeoCTA?.fire('feedbackThanks', { delayMs: 800 }); } catch {}
+
+      // Lokale debug-log (optioneel)
+      try { localStorage.setItem('awn_feedback_last', JSON.stringify(payload)); } catch(_){}
+
+      // Asynchroon versturen, fouten vangen maar UI niet blokkeren
+      try {
+        await fetch('/api/feedback.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+      } catch(err){
+        console.warn('[FEEDBACK] send failed', err);
+      }
+    });
+  }
+})();
+
+window.submitContribution = () => {
+  const note = document.getElementById('contrib-text').value.trim();
+  const author = document.getElementById('contrib-name').value.trim();
+  if (!note) return;
+  const payload = { note, author, ts: Date.now() };
+  console.log('[CONTRIBUTION]', payload);
+  // later: send to /api/submissions or store local
+  LeoCTA.fire('thanksContribution', { delayMs: 800 });
+};
 
 // Stel: window.AWN_MESSAGES = { nl:[...], en:[...] } bestaat al
 
@@ -5126,7 +5295,7 @@ function bindAISheetGlue(){
   };
 
 /* ===========================================================
-   [U+] AI AUTOPLAY GUARD & PERSISTENCE
+   [U+] AI  GUARD & PERSISTENCE
    Beschermt AI-resultaten tegen overschrijven door autoload
    =========================================================== */
 
@@ -5142,7 +5311,7 @@ function bindAISheetGlue(){
   }
 
   // Herstart autoplay alleen als AI niet actief is
-  function scheduleNextAutoload(delay = 8000) {
+  function scheduleNextAutoload(delay = 10000) {
     if (STATE.aiMessageActive) return;
     if (window.AWN_FLAGS?.autoPlayTimer) clearTimeout(window.AWN_FLAGS.autoPlayTimer);
     window.AWN_FLAGS.autoPlayTimer = setTimeout(() => {
@@ -5177,7 +5346,7 @@ function bindAISheetGlue(){
   // Expose helper globally
   window.AWNAI = window.AWNAI || {};
   window.AWNAI.stopAutoload = stopAutoload;
-  window.AWNAI.resumeAutoload = () => { STATE.aiMessageActive = false; scheduleNextAutoload(6000); };
+  window.AWNAI.resumeAutoload = () => { STATE.aiMessageActive = false; scheduleNextAutoload(9000); };
 
 })();
 

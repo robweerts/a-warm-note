@@ -363,6 +363,40 @@
       </footer>
     </section>
   </div>
+  
+  <!-- =================== ABOUT SHEET =================== -->
+  <div id="about-backdrop" class="sheet-backdrop hidden" aria-hidden="true">
+    <section class="sheet sheet--about" role="dialog" aria-modal="true" aria-labelledby="about-title">
+      …
+    </section>
+  </div>
+
+  <!-- =================== FEEDBACK SHEET =================== -->
+  <div id="feedback-backdrop" class="sheet-backdrop hidden" aria-hidden="true">
+    <section class="sheet sheet--feedback" role="dialog" aria-modal="true" aria-labelledby="feedback-title">
+      <header class="sheet-header">
+        <div class="drag-indicator" aria-hidden="true"></div>
+ 		 <h2 id="feedback-title">Hoe helpt A Warm Note je?</h2>
+		 <p id="feedback-subtitle">Laat kort weten wat je ervan vindt.</p>
+        <button class="sheet-close" aria-label="Sluiten">×</button>
+      </header>
+
+      <div class="sheet-body">
+        <div class="feedback-rating">
+			<button class="rate" data-val="1" aria-pressed="false">😔</button>
+			<button class="rate" data-val="3" aria-pressed="false">🙂</button>
+			<button class="rate" data-val="5" aria-pressed="false">🤩</button>
+        </div>
+        <textarea id="feedback-text" rows="3"
+          placeholder="Wat maakte het mooi? Of wat kan beter?"></textarea>
+
+        <div class="sheet-actions">
+          <button id="feedback-submit" class="btn primary">Verstuur feedback</button>
+          <button class="btn text small" id="feedback-skip">Nee bedankt</button>
+        </div>
+      </div>
+    </section>
+  </div>
 
 <!-- AI COMPOSE SHEET -->
 <div id="ai-backdrop" class="sheet-backdrop hidden" aria-hidden="true">
